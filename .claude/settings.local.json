@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev)",
+      "Bash(npx supabase functions deploy plug-chat --project-ref llrzeexnzgknpwcxdxpm)",
+      "Bash(npx supabase functions logs plug-chat --project-ref llrzeexnzgknpwcxdxpm)"
+    ]
+  }
+}

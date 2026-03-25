@@ -1,0 +1,1 @@
+ALTER TABLE public.signing_documents ADD COLUMN IF NOT EXISTS signing_token UUID DEFAULT gen_random_uuid() UNIQUE;

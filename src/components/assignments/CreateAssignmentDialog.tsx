@@ -1,0 +1,343 @@
+import { useState, useRef, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Plus, Upload, X, Tag, Lock } from 'lucide-react';
+
+interface CreateAssignmentDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+}
+
+const SUGGESTED_SKILLS = [
+  'React', 'TypeScript', 'JavaScript', 'Node.js', 'Python', 'SQL', 'Figma',
+  'Product', 'Data Analysis', 'UX Design', 'Vue', 'Next.js', 'Docker', 'AWS',
+];
+
+export function CreateAssignmentDialog({ open, onOpenChange, onSuccess }: CreateAssignmentDialogProps) {
+  const { user } = useAuth();
+  const { language } = useLanguage();
+  const isHebrew = language === 'he';
+
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
+  const [difficulty, setDifficulty] = useState('');
+  const [estimatedHours, setEstimatedHours] = useState('');
+  const [deadline, setDeadline] = useState('');
+  const [accessMode, setAccessMode] = useState<'public' | 'request_only'>('public');
+  const [briefFile, setBriefFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [suggestedTags, setSuggestedTags] = useState<string[]>(SUGGESTED_SKILLS);
+  const [userIsVisible, setUserIsVisible] = useState(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch user profile skills + visibility
+  useEffect(() => {
+    if (!open || !user) return;
+    supabase
+      .from('profiles')
+      .select('cv_data, visible_to_hr, role')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }) => {
+        const profileSkills: string[] = [
+          ...((data?.cv_data as any)?.skills?.technical ?? []),
+          ...((data?.cv_data as any)?.skills?.soft ?? []),
+        ].filter(Boolean);
+        const merged = [...new Set([...profileSkills, ...SUGGESTED_SKILLS])].slice(0, 20);
+        setSuggestedTags(merged);
+
+        const isVisible = (data as any)?.visible_to_hr !== false;
+        const role = (data as any)?.role;
+        const isHR = role && role !== 'job_seeker';
+        setUserIsVisible(isVisible || isHR);
+        // Default access_mode based on visibility
+        setAccessMode(isVisible || isHR ? 'public' : 'request_only');
+      });
+  }, [open, user]);
+
+  const reset = () => {
+    setTitle(''); setDescription(''); setTags([]); setTagInput('');
+    setDifficulty(''); setEstimatedHours(''); setDeadline('');
+    setAccessMode('public'); setBriefFile(null);
+  };
+
+  const addTag = (tag: string) => {
+    const t = tag.trim();
+    if (!t || tags.includes(t) || tags.length >= 8) return;
+    setTags(prev => [...prev, t]);
+    setTagInput('');
+  };
+
+  const removeTag = (tag: string) => setTags(prev => prev.filter(t => t !== tag));
+
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addTag(tagInput);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!user || !title.trim() || !description.trim()) return;
+    setIsSubmitting(true);
+    try {
+      let fileUrl: string | null = null;
+
+      if (briefFile) {
+        const ext = briefFile.name.split('.').pop();
+        const path = `templates/${crypto.randomUUID()}/brief.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from('home-assignments')
+          .upload(path, briefFile);
+        if (uploadError) throw uploadError;
+        const { data: urlData } = await supabase.storage
+          .from('home-assignments')
+          .createSignedUrl(path, 60 * 60 * 24 * 365);
+        fileUrl = urlData?.signedUrl ?? null;
+      }
+
+      const { data: newAssignment, error } = await supabase
+        .from('assignment_templates' as any)
+        .insert({
+          created_by: user.id,
+          title: title.trim(),
+          description: description.trim(),
+          tags: tags.length > 0 ? tags : [],
+          difficulty: difficulty || null,
+          estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
+          deadline: deadline || null,
+          access_mode: accessMode,
+          file_url: fileUrl,
+        })
+        .select('id')
+        .single();
+
+      if (error) throw error;
+
+      // Notify followers
+      const { data: followers } = await supabase
+        .from('follows' as any)
+        .select('follower_id')
+        .eq('followed_user_id', user.id);
+
+      if (followers && (followers as any[]).length > 0) {
+        await supabase.from('notifications' as any).insert(
+          (followers as any[]).map(f => ({
+            user_id: f.follower_id,
+            type: 'new_assignment',
+            title: isHebrew ? 'מטלה חדשה מאדם שאתה עוקב' : 'New assignment posted',
+            message: isHebrew
+              ? `פרסם/ה מטלה: "${title.trim()}"`
+              : `Posted a new assignment: "${title.trim()}"`,
+            metadata: { assignment_id: (newAssignment as any)?.id, path: '/assignments' },
+          }))
+        ).catch(() => {});
+      }
+
+      toast.success(isHebrew ? 'המטלה פורסמה בהצלחה!' : 'Assignment published!');
+      reset();
+      onSuccess();
+      onOpenChange(false);
+    } catch (err) {
+      console.error(err);
+      toast.error(isHebrew ? 'שגיאה בפרסום המטלה' : 'Failed to publish assignment');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) reset(); onOpenChange(o); }}>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto" dir={isHebrew ? 'rtl' : 'ltr'}>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Plus className="w-5 h-5 text-primary" />
+            {isHebrew ? 'פרסם מטלה' : 'Publish Assignment'}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Title */}
+          <div className="space-y-1.5">
+            <Label>{isHebrew ? 'כותרת *' : 'Title *'}</Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={isHebrew ? 'למשל: אתגר React Performance' : 'e.g. React Performance Challenge'}
+            />
+          </div>
+
+          {/* Description */}
+          <div className="space-y-1.5">
+            <Label>{isHebrew ? 'תיאור המטלה *' : 'Assignment Description *'}</Label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={isHebrew ? 'תאר את המטלה, מה מצופה מהמועמד...' : 'Describe the task, what is expected...'}
+              rows={4}
+            />
+          </div>
+
+          {/* Tags */}
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-1.5">
+              <Tag className="w-3.5 h-3.5" />
+              {isHebrew ? 'תגיות / כישורים' : 'Tags / Skills'}
+            </Label>
+
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {tags.map(tag => (
+                  <Badge key={tag} variant="secondary" className="gap-1 pe-1">
+                    {tag}
+                    <button onClick={() => removeTag(tag)} className="hover:text-destructive">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            <Input
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={handleTagInputKeyDown}
+              placeholder={isHebrew ? 'הקלד כישור ולחץ Enter...' : 'Type a skill and press Enter...'}
+              disabled={tags.length >= 8}
+            />
+
+            <div className="flex flex-wrap gap-1.5">
+              {suggestedTags
+                .filter(s => !tags.includes(s))
+                .slice(0, 10)
+                .map(s => (
+                  <button
+                    key={s}
+                    onClick={() => addTag(s)}
+                    disabled={tags.length >= 8}
+                    className="px-2 py-0.5 rounded-full text-xs border border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors disabled:opacity-40"
+                  >
+                    + {s}
+                  </button>
+                ))}
+            </div>
+          </div>
+
+          {/* Difficulty + Hours */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>{isHebrew ? 'רמת קושי' : 'Difficulty'}</Label>
+              <Select value={difficulty} onValueChange={setDifficulty}>
+                <SelectTrigger>
+                  <SelectValue placeholder={isHebrew ? 'בחר...' : 'Select...'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="easy">{isHebrew ? 'קל' : 'Easy'}</SelectItem>
+                  <SelectItem value="medium">{isHebrew ? 'בינוני' : 'Medium'}</SelectItem>
+                  <SelectItem value="hard">{isHebrew ? 'קשה' : 'Hard'}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>{isHebrew ? 'זמן משוער (שעות)' : 'Est. Time (hours)'}</Label>
+              <Input
+                type="number"
+                min="0.5"
+                step="0.5"
+                value={estimatedHours}
+                onChange={(e) => setEstimatedHours(e.target.value)}
+                placeholder={isHebrew ? 'למשל: 3' : 'e.g. 3'}
+              />
+            </div>
+          </div>
+
+          {/* Deadline */}
+          <div className="space-y-1.5">
+            <Label>{isHebrew ? 'דדליין (אופציונלי)' : 'Deadline (optional)'}</Label>
+            <Input
+              type="date"
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+              min={new Date().toISOString().split('T')[0]}
+            />
+          </div>
+
+          {/* Access mode toggle */}
+          <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+            <div className="flex items-center gap-2 text-sm">
+              <Lock className="w-4 h-4 text-muted-foreground" />
+              <div>
+                <p>{isHebrew ? 'דרוש אישור גישה' : 'Require access approval'}</p>
+                <p className="text-xs text-muted-foreground">
+                  {isHebrew
+                    ? 'מועמדים יצטרכו לבקש גישה לפני הגשת פתרון'
+                    : 'Candidates must request access before submitting'}
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={accessMode === 'request_only'}
+              onCheckedChange={v => setAccessMode(v ? 'request_only' : 'public')}
+            />
+          </div>
+
+          {!userIsVisible && (
+            <p className="text-xs text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-lg p-2">
+              {isHebrew
+                ? 'הפרופיל שלך לא גלוי למגייסים — המטלה תוצג בגישה מוגבלת'
+                : 'Your profile is not visible to recruiters — assignment will require access approval'}
+            </p>
+          )}
+
+          {/* Brief file */}
+          <div className="space-y-1.5">
+            <Label>{isHebrew ? 'קובץ בריף (אופציונלי)' : 'Brief File (optional)'}</Label>
+            {briefFile ? (
+              <div className="flex items-center gap-2 p-2.5 border rounded-lg bg-muted/50">
+                <span className="text-sm flex-1 truncate">{briefFile.name}</span>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setBriefFile(null)}>
+                  <X className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            ) : (
+              <Button variant="outline" className="w-full gap-2" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="w-4 h-4" />
+                {isHebrew ? 'העלה קובץ בריף' : 'Upload Brief File'}
+              </Button>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept=".pdf,.doc,.docx,.txt,.md"
+              onChange={(e) => setBriefFile(e.target.files?.[0] ?? null)}
+            />
+          </div>
+
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting || !title.trim() || !description.trim()}
+            className="w-full gap-2"
+          >
+            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            {isHebrew ? 'פרסם מטלה' : 'Publish Assignment'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
