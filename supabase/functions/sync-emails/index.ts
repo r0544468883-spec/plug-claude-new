@@ -290,11 +290,21 @@ serve(async (req) => {
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-    // Get all users with sync_enabled tokens
-    const { data: tokens, error: tokenErr } = await supabase
+    // Support per-user sync via body.user_id
+    const body = await req.json().catch(() => ({}));
+    const targetUserId = body.user_id || null;
+
+    // Get users with sync_enabled tokens
+    let tokenQuery = supabase
       .from("email_oauth_tokens")
       .select("*")
       .eq("sync_enabled", true);
+
+    if (targetUserId) {
+      tokenQuery = tokenQuery.eq("user_id", targetUserId);
+    }
+
+    const { data: tokens, error: tokenErr } = await tokenQuery;
 
     if (tokenErr || !tokens?.length) {
       return new Response(
@@ -367,6 +377,7 @@ serve(async (req) => {
               subject: email.subject,
               body_text: email.body_text,
               body_html: email.body_html,
+              provider: token.provider,
               created_at: email.received_at,
             })
             .select("id")
@@ -388,6 +399,7 @@ serve(async (req) => {
                   body_text: email.body_text,
                   application_id: applicationId,
                   auto_update: true,
+                  user_id: token.user_id,
                 }),
               });
             } catch (classifyErr) {

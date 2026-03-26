@@ -60,6 +60,8 @@ import { CompanyVouchModal } from '@/components/vouch/CompanyVouchModal';
 import { SendMessageDialog } from '@/components/messaging/SendMessageDialog';
 import { EmailThreadView } from '@/components/email/EmailThreadView';
 import { ComposeEmailDialog } from '@/components/email/ComposeEmailDialog';
+import { Undo2, Heart } from 'lucide-react';
+import { buildEmailWebLink } from '@/lib/email-utils';
 
 interface ApplicationDetails {
   id: string;
@@ -91,6 +93,96 @@ interface ApplicationDetailsSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
+}
+
+function RejectionBanner({ applicationId, isRTL, onRevert }: { applicationId: string; isRTL: boolean; onRevert: () => void }) {
+  const [reverting, setReverting] = useState(false);
+
+  const { data: rejectionEmail } = useQuery({
+    queryKey: ['rejection-email', applicationId],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('application_emails')
+        .select('id, provider_msg_id, provider, previous_stage, subject')
+        .eq('application_id', applicationId)
+        .eq('ai_classification', 'rejection')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      return data;
+    },
+    enabled: !!applicationId,
+  });
+
+  const emailLink = rejectionEmail?.provider_msg_id
+    ? buildEmailWebLink(rejectionEmail.provider || 'gmail', rejectionEmail.provider_msg_id)
+    : null;
+
+  const handleRevert = async () => {
+    if (!rejectionEmail?.previous_stage) return;
+    setReverting(true);
+    try {
+      await supabase
+        .from('applications')
+        .update({
+          current_stage: rejectionEmail.previous_stage,
+          status: 'active',
+          updated_at: new Date().toISOString(),
+        } as any)
+        .eq('id', applicationId);
+
+      await (supabase as any)
+        .from('application_emails')
+        .update({ auto_updated: false })
+        .eq('id', rejectionEmail.id);
+
+      toast.success(isRTL ? 'העדכון בוטל בהצלחה' : 'Auto-update reverted');
+      onRevert();
+    } catch {
+      toast.error(isRTL ? 'שגיאה בביטול' : 'Error reverting');
+    } finally {
+      setReverting(false);
+    }
+  };
+
+  return (
+    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 space-y-2">
+      <div className="flex items-center gap-2">
+        <Heart className="w-4 h-4 text-amber-600" />
+        <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+          {isRTL ? 'תהליך זה הסתיים, אבל הדרך ממשיכה' : 'This process ended, but the journey continues'}
+        </p>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {isRTL
+          ? 'כל דחייה מקרבת אותך להזדמנות הנכונה. זה חלק טבעי מחיפוש עבודה.'
+          : 'Every rejection brings you closer to the right opportunity.'}
+      </p>
+      <div className="flex items-center gap-3 mt-1">
+        {emailLink && (
+          <a
+            href={emailLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+          >
+            <ExternalLink className="w-3 h-3" />
+            {isRTL ? 'צפה במייל המקורי' : 'View original email'}
+          </a>
+        )}
+        {rejectionEmail?.previous_stage && (
+          <button
+            onClick={handleRevert}
+            disabled={reverting}
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+          >
+            <Undo2 className="w-3 h-3" />
+            {isRTL ? 'זה לא דחייה? בטל עדכון' : 'Not a rejection? Undo'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function ApplicationDetailsSheet({
@@ -578,6 +670,18 @@ export function ApplicationDetailsSheet({
           )}
 
           <Separator />
+
+          {/* Rejection banner — empathetic UX with email link + undo */}
+          {currentStage === 'rejected' && !isRecruiter && (
+            <RejectionBanner
+              applicationId={application.id}
+              isRTL={isRTL}
+              onRevert={() => {
+                setCurrentStage('applied');
+                onUpdate();
+              }}
+            />
+          )}
 
           {/* Tabs for Status, Interviews, Home Assignment, Team Notes, Plug */}
           <Tabs defaultValue="status" className="w-full">

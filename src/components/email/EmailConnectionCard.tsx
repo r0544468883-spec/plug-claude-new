@@ -20,6 +20,7 @@ export function EmailConnectionCard() {
   const queryClient = useQueryClient();
   const isHebrew = language === 'he';
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
   // Handle OAuth callback params
   useEffect(() => {
@@ -101,6 +102,40 @@ export function EmailConnectionCard() {
     }
   };
 
+  const syncNow = async () => {
+    setSyncing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No session');
+
+      const res = await fetch(
+        `${SUPABASE_URL}/functions/v1/sync-emails`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ user_id: user?.id }),
+        }
+      );
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      toast.success(
+        isHebrew
+          ? `סונכרנו ${data.synced || 0} מיילים חדשים`
+          : `Synced ${data.synced || 0} new emails`
+      );
+      queryClient.invalidateQueries({ queryKey: ['email-oauth-tokens'] });
+    } catch (err: any) {
+      toast.error(isHebrew ? 'שגיאה בסנכרון' : 'Sync failed');
+      console.error('Sync error:', err);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const renderProviderCard = (
     provider: 'gmail' | 'outlook',
     token: typeof gmailToken,
@@ -131,24 +166,42 @@ export function EmailConnectionCard() {
           )}
         </div>
       </div>
-      <div>
+      <div className="flex items-center gap-1">
         {token ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => disconnect(provider)}
-            disabled={disconnecting === provider}
-            className="text-destructive hover:text-destructive"
-          >
-            {disconnecting === provider ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <>
-                <Unlink className="w-4 h-4 mr-1" />
-                {isHebrew ? 'נתק' : 'Disconnect'}
-              </>
-            )}
-          </Button>
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={syncNow}
+              disabled={syncing}
+              className="text-primary"
+            >
+              {syncing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-1" />
+                  {isHebrew ? 'סנכרן' : 'Sync'}
+                </>
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => disconnect(provider)}
+              disabled={disconnecting === provider}
+              className="text-destructive hover:text-destructive"
+            >
+              {disconnecting === provider ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Unlink className="w-4 h-4 mr-1" />
+                  {isHebrew ? 'נתק' : 'Disconnect'}
+                </>
+              )}
+            </Button>
+          </>
         ) : (
           <Button variant="outline" size="sm" onClick={connectFn}>
             {isHebrew ? 'חבר' : 'Connect'}

@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { NotificationItem } from './NotificationItem';
 import { Bell, CheckCheck, AlertCircle, Briefcase, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface SmartNotification {
   id: string;
@@ -196,6 +197,40 @@ export function NotificationBell() {
     markAsReadMutation.mutate(id);
   };
 
+  const handleRevertAutoUpdate = async (applicationId: string, previousStage: string, emailId?: string) => {
+    try {
+      // Revert application stage
+      await supabase
+        .from('applications')
+        .update({ current_stage: previousStage, status: 'active', updated_at: new Date().toISOString() })
+        .eq('id', applicationId);
+
+      // Mark email as not auto-updated
+      if (emailId) {
+        await (supabase as any)
+          .from('application_emails')
+          .update({ auto_updated: false })
+          .eq('id', emailId);
+      }
+
+      // Add timeline event
+      await supabase
+        .from('application_timeline')
+        .insert({
+          application_id: applicationId,
+          event_type: 'stage_change',
+          old_value: 'rejected',
+          new_value: previousStage,
+          description: isHebrew ? 'המשתמש ביטל עדכון אוטומטי' : 'User reverted auto-update',
+        } as any);
+
+      toast.success(isHebrew ? 'העדכון בוטל בהצלחה' : 'Auto-update reverted');
+      queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
+    } catch {
+      toast.error(isHebrew ? 'שגיאה בביטול העדכון' : 'Error reverting update');
+    }
+  };
+
   const handleSmartNotifDismiss = (id: string) => {
     markSeen(id);
     setSmartNotifs(prev => prev.filter(n => n.id !== id));
@@ -286,6 +321,7 @@ export function NotificationBell() {
                   key={notification.id}
                   notification={notification}
                   onClick={handleNotificationClick}
+                  onRevert={handleRevertAutoUpdate}
                 />
               ))}
             </div>

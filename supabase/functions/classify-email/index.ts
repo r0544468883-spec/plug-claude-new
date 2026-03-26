@@ -107,13 +107,24 @@ serve(async (req) => {
     if (!authHeader) throw new Error("Missing authorization");
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-    const anonClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!);
-    const { data: { user }, error: authErr } = await anonClient.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-    if (authErr || !user) throw new Error("Unauthorized");
+    const token = authHeader.replace("Bearer ", "");
+    const isServiceRole = token === SUPABASE_SERVICE_KEY;
+    let userId: string;
 
-    const { email_id, subject, body_text, application_id, auto_update } = await req.json();
+    const requestBody = await req.json();
+    const { email_id, subject, body_text, application_id, auto_update, user_id: bodyUserId } = requestBody;
+
+    if (isServiceRole) {
+      // Called from sync-emails with service role key
+      if (!bodyUserId) throw new Error("Missing user_id for service role call");
+      userId = bodyUserId;
+    } else {
+      // Called from frontend with user JWT
+      const anonClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!);
+      const { data: { user }, error: authErr } = await anonClient.auth.getUser(token);
+      if (authErr || !user) throw new Error("Unauthorized");
+      userId = user.id;
+    }
     if (!subject && !body_text) throw new Error("Need subject or body_text");
 
     // Classify
@@ -134,7 +145,7 @@ serve(async (req) => {
           },
         })
         .eq("id", email_id)
-        .eq("user_id", user.id);
+        .eq("user_id", userId);
     }
 
     // Auto-update application stage if confidence is high enough
@@ -164,19 +175,76 @@ serve(async (req) => {
               .update({ stage: newStage, updated_at: new Date().toISOString() })
               .eq("id", application_id);
 
-            // Timeline event
+            // Get email provider info for building web link
+            let gmailLink: string | null = null;
+            if (email_id) {
+              const { data: emailRow } = await supabase
+                .from("application_emails")
+                .select("provider_msg_id, provider")
+                .eq("id", email_id)
+                .single();
+              if (emailRow?.provider_msg_id) {
+                gmailLink = emailRow.provider === "outlook"
+                  ? `https://outlook.live.com/mail/0/inbox/id/${encodeURIComponent(emailRow.provider_msg_id)}`
+                  : `https://mail.google.com/mail/u/0/#inbox/${emailRow.provider_msg_id}`;
+              }
+            }
+
+            // Get application details for notification text
+            const { data: appDetails } = await supabase
+              .from("applications")
+              .select("company_name")
+              .eq("id", application_id)
+              .single();
+
+            const companyName = appDetails?.company_name || result.company_name || "";
+            const jobTitle = result.job_title || "";
+
+            // Timeline event with email reference
+            const isRejection = result.classification === "rejection";
             await supabase.from("application_timeline").insert({
               application_id,
-              event_type: "stage_change_auto",
-              title: `שלב עודכן אוטומטית: ${newStage}`,
-              description: `על בסיס מייל (ביטחון: ${Math.round(result.confidence * 100)}%)`,
-              created_by: user.id,
+              event_type: isRejection ? "rejection_detected" : "stage_change_auto",
+              title: isRejection
+                ? `התקבל מייל דחייה מ-${companyName || "החברה"}`
+                : `שלב עודכן אוטומטית: ${newStage}`,
+              description: JSON.stringify({
+                email_id: email_id || null,
+                subject: subject || "",
+                confidence: result.confidence,
+                gmail_link: gmailLink,
+              }),
+              created_by: userId,
+            });
+
+            // Insert notification for the user
+            await supabase.from("notifications").insert({
+              user_id: userId,
+              type: isRejection ? "rejection_detected" : "application_update",
+              title: isRejection
+                ? `נראה שקיבלת תשובה מ-${companyName}`
+                : `עדכון אוטומטי: ${companyName} - ${jobTitle}`,
+              message: isRejection
+                ? `לגבי משרת ${jobTitle}. לחץ כדי לצפות במייל המלא.`
+                : `השלב עודכן ל-${newStage} (${Math.round(result.confidence * 100)}% ביטחון)`,
+              is_read: false,
+              metadata: {
+                application_id,
+                email_id: email_id || null,
+                gmail_link: gmailLink,
+                classification: result.classification,
+                confidence: result.confidence,
+                previous_stage: previousStage,
+                new_stage: newStage,
+                company_name: companyName,
+                job_title: jobTitle,
+              },
             });
 
             if (email_id) {
               await supabase
                 .from("application_emails")
-                .update({ auto_updated: true })
+                .update({ auto_updated: true, previous_stage: previousStage })
                 .eq("id", email_id);
             }
 
