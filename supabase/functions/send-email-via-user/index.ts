@@ -112,6 +112,28 @@ serve(async (req) => {
     const { to, subject, body_html, application_id, reply_to_message_id, provider_preference } = await req.json();
     if (!to || !subject || !body_html) throw new Error("Missing required fields: to, subject, body_html");
 
+    // Append PLUG-HR email signature
+    const signature = `
+<br/><br/>
+<table cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;border-top:1px solid #e0e0e0;padding-top:12px;">
+  <tr>
+    <td style="vertical-align:middle;padding-right:12px;">
+      <div style="width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#6ee7b7,#3b82f6);display:flex;align-items:center;justify-content:center;">
+        <img src="https://plug-claude-new-psi.vercel.app/plug-logo.png" alt="PLUG" width="24" height="24" style="display:block;" />
+      </div>
+    </td>
+    <td style="vertical-align:middle;">
+      <span style="font-size:11px;color:#888;font-family:Arial,sans-serif;">
+        מייל זה נכתב עם <strong style="color:#3b82f6;">PLUG-HR</strong>
+      </span>
+      <br/>
+      <a href="https://www.plug-hr.com" style="font-size:11px;color:#3b82f6;text-decoration:none;font-family:Arial,sans-serif;">www.plug-hr.com</a>
+    </td>
+  </tr>
+</table>`;
+
+    const body_with_signature = body_html + signature;
+
     // Get email tokens (prefer requested provider, fallback to any connected)
     let tokenQuery = supabase
       .from("email_oauth_tokens")
@@ -130,7 +152,7 @@ serve(async (req) => {
 
     if (tokens.provider === "gmail") {
       // Send via Gmail API
-      const raw = buildRfc2822(tokens.email_address, to, subject, body_html, reply_to_message_id);
+      const raw = buildRfc2822(tokens.email_address, to, subject, body_with_signature, reply_to_message_id);
       const sendRes = await fetch(
         "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
         {
@@ -164,7 +186,7 @@ serve(async (req) => {
           body: JSON.stringify({
             message: {
               subject,
-              body: { contentType: "HTML", content: body_html },
+              body: { contentType: "HTML", content: body_with_signature },
               toRecipients: [{ emailAddress: { address: to } }],
             },
           }),
