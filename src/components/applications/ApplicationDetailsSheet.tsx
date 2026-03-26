@@ -22,7 +22,8 @@ import {
   MessageSquare,
   User,
   Download,
-  Users
+  Users,
+  Mail
 } from 'lucide-react';
 import {
   Sheet,
@@ -57,6 +58,8 @@ import { CandidateVouchBadge } from '@/components/vouch/CandidateVouchBadge';
 import { CompanyRatingBadge } from '@/components/vouch/CompanyRatingBadge';
 import { CompanyVouchModal } from '@/components/vouch/CompanyVouchModal';
 import { SendMessageDialog } from '@/components/messaging/SendMessageDialog';
+import { EmailThreadView } from '@/components/email/EmailThreadView';
+import { ComposeEmailDialog } from '@/components/email/ComposeEmailDialog';
 
 interface ApplicationDetails {
   id: string;
@@ -97,7 +100,7 @@ export function ApplicationDetailsSheet({
   onUpdate,
 }: ApplicationDetailsSheetProps) {
   const { language } = useLanguage();
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const navigate = useNavigate();
   const isRTL = language === 'he';
   const isRecruiter = role === 'freelance_hr' || role === 'inhouse_hr';
@@ -238,6 +241,58 @@ export function ApplicationDetailsSheet({
       toast.success(isRTL ? 'השינויים נשמרו' : 'Changes saved');
       setHasChanges(false);
       onUpdate();
+
+      // Check for auto-send email templates on stage change
+      if (currentStage !== oldStage && isRecruiter) {
+        try {
+          const { data: autoTemplates } = await (supabase as any)
+            .from('email_templates')
+            .select('*')
+            .eq('trigger_stage', currentStage)
+            .eq('auto_send', true)
+            .eq('is_active', true)
+            .eq('created_by', user?.id);
+
+          if (autoTemplates?.length > 0 && candidateProfile?.email) {
+            const template = autoTemplates[0];
+            const session = await supabase.auth.getSession();
+            const token = session.data.session?.access_token;
+
+            const personalizedBody = template.body
+              .replace(/\{candidate_name\}/g, candidateProfile.full_name || '')
+              .replace(/\{job_title\}/g, job?.title || '')
+              .replace(/\{company_name\}/g, company?.name || '');
+            const personalizedSubject = template.subject
+              .replace(/\{candidate_name\}/g, candidateProfile.full_name || '')
+              .replace(/\{job_title\}/g, job?.title || '')
+              .replace(/\{company_name\}/g, company?.name || '');
+
+            const emailRes = await fetch(
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email-via-user`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                  'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                },
+                body: JSON.stringify({
+                  to: candidateProfile.email,
+                  subject: personalizedSubject,
+                  body_html: `<div dir="${isRTL ? 'rtl' : 'ltr'}" style="font-family: Arial, sans-serif;">${personalizedBody.replace(/\n/g, '<br/>')}</div>`,
+                  application_id: application.id,
+                }),
+              }
+            );
+
+            if (emailRes.ok) {
+              toast.success(isRTL ? 'מייל אוטומטי נשלח למועמד' : 'Auto-email sent to candidate');
+            }
+          }
+        } catch (emailErr) {
+          console.error('Auto-send email error:', emailErr);
+        }
+      }
 
       // Check if we should show vouch modal for stage changes
       if (currentStage !== oldStage && company?.id) {
@@ -503,6 +558,20 @@ export function ApplicationDetailsSheet({
                       </Button>
                     }
                   />
+
+                  <ComposeEmailDialog
+                    defaultTo={candidateProfile.email || ''}
+                    applicationId={application.id}
+                    candidateName={candidateProfile.full_name}
+                    jobTitle={job?.title}
+                    companyName={company?.name}
+                    trigger={
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Mail className="h-4 w-4" />
+                        {isRTL ? 'שלח מייל' : 'Send Email'}
+                      </Button>
+                    }
+                  />
                 </div>
               </div>
             </>
@@ -512,9 +581,13 @@ export function ApplicationDetailsSheet({
 
           {/* Tabs for Status, Interviews, Home Assignment, Team Notes, Plug */}
           <Tabs defaultValue="status" className="w-full">
-            <TabsList className={`grid w-full ${isRecruiter ? 'grid-cols-5' : 'grid-cols-4'}`}>
+            <TabsList className={`grid w-full ${isRecruiter ? 'grid-cols-6' : 'grid-cols-5'}`}>
               <TabsTrigger value="status" className="text-xs">
                 {isRTL ? 'סטטוס' : 'Status'}
+              </TabsTrigger>
+              <TabsTrigger value="emails" className="text-xs">
+                <Mail className="h-3 w-3 mr-1" />
+                {isRTL ? 'מיילים' : 'Emails'}
               </TabsTrigger>
               <TabsTrigger value="interviews" className="text-xs">
                 <Calendar className="h-3 w-3 mr-1" />
@@ -562,6 +635,16 @@ export function ApplicationDetailsSheet({
                   dir={isRTL ? 'rtl' : 'ltr'}
                 />
               </div>
+            </TabsContent>
+
+            <TabsContent value="emails" className="mt-4">
+              <EmailThreadView
+                applicationId={application.id}
+                jobTitle={job?.title}
+                companyName={company?.name}
+                candidateName={isRecruiter ? candidateProfile?.full_name : undefined}
+                candidateEmail={isRecruiter ? candidateProfile?.email : undefined}
+              />
             </TabsContent>
 
             <TabsContent value="interviews" className="mt-4">

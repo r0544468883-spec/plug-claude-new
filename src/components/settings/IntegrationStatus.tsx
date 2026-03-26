@@ -2,10 +2,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
-  Settings2, 
-  CheckCircle2, 
-  XCircle, 
+import {
+  Settings2,
+  CheckCircle2,
+  XCircle,
   AlertCircle,
   Mail,
   Calendar,
@@ -17,6 +17,8 @@ import {
   Copy
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { EmailConnectionCard } from '@/components/email/EmailConnectionCard';
+import { TemplateEditor } from '@/components/email/TemplateEditor';
 
 interface Integration {
   id: string;
@@ -147,6 +149,12 @@ export function IntegrationStatus() {
       </CardHeader>
       
       <CardContent className="space-y-4">
+        {/* Email Connection Card */}
+        <EmailConnectionCard />
+
+        {/* Email Templates Editor */}
+        <TemplateEditor />
+
         {integrations.map((integration) => (
           <div
             key={integration.id}

@@ -18,6 +18,8 @@ import { PreferencesSettings } from '@/components/settings/PreferencesSettings';
 import { PrivacySettings } from '@/components/settings/PrivacySettings';
 import { AccountSettings } from '@/components/settings/AccountSettings';
 import { PortfolioLinks } from '@/components/settings/PortfolioLinks';
+import { EmailConnectionCard } from '@/components/email/EmailConnectionCard';
+import { TemplateEditor } from '@/components/email/TemplateEditor';
 import { MessageInbox } from '@/components/messaging/MessageInbox';
 import { CandidatesPage } from '@/components/candidates/CandidatesPage';
 import { PostJobForm } from '@/components/jobs/PostJobForm';
@@ -629,6 +631,10 @@ export default function Dashboard() {
         {/* Account Settings */}
         <AccountSettings />
       </div>
+
+      {/* Email Integration */}
+      <EmailConnectionCard />
+      <TemplateEditor />
     </div>
   );
 

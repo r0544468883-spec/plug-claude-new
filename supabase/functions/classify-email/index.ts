@@ -1,0 +1,209 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const SUPABASE_URL     = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const CLAUDE_API_KEY   = Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("CLAUDE_API_KEY") || "";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const CLASSIFICATION_PROMPT = `You are an email classifier for a recruitment/job platform.
+Classify the following email into exactly one category:
+- interview_invitation: Invitation to an interview (phone, video, in-person)
+- rejection: Application rejection or "we decided to move forward with other candidates"
+- offer: Job offer or salary negotiation
+- task_assignment: Home assignment, coding challenge, or test task
+- follow_up: Follow-up on a previous interaction
+- acknowledgment: "We received your application" or similar confirmation
+- info_request: Request for more information (CV, portfolio, references)
+- general: Anything else
+
+Also extract if possible:
+- company_name: The company that sent the email
+- job_title: The position being discussed
+- interview_date: Date/time of interview if mentioned (ISO format)
+- action_required: Brief description of what the recipient needs to do
+
+The email may be in Hebrew, English, or mixed.
+
+Return ONLY valid JSON:
+{
+  "classification": "<category>",
+  "confidence": <0.00-1.00>,
+  "company_name": "<string or null>",
+  "job_title": "<string or null>",
+  "interview_date": "<ISO string or null>",
+  "action_required": "<string or null>"
+}`;
+
+async function classifyWithAI(subject: string, body: string): Promise<{
+  classification: string;
+  confidence: number;
+  company_name: string | null;
+  job_title: string | null;
+  interview_date: string | null;
+  action_required: string | null;
+}> {
+  // Truncate body to 2000 chars
+  const truncatedBody = body.length > 2000 ? body.substring(0, 2000) + "..." : body;
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": CLAUDE_API_KEY,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 300,
+      messages: [
+        {
+          role: "user",
+          content: `${CLASSIFICATION_PROMPT}\n\nSubject: ${subject}\n\nBody:\n${truncatedBody}`,
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const detail = await res.text();
+    console.error("AI classification failed:", detail);
+    return { classification: "general", confidence: 0, company_name: null, job_title: null, interview_date: null, action_required: null };
+  }
+
+  const data = await res.json();
+  const text = data.content?.[0]?.text || "{}";
+
+  try {
+    // Extract JSON from response (in case there's extra text)
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No JSON found");
+    return JSON.parse(jsonMatch[0]);
+  } catch {
+    console.error("Failed to parse AI response:", text);
+    return { classification: "general", confidence: 0, company_name: null, job_title: null, interview_date: null, action_required: null };
+  }
+}
+
+// Map classification → application stage
+const CLASSIFICATION_TO_STAGE: Record<string, { stage: string; validFrom: string[] }> = {
+  interview_invitation: { stage: "interview", validFrom: ["applied", "screening", "viewed"] },
+  rejection: { stage: "rejected", validFrom: ["applied", "screening", "interview", "task", "offer", "viewed"] },
+  offer: { stage: "offer", validFrom: ["interview", "task"] },
+  task_assignment: { stage: "task", validFrom: ["interview", "screening", "applied"] },
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("Missing authorization");
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    const anonClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!);
+    const { data: { user }, error: authErr } = await anonClient.auth.getUser(
+      authHeader.replace("Bearer ", "")
+    );
+    if (authErr || !user) throw new Error("Unauthorized");
+
+    const { email_id, subject, body_text, application_id, auto_update } = await req.json();
+    if (!subject && !body_text) throw new Error("Need subject or body_text");
+
+    // Classify
+    const result = await classifyWithAI(subject || "", body_text || "");
+
+    // Save classification to application_emails if email_id provided
+    if (email_id) {
+      await supabase
+        .from("application_emails")
+        .update({
+          ai_classification: result.classification,
+          ai_confidence: result.confidence,
+          ai_extracted_data: {
+            company_name: result.company_name,
+            job_title: result.job_title,
+            interview_date: result.interview_date,
+            action_required: result.action_required,
+          },
+        })
+        .eq("id", email_id)
+        .eq("user_id", user.id);
+    }
+
+    // Auto-update application stage if confidence is high enough
+    let stageUpdated = false;
+    let previousStage = null;
+    let newStage = null;
+
+    if (application_id && auto_update !== false && result.confidence >= 0.60) {
+      const mapping = CLASSIFICATION_TO_STAGE[result.classification];
+      if (mapping) {
+        // Get current application stage
+        const { data: app } = await supabase
+          .from("applications")
+          .select("stage")
+          .eq("id", application_id)
+          .eq("user_id", user.id)
+          .single();
+
+        if (app && mapping.validFrom.includes(app.stage)) {
+          if (result.confidence >= 0.85) {
+            // Auto-update
+            previousStage = app.stage;
+            newStage = mapping.stage;
+
+            await supabase
+              .from("applications")
+              .update({ stage: newStage, updated_at: new Date().toISOString() })
+              .eq("id", application_id);
+
+            // Timeline event
+            await supabase.from("application_timeline").insert({
+              application_id,
+              event_type: "stage_change_auto",
+              title: `שלב עודכן אוטומטית: ${newStage}`,
+              description: `על בסיס מייל (ביטחון: ${Math.round(result.confidence * 100)}%)`,
+              created_by: user.id,
+            });
+
+            if (email_id) {
+              await supabase
+                .from("application_emails")
+                .update({ auto_updated: true })
+                .eq("id", email_id);
+            }
+
+            stageUpdated = true;
+          }
+          // For 0.60-0.84: return suggestion but don't auto-update
+        }
+      }
+    }
+
+    return new Response(
+      JSON.stringify({
+        ...result,
+        stage_updated: stageUpdated,
+        previous_stage: previousStage,
+        new_stage: newStage,
+        suggestion: result.confidence >= 0.60 && result.confidence < 0.85
+          ? CLASSIFICATION_TO_STAGE[result.classification]?.stage || null
+          : null,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (e) {
+    console.error("classify-email error:", e);
+    return new Response(
+      JSON.stringify({ error: e.message }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
