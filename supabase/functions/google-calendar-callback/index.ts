@@ -5,7 +5,7 @@ const GOOGLE_CLIENT_ID     = Deno.env.get("GOOGLE_CLIENT_ID")!;
 const GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET")!;
 const SUPABASE_URL         = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const APP_URL              = Deno.env.get("APP_URL") || "http://localhost:8081";
+const APP_URL              = Deno.env.get("APP_URL") || "https://plug-claude-new-psi.vercel.app";
 
 const REDIRECT_URI = `${SUPABASE_URL}/functions/v1/google-calendar-callback`;
 

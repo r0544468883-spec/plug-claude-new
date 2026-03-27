@@ -163,17 +163,19 @@ serve(async (req) => {
         // Sort by match score
         matchingJobs.sort((a, b) => b.matchScore - a.matchScore);
 
-        // Create a notification instead of email (email would require Resend setup)
-        const { error: notifError } = await supabaseAdmin
+        const topJobs = matchingJobs.slice(0, 5);
+
+        // 1. In-app notification (always)
+        await supabaseAdmin
           .from('notifications')
           .insert({
             user_id: profile.user_id,
             type: 'job_alert',
             title: `${matchingJobs.length} משרות חדשות מתאימות לך!`,
-            message: `נמצאו ${matchingJobs.length} משרות חדשות עם התאמה של 60% ומעלה: ${matchingJobs.slice(0, 3).map(j => j.title).join(', ')}${matchingJobs.length > 3 ? '...' : ''}`,
+            message: `נמצאו ${matchingJobs.length} משרות חדשות עם התאמה של 60% ומעלה: ${topJobs.map(j => j.title).join(', ')}${matchingJobs.length > 5 ? '...' : ''}`,
             metadata: {
               job_count: matchingJobs.length,
-              top_jobs: matchingJobs.slice(0, 5).map(j => ({
+              top_jobs: topJobs.map(j => ({
                 id: j.id,
                 title: j.title,
                 matchScore: j.matchScore,
@@ -182,12 +184,74 @@ serve(async (req) => {
             }
           });
 
-        if (notifError) {
-          console.error(`Error creating notification for ${profile.email}:`, notifError);
-        } else {
-          notificationsSent++;
-          console.log(`Notification sent to ${profile.email} for ${matchingJobs.length} jobs`);
+        // 2. Resend email (if RESEND_API_KEY is configured)
+        const resendKey = Deno.env.get('RESEND_API_KEY');
+        if (resendKey && profile.email) {
+          try {
+            const jobListHtml = topJobs.map(j =>
+              `<tr>
+                <td style="padding:8px 12px;border-bottom:1px solid #eee;">${j.title}</td>
+                <td style="padding:8px 12px;border-bottom:1px solid #eee;">${j.company?.[0]?.name || '—'}</td>
+                <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center;">
+                  <span style="background:#22c55e20;color:#16a34a;padding:2px 8px;border-radius:12px;font-size:12px;">${j.matchScore}%</span>
+                </td>
+              </tr>`
+            ).join('');
+
+            const html = `
+              <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;direction:rtl;">
+                <div style="background:#1a1a2e;padding:24px;text-align:center;border-radius:12px 12px 0 0;">
+                  <h1 style="color:#fff;margin:0;font-size:20px;">PLUG</h1>
+                </div>
+                <div style="padding:24px;background:#fff;border:1px solid #eee;">
+                  <h2 style="margin:0 0 8px;">שלום ${profile.full_name || ''}!</h2>
+                  <p style="color:#666;">נמצאו <strong>${matchingJobs.length} משרות חדשות</strong> שמתאימות לפרופיל שלך:</p>
+                  <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+                    <thead>
+                      <tr style="background:#f8f9fa;">
+                        <th style="padding:8px 12px;text-align:right;">משרה</th>
+                        <th style="padding:8px 12px;text-align:right;">חברה</th>
+                        <th style="padding:8px 12px;text-align:center;">התאמה</th>
+                      </tr>
+                    </thead>
+                    <tbody>${jobListHtml}</tbody>
+                  </table>
+                  <a href="${Deno.env.get('APP_URL') || 'https://plug-claude-new-psi.vercel.app'}/?section=job-search"
+                     style="display:inline-block;background:#6366f1;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:8px;">
+                    צפה בכל המשרות
+                  </a>
+                </div>
+                <div style="padding:16px;text-align:center;color:#999;font-size:12px;">
+                  PLUG Nexus AI — הפלטפורמה לחיפוש עבודה חכם
+                </div>
+              </div>`;
+
+            const emailRes = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${resendKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                from: Deno.env.get('RESEND_FROM_EMAIL') || 'PLUG <notifications@plugnexus.ai>',
+                to: [profile.email],
+                subject: `${matchingJobs.length} משרות חדשות מתאימות לך! | PLUG`,
+                html,
+              }),
+            });
+
+            if (!emailRes.ok) {
+              console.error(`Resend error for ${profile.email}:`, await emailRes.text());
+            } else {
+              console.log(`Email sent to ${profile.email}`);
+            }
+          } catch (emailErr) {
+            console.error(`Email send error for ${profile.email}:`, emailErr);
+          }
         }
+
+        notificationsSent++;
+        console.log(`Alert sent to ${profile.email} for ${matchingJobs.length} jobs`);
       }
     }
 
