@@ -229,7 +229,7 @@ function PushNotificationsCard() {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session?.access_token}`,
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -258,7 +258,7 @@ function PushNotificationsCard() {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session?.access_token}`,
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ endpoint: subscription?.endpoint }),
@@ -376,7 +376,7 @@ function GoogleCalendarCard() {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session?.access_token}`,
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ user_id: user?.id }),
