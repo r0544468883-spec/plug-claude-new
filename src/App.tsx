@@ -2,14 +2,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CreditsProvider } from "@/contexts/CreditsContext";
 import { HelmetProvider } from "react-helmet-async";
 import { ScrollToTop } from "./components/ScrollToTop";
 import Index from "./pages/Index";
-import Profile from "./pages/Profile";
 import PublicProfile from "./pages/PublicProfile";
 import SavedJobs from "./pages/SavedJobs";
 import CandidateProfile from "./pages/CandidateProfile";
@@ -48,7 +47,7 @@ const App = () => (
                 </a>
                 <Routes>
                   <Route path="/" element={<Index />} />
-                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/profile" element={<Navigate to="/?section=profile-settings" replace />} />
                   <Route path="/p/:userId" element={<PublicProfile />} />
                   <Route path="/saved-jobs" element={<SavedJobs />} />
                   <Route path="/candidate/:candidateId" element={<CandidateProfile />} />

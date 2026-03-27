@@ -18,9 +18,10 @@ interface AuthFormProps {
   selectedRole: AppRole;
   onBack: () => void;
   onSuccess: () => void;
+  onRegistration?: () => void;
 }
 
-export function AuthForm({ selectedRole, onBack, onSuccess }: AuthFormProps) {
+export function AuthForm({ selectedRole, onBack, onSuccess, onRegistration }: AuthFormProps) {
   const { t, direction } = useLanguage();
   const { signUp, signIn } = useAuth();
   
@@ -87,6 +88,7 @@ export function AuthForm({ selectedRole, onBack, onSuccess }: AuthFormProps) {
           toast.error(error.message);
         } else {
           toast.success('Account created successfully!');
+          onRegistration?.();
           onSuccess();
         }
       }

@@ -13,13 +13,7 @@ import { JobSearchPage } from '@/components/jobs/JobSearchPage';
 import { ResumeUpload } from '@/components/documents/ResumeUpload';
 import { VouchWidget } from '@/components/vouch/VouchWidget';
 import { GiveVouchDialog } from '@/components/vouch/GiveVouchDialog';
-import { ProfileSettings } from '@/components/settings/ProfileSettings';
-import { PreferencesSettings } from '@/components/settings/PreferencesSettings';
-import { PrivacySettings } from '@/components/settings/PrivacySettings';
-import { AccountSettings } from '@/components/settings/AccountSettings';
-import { PortfolioLinks } from '@/components/settings/PortfolioLinks';
-import { EmailConnectionCard } from '@/components/email/EmailConnectionCard';
-import { TemplateEditor } from '@/components/email/TemplateEditor';
+import { UnifiedProfileSettings } from '@/components/profile/UnifiedProfileSettings';
 import { MessageInbox } from '@/components/messaging/MessageInbox';
 import { CandidatesPage } from '@/components/candidates/CandidatesPage';
 import { PostJobForm } from '@/components/jobs/PostJobForm';
@@ -35,8 +29,6 @@ import { LevelBadge } from '@/components/gamification/LevelBadge';
 import { CVBuilder } from '@/components/cv-builder/CVBuilder';
 import { CompanyRecommendations } from '@/components/jobs/CompanyRecommendations';
 import { FavoriteCompanies } from '@/components/jobs/FavoriteCompanies';
-import { PersonalCardEditor } from '@/components/profile/PersonalCardEditor';
-import { PhotoUpload } from '@/components/profile/PhotoUpload';
 import { MobileWelcomeStats } from '@/components/dashboard/MobileWelcomeStats';
 import { InterviewPrepContent } from '@/components/interview/InterviewPrepContent';
 import { FeedPage } from '@/components/feed/FeedPage';
@@ -431,7 +423,7 @@ export default function Dashboard() {
           ] : role === 'company_employee' ? [
             { labelHe: 'המלץ על חבר', labelEn: 'Refer Friend', icon: Heart, section: 'referrals' as DashboardSection },
             { labelHe: 'חפש משרות', labelEn: 'Find Jobs', icon: Search, section: 'job-search' as DashboardSection },
-            { labelHe: 'הפרופיל שלי', labelEn: 'My Profile', icon: User, section: 'profile-docs' as DashboardSection },
+            { labelHe: 'הפרופיל שלי', labelEn: 'My Profile', icon: User, section: 'profile-settings' as DashboardSection },
           ] : [];
         if (!actions.length) return null;
         return (
@@ -473,7 +465,7 @@ export default function Dashboard() {
         <div className="lg:col-span-1">
           <div className="lg:sticky lg:top-4 space-y-4">
             {/* Vouch Widget */}
-            <VouchWidget onNavigate={() => setCurrentSection('profile-docs')} />
+            <VouchWidget onNavigate={() => setCurrentSection('profile-settings')} />
 
             {/* Company Recommendations */}
             {role === 'job_seeker' && <CompanyRecommendations />}
@@ -522,7 +514,7 @@ export default function Dashboard() {
                     }
                   </p>
                   <Button size="sm" variant="outline" className="w-full" onClick={() => setCurrentSection(
-                    role === 'job_seeker' ? 'profile-docs' :
+                    role === 'job_seeker' ? 'profile-settings' :
                     role === 'company_employee' ? 'referrals' : 'post-job'
                   )}>
                     {role === 'job_seeker'
@@ -541,59 +533,8 @@ export default function Dashboard() {
     </div>
   );
 
-  const renderProfileDocsContent = () => (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <h2 className="text-2xl font-bold flex items-center gap-3">
-        <User className="w-6 h-6 text-primary" />
-        {isRTL ? 'הפרופיל שלי' : 'My Profile'}
-      </h2>
-
-      {/* Profile Completion Bar */}
-      <ProfileCompletionCard onNavigate={setCurrentSection} />
-
-      {/* Personal Card Editor - First for job seekers (includes photo + portfolio links) */}
-      {role === 'job_seeker' && <PersonalCardEditor />}
-
-      {/* Photo for non-job-seeker roles */}
-      {role !== 'job_seeker' && user && (
-        <Card className="bg-card border-border">
-          <CardContent className="p-6 flex flex-col items-center gap-3">
-            <PhotoUpload
-              userId={user.id}
-              currentAvatarUrl={profile?.avatar_url || null}
-              userName={profile?.full_name || 'User'}
-              onUpload={() => {}}
-              size="lg"
-            />
-            <p className="font-semibold text-lg">{profile?.full_name}</p>
-            <p className="text-sm text-muted-foreground">{profile?.email}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Portfolio Links — only for non-job-seekers (job seekers have it inside PersonalCardEditor) */}
-      {role !== 'job_seeker' && <PortfolioLinks />}
-
-      {/* Resume Upload Section */}
-      {role === 'job_seeker' && (
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="w-5 h-5 text-primary" />
-              {isRTL ? 'קורות חיים' : 'Resume / CV'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResumeUpload onSuccess={() => refetchStats()} />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Vouches Section */}
-      {user && profile && (
-        <VouchWidget />
-      )}
-    </div>
+  const renderProfileSettingsContent = () => (
+    <UnifiedProfileSettings onNavigate={setCurrentSection} />
   );
 
   const renderChatContent = () => (
@@ -611,32 +552,8 @@ export default function Dashboard() {
     </div>
   );
 
-  const renderSettingsContent = () => (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <h2 className="text-2xl font-bold flex items-center gap-3">
-        <Settings className="w-6 h-6 text-primary" />
-        {t('dashboard.settings') || 'Settings'}
-      </h2>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Profile Settings */}
-        <ProfileSettings />
-
-        {/* Preferences Settings */}
-        <PreferencesSettings />
-
-        {/* Privacy Settings */}
-        <PrivacySettings />
-
-        {/* Account Settings */}
-        <AccountSettings />
-      </div>
-
-      {/* Email Integration */}
-      <EmailConnectionCard />
-      <TemplateEditor />
-    </div>
-  );
+  // Backward compat: old 'settings' section redirects to unified profile-settings
+  // renderSettingsContent removed — merged into UnifiedProfileSettings
 
   const renderPlaceholderContent = (title: string, icon: React.ComponentType<{ className?: string }>) => {
     const Icon = icon;
@@ -701,12 +618,12 @@ export default function Dashboard() {
     switch (currentSection) {
       case 'overview':
         return renderOverviewContent();
+      case 'profile-settings':
       case 'profile-docs':
-        return withBackButton(renderProfileDocsContent());
+      case 'settings':
+        return withBackButton(renderProfileSettingsContent());
       case 'chat':
         return withBackButton(renderChatContent());
-      case 'settings':
-        return withBackButton(renderSettingsContent());
       case 'applications':
         return withBackButton(
           <div className="space-y-6">

@@ -7,19 +7,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { 
-  CheckCircle2, 
-  Circle, 
-  Upload, 
-  User, 
-  FileText, 
+import {
+  CheckCircle2,
+  Circle,
+  Upload,
+  User,
+  FileText,
+  Mail,
   Sparkles,
   ChevronDown,
   ChevronUp,
   Rocket
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useNavigate } from 'react-router-dom';
 
 interface ChecklistItem {
   id: string;
@@ -33,14 +33,13 @@ interface ChecklistItem {
 }
 
 interface OnboardingChecklistProps {
-  onNavigate: (section: 'overview' | 'applications' | 'candidates' | 'jobs' | 'job-search' | 'profile-docs' | 'chat' | 'settings' | 'messages' | 'post-job' | 'saved-jobs' | 'cv-builder') => void;
+  onNavigate: (section: string) => void;
   onShowResumeDialog: () => void;
 }
 
 export function OnboardingChecklist({ onNavigate, onShowResumeDialog }: OnboardingChecklistProps) {
   const { user, profile } = useAuth();
   const { language } = useLanguage();
-  const navigate = useNavigate();
   const isRTL = language === 'he';
   const [isExpanded, setIsExpanded] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -92,6 +91,21 @@ export function OnboardingChecklist({ onNavigate, onShowResumeDialog }: Onboardi
     enabled: !!user?.id,
   });
 
+  // Check if user connected email (Gmail/Outlook)
+  const { data: hasEmailConnected } = useQuery({
+    queryKey: ['has-email-connected', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      const { data } = await (supabase as any)
+        .from('email_oauth_tokens')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+      return (data && data.length > 0) || false;
+    },
+    enabled: !!user?.id,
+  });
+
   // Check profile completion
   const isProfileComplete = !!(
     profile?.full_name &&
@@ -119,7 +133,17 @@ export function OnboardingChecklist({ onNavigate, onShowResumeDialog }: Onboardi
       descriptionEn: 'Add a short bio and portfolio links',
       icon: User,
       completed: isProfileComplete,
-      action: () => navigate('/profile'),
+      action: () => onNavigate('profile-settings'),
+    },
+    {
+      id: 'email',
+      titleHe: 'חבר את Gmail שלך',
+      titleEn: 'Connect your Gmail',
+      descriptionHe: 'חיבור מייל מאפשר מעקב אוטומטי אחרי תהליכי גיוס',
+      descriptionEn: 'Email connection enables automatic recruitment tracking',
+      icon: Mail,
+      completed: !!hasEmailConnected,
+      action: () => onNavigate('profile-settings'),
     },
     {
       id: 'apply',

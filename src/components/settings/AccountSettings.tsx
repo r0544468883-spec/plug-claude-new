@@ -27,7 +27,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Key, Download, Trash2, Loader2, AlertTriangle, Building2 } from 'lucide-react';
+import { Key, Download, Trash2, Loader2, AlertTriangle, Building2, Mail, Send } from 'lucide-react';
 
 export function AccountSettings() {
   const { user, signOut } = useAuth();
@@ -39,6 +39,8 @@ export function AccountSettings() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
 
   const handleChangePassword = async () => {
     if (newPassword !== confirmPassword) {
@@ -115,6 +117,26 @@ export function AccountSettings() {
     }
   };
 
+  const handleEmailChange = async () => {
+    if (!newEmail.trim() || !newEmail.includes('@')) {
+      toast.error(isHebrew ? 'נא להזין כתובת אימייל תקינה' : 'Please enter a valid email address');
+      return;
+    }
+    setIsChangingEmail(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ email: newEmail.trim() });
+      if (error) throw error;
+      toast.success(isHebrew
+        ? 'נשלח קישור אימות לאימייל החדש. אנא אשר את הכתובת החדשה.'
+        : 'Verification link sent to your new email. Please confirm the new address.');
+      setNewEmail('');
+    } catch (err: any) {
+      toast.error(err.message || (isHebrew ? 'שגיאה בשינוי האימייל' : 'Failed to change email'));
+    } finally {
+      setIsChangingEmail(false);
+    }
+  };
+
   const handleDeleteAccount = async () => {
     // This would typically call a server function to delete the account
     toast.error(isHebrew ? 'יש ליצור קשר עם התמיכה למחיקת החשבון' : 'Please contact support to delete your account');
@@ -132,6 +154,43 @@ export function AccountSettings() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Change Email */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2">
+            <Mail className="w-4 h-4" />
+            {isHebrew ? 'אימייל נוכחי' : 'Current Email'}
+          </Label>
+          <Input value={user?.email || ''} disabled className="bg-muted" />
+        </div>
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2">
+            <Mail className="w-4 h-4" />
+            {isHebrew ? 'שינוי אימייל' : 'Change Email'}
+          </Label>
+          <div className="flex gap-2">
+            <Input
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              placeholder={isHebrew ? 'הכנס אימייל חדש' : 'Enter new email'}
+              type="email"
+            />
+            <Button
+              variant="outline"
+              onClick={handleEmailChange}
+              disabled={isChangingEmail || !newEmail.trim()}
+              className="shrink-0 gap-2"
+            >
+              {isChangingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {isHebrew ? 'שלח' : 'Send'}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {isHebrew ? 'יישלח קישור אימות לכתובת החדשה' : 'A verification link will be sent to the new address'}
+          </p>
+        </div>
+
+        <div className="border-t border-border my-2" />
+
         {/* Change Password */}
         <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
           <DialogTrigger asChild>

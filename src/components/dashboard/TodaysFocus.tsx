@@ -3,7 +3,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Check, ChevronRight, ChevronUp, ChevronDown, PartyPopper, X } from 'lucide-react';
@@ -105,7 +104,7 @@ export function TodaysFocus({ onNavigate, onShowResumeDialog, onDismiss }: Today
           section: 'overview',
           isOnboarding: true,
           completed: false,
-          action: () => navigate('/profile'),
+          action: () => onNavigate('profile-settings'),
         });
       }
       if (!hasApplication) {
