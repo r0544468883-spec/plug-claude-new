@@ -28,7 +28,6 @@ interface FocusItem {
 export function TodaysFocus({ onNavigate, onShowResumeDialog, onDismiss }: TodaysFocusProps) {
   const { role, user, profile } = useAuth();
   const { language } = useLanguage();
-  const navigate = useNavigate();
   const isRTL = language === 'he';
   const [completed, setCompleted] = useState<Set<string>>(new Set());
   const [isExpanded, setIsExpanded] = useState(false);
