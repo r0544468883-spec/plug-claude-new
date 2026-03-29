@@ -58,12 +58,12 @@ export function ApplicationsFilters({
     <div className="flex flex-col md:flex-row gap-3">
       {/* Search */}
       <div className="relative flex-1 max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder={t('applications.searchPlaceholder') || 'Search by job or company...'}
-          className="pl-10 bg-card border-border"
+          className="ps-10 bg-card border-border"
         />
       </div>
 

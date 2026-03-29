@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,8 +17,13 @@ import { CompanyVouchModal } from '@/components/vouch/CompanyVouchModal';
 import { CompanyVouchToast } from '@/components/vouch/CompanyVouchToast';
 import { useCompanyVouchPrompts } from '@/hooks/useCompanyVouchPrompts';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Briefcase, Loader2, Sparkles, FileSpreadsheet, Bookmark, ExternalLink, Heart, Building2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Briefcase, Loader2, Sparkles, FileSpreadsheet, Bookmark, ExternalLink, Heart, Building2, Plus, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Application {
@@ -62,10 +67,27 @@ export function ApplicationsPage({ initialStageFilter }: ApplicationsPageProps =
   const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [stageFilter, setStageFilter] = useState<StageFilter>((initialStageFilter as StageFilter) || 'all');
-  const [sortBy, setSortBy] = useState<SortOption>('newest');
+  // Restore filters from sessionStorage
+  const filterStorageKey = user ? `plug_app_filters_${user.id}` : null;
+  const savedFilters = useMemo(() => {
+    if (!filterStorageKey) return null;
+    try {
+      const raw = sessionStorage.getItem(filterStorageKey);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  }, [filterStorageKey]);
+
+  const [search, setSearch] = useState(savedFilters?.search || '');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(savedFilters?.statusFilter || 'all');
+  const [stageFilter, setStageFilter] = useState<StageFilter>((initialStageFilter as StageFilter) || savedFilters?.stageFilter || 'all');
+  const [sortBy, setSortBy] = useState<SortOption>(savedFilters?.sortBy || 'newest');
+
+  // Persist filters to sessionStorage
+  useEffect(() => {
+    if (filterStorageKey) {
+      sessionStorage.setItem(filterStorageKey, JSON.stringify({ search, statusFilter, stageFilter, sortBy }));
+    }
+  }, [search, statusFilter, stageFilter, sortBy, filterStorageKey]);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [savedJobs, setSavedJobs] = useState<any[]>([]);
 
@@ -424,105 +446,146 @@ export function ApplicationsPage({ initialStageFilter }: ApplicationsPageProps =
   }, [user?.id, isRTL, t]);
 
 
+  // Pipeline stages
+  const pipelineStages = [
+    { slug: 'applied',          he: 'הגשתי',        en: 'Applied' },
+    { slug: 'screening',        he: 'סינון',         en: 'Screening' },
+    { slug: 'interview',        he: 'ראיון',         en: 'Interview' },
+    { slug: 'home_assignment',  he: 'מטלת בית',     en: 'Home Assignment' },
+    { slug: 'offer',            he: 'הצעה',          en: 'Offer' },
+    { slug: 'hired',            he: 'התקבלתי',       en: 'Hired' },
+  ];
+
+  const stageCounts = useMemo(() =>
+    applications.reduce<Record<string, number>>((acc, app) => {
+      const s = app.current_stage || 'applied';
+      acc[s] = (acc[s] || 0) + 1;
+      return acc;
+    }, {}),
+  [applications]);
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="space-y-4 p-2" dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-7 w-48" />
+          <Skeleton className="h-7 w-20" />
+        </div>
+        <div className="flex gap-2">
+          {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-10 w-20 rounded-full" />)}
+        </div>
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="flex gap-3 p-4 border border-border rounded-lg">
+            <Skeleton className="w-14 h-14 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+              <Skeleton className="h-3 w-1/3" />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 pb-24" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-2">
-        <Briefcase className="w-6 h-6 text-primary" />
-        <h2 className="text-2xl font-bold">
+    <div className="space-y-4 pb-24" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* ── Toolbar ── */}
+      <div className="flex flex-wrap items-center gap-2">
+        <h1 className="text-xl font-bold text-foreground flex items-center gap-2 me-auto">
+          <Briefcase className="w-5 h-5 text-primary" />
           {isRTL ? 'משרות שהגשתי' : 'Jobs I Applied To'}
-        </h2>
+          <Badge variant="secondary" className="text-xs font-normal">{applications.length}</Badge>
+        </h1>
+
+        {/* Add Application — Sheet */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+              <Plus className="w-3.5 h-3.5" />
+              {isRTL ? 'הוסף מועמדות' : 'Add Application'}
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-[380px] sm:w-[440px] overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>{isRTL ? 'הוסף מועמדות חדשה' : 'Add New Application'}</SheetTitle>
+            </SheetHeader>
+            <div className="mt-4 space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {isRTL ? 'הדבק לינק ופלאג יעשה את השאר' : 'Paste a link and Plug will do the rest'}
+              </p>
+              <AddApplicationForm onApplicationAdded={fetchApplications} />
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        {/* Bulk Import */}
+        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={() => setShowBulkImport(true)}>
+          <FileSpreadsheet className="w-3.5 h-3.5" />
+          {isRTL ? 'יבוא מרובה' : 'Bulk Import'}
+        </Button>
+
+        {/* Stats Dialog */}
+        {user && (
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs">
+                <BarChart3 className="w-3.5 h-3.5" />
+                {isRTL ? 'סטטיסטיקות' : 'Stats'}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{isRTL ? 'סטטיסטיקות מועמדויות' : 'Application Stats'}</DialogTitle>
+              </DialogHeader>
+              <ApplicationsStatsPanel applications={applications} userId={user.id} />
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
-      {/* Job Search Roadmap */}
-      {applications.length > 0 && (() => {
-        const stages = [
-          { slug: 'applied',          he: 'הגשתי',        en: 'Applied' },
-          { slug: 'phone_screen',     he: 'שיחת טלפון',   en: 'Phone Screen' },
-          { slug: 'interview',        he: 'ראיון',         en: 'Interview' },
-          { slug: 'home_assignment',  he: 'מטלת בית',     en: 'Home Assignment' },
-          { slug: 'second_interview', he: 'ראיון נוסף',   en: '2nd Interview' },
-          { slug: 'offer',            he: 'הצעה',          en: 'Offer' },
-        ];
-        const counts = applications.reduce<Record<string, number>>((acc, app) => {
-          const s = app.current_stage || 'applied';
-          acc[s] = (acc[s] || 0) + 1;
-          return acc;
-        }, {});
-        return (
-          <Card className="border-border bg-card">
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground mb-3 font-medium">
-                {isRTL ? 'מסלול חיפוש עבודה' : 'Job Search Roadmap'}
-              </p>
-              <div className="flex items-start gap-0 overflow-x-auto">
-                {stages.map((stage, i) => {
-                  const count = counts[stage.slug] || 0;
-                  const isActive = count > 0;
-                  return (
-                    <div key={stage.slug} className="flex items-center flex-shrink-0">
-                      <div className="flex flex-col items-center text-center w-20">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors ${
-                          isActive
-                            ? 'bg-primary border-primary text-primary-foreground'
-                            : 'bg-muted border-muted-foreground/20 text-muted-foreground'
-                        }`}>
-                          {isActive ? count : i + 1}
-                        </div>
-                        <p className={`text-[10px] mt-1 leading-tight ${isActive ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                          {isRTL ? stage.he : stage.en}
-                        </p>
-                      </div>
-                      {i < stages.length - 1 && (
-                        <div className="w-4 h-0.5 bg-muted-foreground/20 flex-shrink-0 mb-4" />
-                      )}
-                    </div>
-                  );
-                })}
+      {/* ── Clickable Pipeline ── */}
+      {applications.length > 0 && (
+        <div className="flex items-center gap-0 overflow-x-auto py-1">
+          {pipelineStages.map((stage, i) => {
+            const count = stageCounts[stage.slug] || 0;
+            const isActive = count > 0;
+            const isSelected = stageFilter === stage.slug;
+            return (
+              <div key={stage.slug} className="flex items-center flex-shrink-0">
+                <button
+                  onClick={() => setStageFilter(isSelected ? 'all' as any : stage.slug as any)}
+                  className="flex flex-col items-center text-center w-20 group"
+                >
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${
+                    isSelected
+                      ? 'bg-accent border-accent text-white ring-2 ring-accent/30'
+                      : isActive
+                        ? 'bg-primary border-primary text-primary-foreground group-hover:ring-2 group-hover:ring-primary/30'
+                        : 'bg-muted border-muted-foreground/20 text-muted-foreground group-hover:border-muted-foreground/40'
+                  }`}>
+                    {isActive ? count : i + 1}
+                  </div>
+                  <p className={`text-[10px] mt-1 leading-tight transition-colors ${
+                    isSelected ? 'text-accent font-semibold' : isActive ? 'text-foreground font-medium' : 'text-muted-foreground'
+                  }`}>
+                    {isRTL ? stage.he : stage.en}
+                  </p>
+                </button>
+                {i < pipelineStages.length - 1 && (
+                  <div className={`w-4 h-0.5 flex-shrink-0 mb-4 transition-colors ${
+                    isActive && (stageCounts[pipelineStages[i + 1]?.slug] || 0) > 0
+                      ? 'bg-primary/40'
+                      : 'bg-muted-foreground/20'
+                  }`} />
+                )}
               </div>
-            </CardContent>
-          </Card>
-        );
-      })()}
-
-      {/* Add Application Form - Always Visible */}
-      <Card className="border-primary/20 bg-primary/5">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-accent" />
-              <span className="font-medium">
-                {isRTL ? 'הדבק לינק ופלאג יעשה את השאר' : 'Paste a link and Plug will do the rest'}
-              </span>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowBulkImport(true)}
-              className="gap-2"
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-              {isRTL ? 'יבוא מרובה' : 'Bulk Import'}
-            </Button>
-          </div>
-          <AddApplicationForm onApplicationAdded={fetchApplications} />
-        </CardContent>
-      </Card>
-
-      {/* Stats Panel — 3 tabs: Personal / Benchmark / Market */}
-      {user && (
-        <ApplicationsStatsPanel applications={applications} userId={user.id} />
+            );
+          })}
+        </div>
       )}
 
-      {/* Filters */}
+      {/* ── Filters ── */}
       <ApplicationsFilters
         search={search}
         onSearchChange={setSearch}
@@ -534,147 +597,162 @@ export function ApplicationsPage({ initialStageFilter }: ApplicationsPageProps =
         onSortChange={setSortBy}
       />
 
-      {/* Applications List */}
-      {filteredApplications.length === 0 ? (
-        applications.length === 0 ? (
-          <EmptyApplicationsState onNavigateToJobs={() => {
-            // Navigate to job search - this is handled by parent Dashboard
-            window.dispatchEvent(new CustomEvent('plug:navigate', { detail: 'job-search' }));
-          }} />
-        ) : (
-          <Card className="bg-card border-border">
-            <CardContent className="p-8 text-center">
-              <h3 className="text-lg font-medium text-foreground mb-2">
-                {isRTL ? 'לא נמצאו תוצאות' : 'No matching applications'}
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                {isRTL ? 'נסה לשנות את הסינון' : 'Try adjusting your filters'}
-              </p>
-            </CardContent>
-          </Card>
-        )
-      ) : (
-        <div className="space-y-3">
-          {filteredApplications.map((application) => (
-            <VerticalApplicationCard
-              key={application.id}
-              application={{
-                ...application,
-                job: application.job ? {
-                  ...application.job,
-                  company: application.job.company || null
-                } : {
-                  id: '',
-                  title: application.job_title
-                    || (application.job_url ? (isRTL ? 'משרה חיצונית' : 'External Job') : (isRTL ? 'משרה לא ידועה' : 'Unknown Job')),
-                  location: null,
-                  job_type: null,
-                  salary_range: null,
-                  description: null,
-                  requirements: null,
-                  source_url: application.job_url || null,
-                  company_name: application.job_company || null,
-                  company: null,
-                },
-                hasUpcomingInterview: application.current_stage === 'interview',
-              }}
-              onViewDetails={() => handleViewDetails(application)}
-              onWithdraw={() => handleWithdraw(application.id)}
-              onStageChange={(stage) => handleStageChange(application.id, stage)}
-              onDelete={() => handleDelete(application.id)}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Job Analyses from Extension */}
-      {user && (
-        <div className="mt-6">
-          <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="w-5 h-5 text-accent" />
-            <h3 className="text-lg font-semibold">
-              {isRTL ? 'ניתוחי משרות מהתוסף' : 'Job Analyses from Extension'}
-            </h3>
-          </div>
-          <AnalysisHistory userId={user.id} language={language} />
-          <div className="mt-6">
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="w-4 h-4 text-muted-foreground" />
-              <h4 className="font-medium text-muted-foreground text-sm">
-                {isRTL ? 'משרות שנצפו בתוסף' : 'Browsed via Extension'}
-              </h4>
-            </div>
-            <ExtensionJobHistory />
-          </div>
-        </div>
-      )}
-
-      {/* Saved Jobs Section */}
-      <div className="mt-6">
-        <div className="flex items-center gap-2 mb-3">
-          <Bookmark className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">
-            {isRTL ? 'משרות שמורות' : 'Saved Jobs'}
-          </h3>
-          {savedJobs.length > 0 && (
-            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-              {savedJobs.length}
-            </span>
+      {/* ── Tabs: Applications | Saved | Extension ── */}
+      <Tabs defaultValue="applications" className="w-full">
+        <TabsList className="w-full justify-start bg-muted/50 rounded-lg p-1 plug-glow-purple">
+          <TabsTrigger value="applications" className="rounded-md data-[state=active]:plug-glow-purple">
+            <Briefcase className="w-4 h-4 me-1.5" />
+            {isRTL ? 'מועמדויות' : 'Applications'}
+            <Badge variant="secondary" className="ms-1.5 text-[10px] px-1.5 py-0">{filteredApplications.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="saved" className="rounded-md">
+            <Bookmark className="w-4 h-4 me-1.5" />
+            {isRTL ? 'שמורות' : 'Saved'}
+            {savedJobs.length > 0 && (
+              <Badge variant="secondary" className="ms-1.5 text-[10px] px-1.5 py-0">{savedJobs.length}</Badge>
+            )}
+          </TabsTrigger>
+          {user && (
+            <TabsTrigger value="extension" className="rounded-md">
+              <Sparkles className="w-4 h-4 me-1.5" />
+              {isRTL ? 'פעילות תוסף' : 'Extension'}
+            </TabsTrigger>
           )}
-        </div>
-        {savedJobs.length === 0 ? (
-          <Card className="bg-card border-border">
-            <CardContent className="p-6 text-center">
-              <Heart className="w-8 h-8 text-muted-foreground mx-auto mb-2 opacity-40" />
-              <p className="text-sm text-muted-foreground">
-                {isRTL ? 'לא שמרת משרות עדיין. לחץ על לב ליד משרה כדי לשמור אותה.' : 'No saved jobs yet. Click the heart on a job to save it.'}
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-2">
-            {savedJobs.map((job: any) => {
-              const company = Array.isArray(job.company) ? job.company[0] : job.company;
-              return (
-                <Card key={job.id} className="bg-card border-border hover:border-primary/40 transition-colors">
-                  <CardContent className="p-3 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        {company?.logo_url ? (
-                          <img src={company.logo_url} alt="" className="w-6 h-6 object-contain rounded" />
-                        ) : (
-                          <Building2 className="w-4 h-4 text-primary" />
+        </TabsList>
+
+        {/* ── Applications Tab ── */}
+        <TabsContent value="applications" className="mt-4">
+          {filteredApplications.length === 0 ? (
+            applications.length === 0 ? (
+              <EmptyApplicationsState onNavigateToJobs={() => {
+                window.dispatchEvent(new CustomEvent('plug:navigate', { detail: 'job-search' }));
+              }} />
+            ) : (
+              <Card className="bg-card border-border">
+                <CardContent className="p-8 text-center">
+                  <h3 className="text-lg font-medium text-foreground mb-2">
+                    {isRTL ? 'לא נמצאו תוצאות' : 'No matching applications'}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {isRTL ? 'נסה לשנות את הסינון' : 'Try adjusting your filters'}
+                  </p>
+                  <Button variant="outline" size="sm" onClick={() => { setStageFilter('all' as any); setStatusFilter('all'); setSearch(''); }}>
+                    {isRTL ? 'נקה פילטרים' : 'Clear filters'}
+                  </Button>
+                </CardContent>
+              </Card>
+            )
+          ) : (
+            <div className="space-y-3">
+              {filteredApplications.map((application) => (
+                <VerticalApplicationCard
+                  key={application.id}
+                  application={{
+                    ...application,
+                    job: application.job ? {
+                      ...application.job,
+                      company: application.job.company || null
+                    } : {
+                      id: '',
+                      title: application.job_title
+                        || (application.job_url ? (isRTL ? 'משרה חיצונית' : 'External Job') : (isRTL ? 'משרה לא ידועה' : 'Unknown Job')),
+                      location: null,
+                      job_type: null,
+                      source_url: application.job_url || null,
+                      company_name: application.job_company || null,
+                      company: null,
+                    },
+                    hasUpcomingInterview: application.current_stage === 'interview',
+                  }}
+                  onViewDetails={() => handleViewDetails(application)}
+                  onWithdraw={() => handleWithdraw(application.id)}
+                  onStageChange={(stage) => handleStageChange(application.id, stage)}
+                  onDelete={() => handleDelete(application.id)}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ── Saved Jobs Tab ── */}
+        <TabsContent value="saved" className="mt-4">
+          {savedJobs.length === 0 ? (
+            <Card className="bg-card border-border">
+              <CardContent className="p-8 text-center">
+                <Heart className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-40" />
+                <h3 className="text-lg font-medium text-foreground mb-1">
+                  {isRTL ? 'אין משרות שמורות' : 'No saved jobs'}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {isRTL ? 'לחץ על לב ליד משרה כדי לשמור אותה.' : 'Click the heart on a job to save it.'}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {savedJobs.map((job: any) => {
+                const company = Array.isArray(job.company) ? job.company[0] : job.company;
+                return (
+                  <Card key={job.id} className="bg-card border-border hover:border-primary/40 transition-colors">
+                    <CardContent className="p-3 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          {company?.logo_url ? (
+                            <img src={company.logo_url} alt="" className="w-6 h-6 object-contain rounded" />
+                          ) : (
+                            <Building2 className="w-4 h-4 text-primary" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm truncate">{job.title}</p>
+                          <p className="text-xs text-muted-foreground truncate">{company?.name || (isRTL ? 'חברה לא ידועה' : 'Unknown Company')}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {job.source_url && (
+                          <a href={job.source_url} target="_blank" rel="noopener noreferrer">
+                            <Button size="sm" variant="outline" className="h-8 min-w-[44px] gap-1 text-xs">
+                              <ExternalLink className="w-3 h-3" />
+                              {isRTL ? 'למשרה' : 'View'}
+                            </Button>
+                          </a>
                         )}
+                        <Button
+                          size="sm"
+                          className="h-8 min-w-[44px] text-xs"
+                          onClick={() => window.dispatchEvent(new CustomEvent('plug:navigate', { detail: 'job-search' }))}
+                        >
+                          {isRTL ? 'הגש' : 'Apply'}
+                        </Button>
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{job.title}</p>
-                        <p className="text-xs text-muted-foreground truncate">{company?.name || (isRTL ? 'חברה לא ידועה' : 'Unknown Company')}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {job.source_url && (
-                        <a href={job.source_url} target="_blank" rel="noopener noreferrer">
-                          <Button size="sm" variant="outline" className="h-7 gap-1 text-xs">
-                            <ExternalLink className="w-3 h-3" />
-                            {isRTL ? 'למשרה' : 'View'}
-                          </Button>
-                        </a>
-                      )}
-                      <Button
-                        size="sm"
-                        className="h-7 text-xs"
-                        onClick={() => window.dispatchEvent(new CustomEvent('plug:navigate', { detail: 'job-search' }))}
-                      >
-                        {isRTL ? 'הגש' : 'Apply'}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ── Extension Activity Tab ── */}
+        {user && (
+          <TabsContent value="extension" className="mt-4 space-y-6">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-accent" />
+                {isRTL ? 'ניתוחי משרות' : 'Job Analyses'}
+              </h3>
+              <AnalysisHistory userId={user.id} language={language} />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-muted-foreground" />
+                {isRTL ? 'משרות שנצפו' : 'Browsed Jobs'}
+              </h3>
+              <ExtensionJobHistory />
+            </div>
+          </TabsContent>
         )}
-      </div>
+      </Tabs>
 
       {/* Interview Flow Dialog */}
       {interviewFlowApp && user && (
