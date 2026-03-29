@@ -7,6 +7,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout, DashboardSection } from '@/components/dashboard/DashboardLayout';
 import { TodaysFocus } from '@/components/dashboard/TodaysFocus';
 import { ExtensionAgentPanel } from '@/components/extension/ExtensionAgentPanel';
+import { OverviewHome } from '@/components/dashboard/OverviewHome';
 import { PlugChat } from '@/components/chat/PlugChat';
 import { ApplicationsPage } from '@/components/applications/ApplicationsPage';
 import { JobSearchPage } from '@/components/jobs/JobSearchPage';
@@ -337,201 +338,54 @@ export default function Dashboard() {
   };
 
   // Section-specific content renderers
-  const renderOverviewContent = () => (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Time-based greeting */}
-      <div className="text-xl font-semibold text-foreground">
-        {getTimeBasedGreeting()}
-      </div>
-
-      {/* Mobile Welcome Stats Popup */}
-      {role === 'job_seeker' && (
-        <MobileWelcomeStats
-          totalApplications={dashboardData?.totalApplications || 0}
-          interviews={dashboardData?.interviews || 0}
-          activeApplications={dashboardData?.activeApplications || 0}
-        />
-      )}
-
-      {/* Profile Completion Widget */}
-      {showProfileCard && (
-        <ProfileCompletionCard
-          onNavigate={setCurrentSection}
-          onDismiss={() => {
-            localStorage.setItem('plug-profile-card-dismissed', 'true');
-            setShowProfileCard(false);
-          }}
-        />
-      )}
-
-      {/* Today's Focus (includes onboarding steps) */}
-      {showTodaysFocus && (
-        <TodaysFocus
+  const renderOverviewContent = () => {
+    if (role === 'job_seeker') {
+      return (
+        <OverviewHome
           onNavigate={setCurrentSection}
           onShowResumeDialog={() => setShowResumeDialog(true)}
-          onDismiss={() => {
-            localStorage.setItem('plug-focus-dismissed', 'true');
-            setShowTodaysFocus(false);
+          onOpenChat={(msg) => {
+            if (msg) {
+              setPendingMessage(msg);
+              setPendingMessageKey(k => k + 1);
+            }
+            setChatContextSection('overview');
+            setCurrentSection('chat');
           }}
         />
-      )}
+      );
+    }
 
-      {/* Extension Agent Panel - job seekers only */}
-      {role === 'job_seeker' && <ExtensionAgentPanel />}
-
-      {/* PLUG Social Entry Card - job seekers only */}
-      {role === 'job_seeker' && (
-        <Card
-          className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20 cursor-pointer plug-card-hover"
-          onClick={() => setCurrentSection('feed')}
-        >
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-primary/20">
-              <Newspaper className="w-6 h-6 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-base">PLUG Social</h3>
-              <p className="text-sm text-muted-foreground">
-                {isRTL
-                  ? 'פיד תוכן וקהילות מקצועיות – הרוויחו דלק מכל אינטראקציה ⚡'
-                  : 'Content feed & communities – earn fuel from every interaction ⚡'}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4" data-tour="stats-row">
-        {stats.map((stat, index) => (
-          <StatCard key={index} {...stat} colorIndex={index} />
-        ))}
-      </div>
-
-      {/* Quick Actions Row */}
-      {(() => {
-        const actions =
-          role === 'job_seeker' ? [
-            { labelHe: 'חפש עבודה', labelEn: 'Find Jobs', icon: Search, section: 'job-search' as DashboardSection },
-            { labelHe: 'עדכן קורות חיים', labelEn: 'Update CV', icon: FileEdit, section: 'cv-builder' as DashboardSection },
-            { labelHe: 'תרגל ראיון', labelEn: 'Interview Prep', icon: Mic, section: 'interview-prep' as DashboardSection },
-            { labelHe: 'משרות שהגשתי', labelEn: 'Applied Jobs', icon: Briefcase, section: 'applications' as DashboardSection },
-          ] : role === 'freelance_hr' || role === 'inhouse_hr' ? [
-            { labelHe: 'פרסם משרה', labelEn: 'Post Job', icon: Plus, section: 'post-job' as DashboardSection },
-            { labelHe: 'מועמדים', labelEn: 'Candidates', icon: Users, section: 'candidates' as DashboardSection },
-            { labelHe: 'לקוחות', labelEn: 'Clients', icon: Building2, section: 'clients' as DashboardSection },
-          ] : role === 'company_employee' ? [
-            { labelHe: 'המלץ על חבר', labelEn: 'Refer Friend', icon: Heart, section: 'referrals' as DashboardSection },
-            { labelHe: 'חפש משרות', labelEn: 'Find Jobs', icon: Search, section: 'job-search' as DashboardSection },
-            { labelHe: 'הפרופיל שלי', labelEn: 'My Profile', icon: User, section: 'profile-settings' as DashboardSection },
-          ] : [];
-        if (!actions.length) return null;
-        return (
-          <div className="grid grid-cols-3 gap-3">
-            {actions.map(a => {
-              const Icon = a.icon;
-              return (
-                <button
-                  key={a.section}
-                  onClick={() => setCurrentSection(a.section)}
-                  className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted/50 border border-border hover:bg-muted hover:border-primary/30 transition-all text-center"
-                >
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <Icon className="w-5 h-5 text-primary" />
-                  </div>
-                  <span className="text-xs font-medium leading-tight">
-                    {isRTL ? a.labelHe : a.labelEn}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        );
-      })()}
-
-      {/* Main Content - Chat with Insights on Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* PLUG Chat - Center (Large) */}
-        <div className="lg:col-span-2" ref={chatRef}>
-          <PlugChat 
-            initialMessage={pendingMessage || undefined}
-            initialMessageKey={pendingMessageKey}
-            onMessageSent={handleMessageSent}
-            contextPage={plugContextPage}
-          />
+    // HR & Employee overview — keep existing layout for now
+    return (
+      <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className="text-xl font-semibold text-foreground">
+          {getTimeBasedGreeting()}
         </div>
-
-        {/* AI Insights + Vouch Widget + Company Recommendations - Right Side - Sticky */}
-        <div className="lg:col-span-1">
-          <div className="lg:sticky lg:top-4 space-y-4">
-            {/* Vouch Widget */}
-            <VouchWidget onNavigate={() => setCurrentSection('profile-settings')} />
-
-            {/* Company Recommendations */}
-            {role === 'job_seeker' && <CompanyRecommendations />}
-
-            {/* Feed Carousel Widget — all roles */}
-            <FeedCarouselWidget onNavigateToFeed={() => setCurrentSection('feed')} />
-
-            {/* AI Insights */}
-            <Card className="bg-card border-border plug-ai-highlight">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-                  {t('dashboard.aiInsights') || 'AI Insights'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-3 rounded-lg bg-accent/5 border border-accent/20">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {role === 'job_seeker'
-                      ? isRTL ? 'חפש משרות חדשות המתאימות לפרופיל שלך' : 'Search new jobs matching your profile'
-                      : role === 'company_employee'
-                      ? isRTL ? 'ספר לחברים על משרות פתוחות' : 'Refer friends to open positions'
-                      : isRTL ? 'עקוב אחרי מועמדים שממתינים לסקירה' : 'Review candidates waiting for you'
-                    }
-                  </p>
-                  <Button size="sm" className="w-full" onClick={() => setCurrentSection(
-                    role === 'job_seeker' ? 'job-search' :
-                    role === 'company_employee' ? 'referrals' : 'candidates'
-                  )}>
-                    {role === 'job_seeker'
-                      ? isRTL ? 'חפש משרות ←' : 'Search Jobs →'
-                      : role === 'company_employee'
-                      ? isRTL ? 'המלצות ←' : 'Referrals →'
-                      : isRTL ? 'צפה במועמדים ←' : 'View Candidates →'
-                    }
-                  </Button>
-                </div>
-                <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-                  <p className="text-sm font-medium text-primary mb-1">{isRTL ? 'טיפ מקצועי' : 'Pro Tip'}</p>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {role === 'job_seeker'
-                      ? isRTL ? 'השלם את הפרופיל שלך לקבלת המלצות טובות יותר' : 'Complete your profile for better AI recommendations'
-                      : role === 'company_employee'
-                      ? isRTL ? 'צפה במשרות הפתוחות בחברה שלך' : 'View open positions at your company'
-                      : isRTL ? 'פרסם משרה חדשה כדי למצוא מועמדים מהר יותר' : 'Post a new job to find candidates faster'
-                    }
-                  </p>
-                  <Button size="sm" variant="outline" className="w-full" onClick={() => setCurrentSection(
-                    role === 'job_seeker' ? 'profile-settings' :
-                    role === 'company_employee' ? 'referrals' : 'post-job'
-                  )}>
-                    {role === 'job_seeker'
-                      ? isRTL ? 'עדכן פרופיל ←' : 'Update Profile →'
-                      : role === 'company_employee'
-                      ? isRTL ? 'משרות פתוחות ←' : 'Open Jobs →'
-                      : isRTL ? 'פרסם משרה ←' : 'Post Job →'
-                    }
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4" data-tour="stats-row">
+          {stats.map((stat, index) => (
+            <StatCard key={index} {...stat} colorIndex={index} />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2" ref={chatRef}>
+            <PlugChat
+              initialMessage={pendingMessage || undefined}
+              initialMessageKey={pendingMessageKey}
+              onMessageSent={handleMessageSent}
+              contextPage={plugContextPage}
+            />
+          </div>
+          <div className="lg:col-span-1">
+            <div className="lg:sticky lg:top-4 space-y-4">
+              <VouchWidget onNavigate={() => setCurrentSection('profile-settings')} />
+              <FeedCarouselWidget onNavigateToFeed={() => setCurrentSection('feed')} />
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderProfileSettingsContent = () => (
     <UnifiedProfileSettings onNavigate={setCurrentSection} />

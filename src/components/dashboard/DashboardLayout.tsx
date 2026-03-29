@@ -94,18 +94,24 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
   const getNavItems = (): NavItemConfig[] => {
     if (role === 'job_seeker') {
       return [
-        { icon: LayoutDashboard, label: t('dashboard.overview'), section: 'overview', tooltipHe: 'מבט כללי על החשבון, סטטיסטיקות והודעות מ-Plug', tooltipEn: 'Overview of your account, stats, and Plug messages' },
-        { icon: User, label: isRTL ? 'פרופיל והגדרות' : 'Profile & Settings', section: 'profile-settings', tooltipHe: 'פרופיל, הגדרות, אינטגרציות וחשבון', tooltipEn: 'Profile, settings, integrations & account' },
-        { icon: Search, label: t('dashboard.jobSearch') || 'Job Search', section: 'job-search', tooltipHe: 'חיפוש משרות חדשות וסינון לפי מיקום, קטגוריה וסוג', tooltipEn: 'Search new jobs and filter by location, category, and type' },
-        { icon: Briefcase, label: isRTL ? 'משרות שהגשתי' : 'Jobs I Applied To', section: 'applications', tooltipHe: 'משרות שהגשתי דרך פלאג, אולג\'ובס ולינקדין', tooltipEn: 'Jobs you applied to via PLUG, AllJobs & LinkedIn' },
-        { icon: Building2, label: isRTL ? 'החברות שלי' : 'My Companies', section: 'favorite-companies' as DashboardSection, tooltipHe: 'משרות מחולקות לפי חברה לעקיבה אחר תהליכים', tooltipEn: 'Jobs grouped by company to track your processes' },
-        { icon: Calendar, label: isRTL ? 'יומן' : 'Schedule', section: 'schedule', tooltipHe: 'יומן משימות, ראיונות ותזכורות', tooltipEn: 'Tasks, interviews and reminders calendar' },
-        { icon: FileEdit, label: 'CV Builder', section: 'cv-builder', tooltipHe: 'בניית קורות חיים מקצועיים עם תבניות ו-AI', tooltipEn: 'Build professional CVs with templates and AI' },
-        { icon: Mic, label: 'Interview Prep', section: 'interview-prep', tooltipHe: 'הכנה לראיון עבודה עם שאלות ותרגול AI', tooltipEn: 'Interview preparation with AI questions and practice' },
-        { icon: Newspaper, label: 'PLUG Social', section: 'feed', tooltipHe: 'פיד תוכן וקהילות מקצועיות', tooltipEn: 'Content feed & professional communities' },
-        { icon: ClipboardList, label: isRTL ? 'לוח המטלות' : 'Assignments', section: 'assignments' as DashboardSection, tooltipHe: 'לוח המטלות – הוכח את הכישורים שלך עם אתגרים אמיתיים', tooltipEn: 'Assignment marketplace – prove your skills with real challenges' },
-        { icon: MessageSquare, label: 'Messages', section: 'messages', tooltipHe: 'הודעות פנימיות מקבלים ומגייסים', tooltipEn: 'Internal messages from recruiters and contacts' },
-        { icon: Gem, label: isRTL ? 'קרדיטים' : 'Credits', section: 'credits' as DashboardSection, tooltipHe: 'יתרת דלק, היסטוריה ורכישה', tooltipEn: 'Fuel balance, history & purchase' },
+        // ── Core ──
+        { icon: LayoutDashboard, label: isRTL ? 'מסך ראשי' : 'Overview', section: 'overview', tooltipHe: 'מסך ראשי — הצצה לכל מה שקורה אצלך', tooltipEn: 'Home — a peek into everything happening' },
+        { icon: Search, label: isRTL ? 'לוח המשרות שלי' : 'My Jobboard', section: 'job-search', tooltipHe: 'חיפוש משרות חדשות וסינון לפי מיקום, קטגוריה וסוג', tooltipEn: 'Search new jobs and filter by location, category, and type' },
+        { icon: Briefcase, label: isRTL ? 'המשרות שהגשתי אליהם' : 'My job applications', section: 'applications', tooltipHe: 'משרות שהגשתי דרך פלאג, אולג\'ובס ולינקדין', tooltipEn: 'Jobs you applied to via PLUG, AllJobs & LinkedIn' },
+        { icon: Calendar, label: isRTL ? 'יומן החיפוש שלי' : 'My applications schedule', section: 'schedule', tooltipHe: 'יומן ראיונות, מעקב ותזכורות', tooltipEn: 'Interviews, follow-ups and reminders calendar' },
+        // ── Preparation & Profile ──
+        { icon: User, label: isRTL ? 'הפרופיל שלי' : 'My Profile', section: 'profile-settings', tooltipHe: 'פרופיל, הגדרות, אינטגרציות וחשבון', tooltipEn: 'Profile, settings, integrations & account' },
+        { icon: FileEdit, label: isRTL ? 'בניית קורות חיים' : 'CV Builder', section: 'cv-builder', tooltipHe: 'בניית קורות חיים מקצועיים עם תבניות ו-AI', tooltipEn: 'Build professional CVs with templates and AI' },
+        { icon: Mic, label: isRTL ? 'הכנה לראיון עבודה' : 'Interview Prep', section: 'interview-prep', tooltipHe: 'הכנה לראיון עבודה עם שאלות ותרגול AI', tooltipEn: 'Interview preparation with AI questions and practice' },
+        { icon: ClipboardList, label: isRTL ? 'לוח המטלות' : 'Assignments Board', section: 'assignments' as DashboardSection, tooltipHe: 'לוח המטלות – הוכח את הכישורים שלך עם אתגרים אמיתיים', tooltipEn: 'Assignments board – prove your skills with real challenges' },
+        // ── Discovery & Opportunities ──
+        { icon: Sparkles, label: isRTL ? 'יצירת הזדמנויות חדשות' : 'New discoveries', section: 'feed', tooltipHe: 'גלה הזדמנויות חדשות, תוכן מקצועי וטרנדים', tooltipEn: 'Discover new opportunities, professional content & trends' },
+        { icon: Building2, label: isRTL ? 'חברות שיכולות לעניין אותי' : 'My Companies', section: 'favorite-companies' as DashboardSection, tooltipHe: 'חברות שאתה עוקב אחריהן ומשרות רלוונטיות', tooltipEn: 'Companies you follow and relevant openings' },
+        { icon: Users, label: isRTL ? 'קהילות' : 'Communities', section: 'communities' as DashboardSection, tooltipHe: 'קהילות מקצועיות ונטוורקינג', tooltipEn: 'Professional communities & networking' },
+        { icon: MessageSquare, label: isRTL ? 'הודעות' : 'Messages', section: 'messages', tooltipHe: 'הודעות פנימיות מקבלים ומגייסים', tooltipEn: 'Internal messages from recruiters and contacts' },
+        // ── System ──
+        { icon: Gem, label: isRTL ? 'הקרדיטים שלי' : 'Credits', section: 'credits' as DashboardSection, tooltipHe: 'יתרת דלק, היסטוריה ורכישה', tooltipEn: 'Fuel balance, history & purchase' },
+        { icon: Settings, label: isRTL ? 'הגדרות' : 'Settings', section: 'settings' as DashboardSection, tooltipHe: 'הגדרות חשבון ואינטגרציות', tooltipEn: 'Account settings & integrations' },
       ];
     }
 
