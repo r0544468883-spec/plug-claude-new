@@ -190,6 +190,12 @@
                 0 0 40px hsl(156 100% 50% / 0.1);
   }
 
+  /* Purple glow for tabs */
+  .plug-glow-purple {
+    box-shadow: 0 0 12px hsl(270 91% 65% / 0.35),
+                0 0 24px hsl(270 91% 65% / 0.15);
+  }
+
   /* AI purple highlight */
   .plug-ai-highlight {
     background: hsl(270 91% 65% / 0.1);

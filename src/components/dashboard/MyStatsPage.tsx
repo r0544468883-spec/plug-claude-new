@@ -128,8 +128,8 @@ export function MyStatsPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="personal" className="w-full">
-        <TabsList className="w-full justify-start bg-muted/50 rounded-lg p-1">
-          <TabsTrigger value="personal" className="rounded-md">
+        <TabsList className="w-full justify-start bg-muted/50 rounded-lg p-1 plug-glow-purple">
+          <TabsTrigger value="personal" className="rounded-md data-[state=active]:plug-glow-purple">
             <BarChart3 className="w-4 h-4 me-1.5" />
             {isRTL ? 'נתונים אישיים' : 'Personal'}
           </TabsTrigger>

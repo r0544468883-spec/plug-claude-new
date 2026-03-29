@@ -139,7 +139,7 @@ export function JobCard({ job, onViewDetails, onApply, onDismiss, onMarkApplied,
   return (
     <Card className="bg-card border-border hover:border-primary/50 transition-colors plug-card-hover cursor-pointer group relative">
       {displayMatchScore > 0 && (
-        <div className="absolute top-2 left-2 z-10">
+        <div className="absolute top-2 start-2 z-10">
           <Badge className={`gap-1 shadow-lg ${displayMatchScore >= 85 ? 'bg-green-500 text-white' : displayMatchScore >= 60 ? 'bg-yellow-500 text-white' : 'bg-muted text-muted-foreground'}`}>
             {displayMatchScore}% {isHebrew ? 'התאמה' : 'Match'}
           </Badge>
@@ -147,7 +147,7 @@ export function JobCard({ job, onViewDetails, onApply, onDismiss, onMarkApplied,
       )}
 
       {isCommunityShared && (
-        <div className="absolute top-2 right-2 z-10">
+        <div className="absolute top-2 end-2 z-10">
           <Badge className="gap-1 bg-primary/90 text-primary-foreground shadow-lg">
             <Users className="w-3 h-3" />
             {isHebrew ? 'קהילתי' : 'Community'}
@@ -173,7 +173,7 @@ export function JobCard({ job, onViewDetails, onApply, onDismiss, onMarkApplied,
                 </p>
               </div>
               {user && (
-                <Button variant="ghost" size="icon" className={`flex-shrink-0 transition-all absolute top-12 right-2 ${isSaved ? 'opacity-100 text-red-500' : 'opacity-0 group-hover:opacity-100'}`} onClick={handleSaveClick} disabled={saveJobMutation.isPending}>
+                <Button variant="ghost" size="icon" className={`flex-shrink-0 transition-all absolute top-12 end-2 ${isSaved ? 'opacity-100 text-red-500' : 'opacity-0 group-hover:opacity-100'}`} onClick={handleSaveClick} disabled={saveJobMutation.isPending}>
                   <Heart className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
                 </Button>
               )}
@@ -281,7 +281,7 @@ export function JobCard({ job, onViewDetails, onApply, onDismiss, onMarkApplied,
             <div className="flex gap-2 mt-4">
               {isApplied ? (
                 <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white" disabled>
-                  <CheckCheck className="w-4 h-4 mr-1" />
+                  <CheckCheck className="w-4 h-4 me-1" />
                   {isHebrew ? 'הוגש ✓' : 'Applied ✓'}
                 </Button>
               ) : (
@@ -290,15 +290,15 @@ export function JobCard({ job, onViewDetails, onApply, onDismiss, onMarkApplied,
                 </Button>
               )}
               {onMarkApplied && !isApplied && (
-                <Button variant="outline" size="sm" title={isHebrew ? 'סמן כהוגש' : 'Mark as applied'} onClick={(e) => { e.stopPropagation(); onMarkApplied(job); }}>
+                <Button variant="outline" size="sm" className="min-h-[44px] min-w-[44px]" title={isHebrew ? 'סמן כהוגש' : 'Mark as applied'} onClick={(e) => { e.stopPropagation(); onMarkApplied(job); }}>
                   <CheckCheck className="w-4 h-4" />
                 </Button>
               )}
-              <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onViewDetails(job); }}>
+              <Button variant="outline" size="sm" className="min-h-[44px] min-w-[44px]" onClick={(e) => { e.stopPropagation(); onViewDetails(job); }}>
                 <ExternalLink className="w-4 h-4" />
               </Button>
               {onDismiss && (
-                <Button variant="ghost" size="sm" title={isHebrew ? 'הסתר משרה' : 'Hide job'} className="text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); onDismiss(job); }}>
+                <Button variant="ghost" size="sm" className="min-h-[44px] min-w-[44px] text-muted-foreground hover:text-destructive" title={isHebrew ? 'הסתר משרה' : 'Hide job'} onClick={(e) => { e.stopPropagation(); onDismiss(job); }}>
                   <X className="w-4 h-4" />
                 </Button>
               )}

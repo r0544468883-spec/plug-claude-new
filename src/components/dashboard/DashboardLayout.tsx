@@ -187,7 +187,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-start",
                   (item.section === 'feed' ? SOCIAL_SECTIONS.includes(currentSection) : currentSection === item.section)
-                    ? "bg-primary/10 text-primary plug-row-active"
+                    ? "bg-primary/10 text-primary plug-row-active plug-glow-purple"
                     : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/10"
                 )}
               >
