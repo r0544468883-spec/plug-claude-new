@@ -482,7 +482,7 @@ export default function Dashboard() {
       case 'applications':
         return withBackButton(
           <div className="space-y-6">
-            <ApplicationsPage initialStageFilter={appsStageFilter} />
+            <ApplicationsPage initialStageFilter={appsStageFilter} onNavigate={(s) => setCurrentSection(s as any)} />
             <PlugChat contextPage="applications" />
           </div>
         );

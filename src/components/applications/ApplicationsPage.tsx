@@ -57,9 +57,10 @@ interface Application {
 
 interface ApplicationsPageProps {
   initialStageFilter?: string;
+  onNavigate?: (section: string) => void;
 }
 
-export function ApplicationsPage({ initialStageFilter }: ApplicationsPageProps = {}) {
+export function ApplicationsPage({ initialStageFilter, onNavigate }: ApplicationsPageProps = {}) {
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const isRTL = language === 'he';
@@ -617,6 +618,16 @@ export function ApplicationsPage({ initialStageFilter }: ApplicationsPageProps =
               <Sparkles className="w-4 h-4 me-1.5" />
               {isRTL ? 'פעילות תוסף' : 'Extension'}
             </TabsTrigger>
+          )}
+          {/* Link to My Stats page */}
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate('my-stats')}
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <BarChart3 className="w-4 h-4 me-1.5" />
+              {isRTL ? 'נתוני החיפוש שלי' : 'My Stats'}
+            </button>
           )}
         </TabsList>
 
