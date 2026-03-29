@@ -8,6 +8,7 @@ import { DashboardLayout, DashboardSection } from '@/components/dashboard/Dashbo
 import { TodaysFocus } from '@/components/dashboard/TodaysFocus';
 import { ExtensionAgentPanel } from '@/components/extension/ExtensionAgentPanel';
 import { OverviewHome } from '@/components/dashboard/OverviewHome';
+import { MyStatsPage } from '@/components/dashboard/MyStatsPage';
 import { PlugChat } from '@/components/chat/PlugChat';
 import { ApplicationsPage } from '@/components/applications/ApplicationsPage';
 import { JobSearchPage } from '@/components/jobs/JobSearchPage';
@@ -596,6 +597,8 @@ export default function Dashboard() {
         return withBackButton(<HRToolsHub />);
       case 'referrals':
         return withBackButton(<ReferralPanel />);
+      case 'my-stats':
+        return withBackButton(<MyStatsPage />);
     }
   };
 
