@@ -16,9 +16,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
-import { Search, Briefcase, Share2, Target, BarChart3, Building2, Undo2, ArrowDownUp, Loader2 } from 'lucide-react';
+import { Search, Briefcase, Share2, Target, BarChart3, Building2, Undo2, ArrowDownUp, Loader2, SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -274,6 +275,24 @@ export function JobSearchPage() {
             {allDisplayedJobs.length}
           </Badge>
         </h1>
+
+        {/* New Search — opens full filters in right-side sheet */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              {isHebrew ? 'חיפוש חדש' : 'New Search'}
+            </Button>
+          </SheetTrigger>
+          <SheetContent side={isHebrew ? 'right' : 'right'} className="w-[360px] sm:w-[420px] overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>{isHebrew ? 'חיפוש מתקדם' : 'Advanced Search'}</SheetTitle>
+            </SheetHeader>
+            <div className="mt-4">
+              <JobFilters filters={filters} onFiltersChange={setFilters} onClearFilters={handleClearFilters} />
+            </div>
+          </SheetContent>
+        </Sheet>
 
         {/* Sort */}
         <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
