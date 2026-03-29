@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { MapPin, Clock, DollarSign, Building2, Briefcase, ExternalLink, Share2, Heart, CheckCircle2, Layers, X, CheckCheck, Sparkles } from 'lucide-react';
+import { MapPin, Clock, DollarSign, Building2, Briefcase, ExternalLink, Share2, Heart, CheckCircle2, Layers, X, CheckCheck, Sparkles, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { he, enUS } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -43,10 +45,62 @@ export function JobDetailsPanel({ job, onApply, onDismiss, onMarkApplied, onRefr
   const { user } = useAuth();
   const isHebrew = language === 'he';
   const [showEditField, setShowEditField] = useState(false);
+  const [scrapedDescription, setScrapedDescription] = useState<string | null>(null);
+  const [scrapedRequirements, setScrapedRequirements] = useState<string | null>(null);
+  const [isScraping, setIsScraping] = useState(false);
+  const [scrapeAttempted, setScrapeAttempted] = useState<string | null>(null);
 
   const { data: savedJobIds = [] } = useSavedJobs();
   const saveJobMutation = useSaveJobMutation();
   const isSaved = savedJobIds.includes(job.id);
+
+  // Auto-fetch description for jobs that don't have one but have a source_url
+  useEffect(() => {
+    if (job.description || !job.source_url || isScraping || scrapeAttempted === job.id) return;
+
+    const fetchDescription = async () => {
+      setIsScraping(true);
+      setScrapedDescription(null);
+      setScrapedRequirements(null);
+      try {
+        const { data, error } = await supabase.functions.invoke('scrape-job', {
+          body: { url: job.source_url },
+        });
+        if (!error && data?.success && data?.job) {
+          const desc = data.job.description || null;
+          const reqs = data.job.requirements || null;
+          setScrapedDescription(desc);
+          setScrapedRequirements(reqs);
+
+          // Save back to DB so we don't scrape again next time
+          if (desc || reqs) {
+            await supabase.from('jobs').update({
+              ...(desc ? { description: desc } : {}),
+              ...(reqs ? { requirements: reqs } : {}),
+            }).eq('id', job.id) as any;
+          }
+        }
+      } catch (e) {
+        console.error('[JobDetailsPanel] scrape error:', e);
+      } finally {
+        setIsScraping(false);
+        setScrapeAttempted(job.id);
+      }
+    };
+
+    fetchDescription();
+  }, [job.id, job.description, job.source_url]);
+
+  // Reset scraped data when job changes
+  useEffect(() => {
+    if (scrapeAttempted !== job.id) {
+      setScrapedDescription(null);
+      setScrapedRequirements(null);
+    }
+  }, [job.id]);
+
+  const displayDescription = job.description || scrapedDescription;
+  const displayRequirements = job.requirements || scrapedRequirements;
 
   const isJobPoster = user && (job.shared_by_user_id === user.id || job.created_by === user.id);
 
@@ -184,15 +238,27 @@ export function JobDetailsPanel({ job, onApply, onDismiss, onMarkApplied, onRefr
       <Separator className="my-4" />
 
       {/* Description */}
-      {job.description ? (
+      {isScraping ? (
+        <div className="mb-4 space-y-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            {isHebrew ? 'טוען פרטי משרה מאתר המקור...' : 'Loading job details from source...'}
+          </div>
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
+          <Skeleton className="h-4 w-4/6" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
+      ) : displayDescription ? (
         <div className="mb-4">
           <h3 className="font-semibold mb-2 text-sm">{isHebrew ? 'תיאור המשרה' : 'Job Description'}</h3>
-          <p className="text-sm text-muted-foreground whitespace-pre-line">{job.description}</p>
+          <p className="text-sm text-muted-foreground whitespace-pre-line">{displayDescription}</p>
         </div>
       ) : (
         <div className="mb-4 p-4 rounded-lg bg-muted/30 border border-dashed border-border text-center">
           <p className="text-sm text-muted-foreground">
-            {isHebrew ? 'תיאור המשרה לא זמין כאן.' : 'Job description is not available here.'}
+            {isHebrew ? 'תיאור המשרה לא זמין.' : 'Job description is not available.'}
           </p>
           {job.source_url && (
             <a href={job.source_url} target="_blank" rel="noopener noreferrer"
@@ -205,10 +271,10 @@ export function JobDetailsPanel({ job, onApply, onDismiss, onMarkApplied, onRefr
       )}
 
       {/* Requirements */}
-      {job.requirements && (
+      {displayRequirements && (
         <div className="mb-4">
           <h3 className="font-semibold mb-2 text-sm">{isHebrew ? 'דרישות' : 'Requirements'}</h3>
-          <p className="text-sm text-muted-foreground whitespace-pre-line">{job.requirements}</p>
+          <p className="text-sm text-muted-foreground whitespace-pre-line">{displayRequirements}</p>
         </div>
       )}
 
@@ -253,12 +319,12 @@ export function JobDetailsPanel({ job, onApply, onDismiss, onMarkApplied, onRefr
       )}
 
       {/* Skill Gap Analysis */}
-      {user && (job.requirements || job.description) && (
+      {user && (displayRequirements || displayDescription) && (
         <>
           <Separator className="my-4" />
           <div className="mb-4">
             <h3 className="font-semibold mb-2 text-sm">{isHebrew ? 'מה חסר לך?' : 'Your Skill Gap'}</h3>
-            <SkillGapAnalysis jobTitle={job.title} jobRequirements={job.requirements} jobDescription={job.description} />
+            <SkillGapAnalysis jobTitle={job.title} jobRequirements={displayRequirements} jobDescription={displayDescription} />
           </div>
         </>
       )}
