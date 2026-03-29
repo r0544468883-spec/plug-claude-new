@@ -493,6 +493,21 @@ export function ScheduleCalendar() {
             ))}
           </div>
 
+          {gcalConnected && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-2"
+              onClick={handleGcalSync}
+              disabled={gcalSyncing}
+            >
+              <RefreshCw className={cn('w-4 h-4', gcalSyncing && 'animate-spin')} />
+              {gcalSyncing
+                ? (isRTL ? 'מסנכרן...' : 'Syncing...')
+                : (isRTL ? 'סנכרן יומן' : 'Sync Calendar')}
+            </Button>
+          )}
+
           <Dialog open={addDialogOpen} onOpenChange={(o) => { setAddDialogOpen(o); if (!o) resetForm(); }}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-2">

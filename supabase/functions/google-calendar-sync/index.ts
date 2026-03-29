@@ -91,23 +91,42 @@ serve(async (req) => {
       }).eq("user_id", user.id);
     }
 
-    // Fetch upcoming events (next 14 days)
+    // Fetch upcoming events (next 14 days) from ALL calendars
     const now          = new Date().toISOString();
     const twoWeeks     = new Date(Date.now() + 14 * 86400 * 1000).toISOString();
-    const calRes       = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events` +
-      `?timeMin=${now}&timeMax=${twoWeeks}&maxResults=50&singleEvents=true&orderBy=startTime`,
+
+    // Get list of all calendars
+    const calListRes = await fetch(
+      `https://www.googleapis.com/calendar/v3/users/me/calendarList`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
 
-    if (!calRes.ok) {
-      return new Response(JSON.stringify({ error: "gcal_fetch_failed" }), { status: 500, headers: corsHeaders });
+    let calendarIds = ["primary"];
+    if (calListRes.ok) {
+      const { items: calendars = [] } = await calListRes.json();
+      calendarIds = calendars
+        .filter((c: any) => c.selected !== false)
+        .map((c: any) => c.id);
+      if (calendarIds.length === 0) calendarIds = ["primary"];
     }
 
-    const { items: events = [] } = await calRes.json();
+    // Fetch events from all calendars
+    const allEvents: any[] = [];
+    for (const calId of calendarIds) {
+      const calRes = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events` +
+        `?timeMin=${now}&timeMax=${twoWeeks}&maxResults=50&singleEvents=true&orderBy=startTime`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      if (calRes.ok) {
+        const { items = [] } = await calRes.json();
+        allEvents.push(...items);
+      }
+    }
+
     let synced = 0;
 
-    for (const ev of events) {
+    for (const ev of allEvents) {
       if (!ev.start || !ev.summary) continue;
 
       const dueDate  = (ev.start.date || ev.start.dateTime?.substring(0, 10)) ?? null;
