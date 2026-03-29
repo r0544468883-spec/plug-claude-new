@@ -184,10 +184,23 @@ export function JobDetailsPanel({ job, onApply, onDismiss, onMarkApplied, onRefr
       <Separator className="my-4" />
 
       {/* Description */}
-      {job.description && (
+      {job.description ? (
         <div className="mb-4">
           <h3 className="font-semibold mb-2 text-sm">{isHebrew ? 'תיאור המשרה' : 'Job Description'}</h3>
           <p className="text-sm text-muted-foreground whitespace-pre-line">{job.description}</p>
+        </div>
+      ) : (
+        <div className="mb-4 p-4 rounded-lg bg-muted/30 border border-dashed border-border text-center">
+          <p className="text-sm text-muted-foreground">
+            {isHebrew ? 'תיאור המשרה לא זמין כאן.' : 'Job description is not available here.'}
+          </p>
+          {job.source_url && (
+            <a href={job.source_url} target="_blank" rel="noopener noreferrer"
+              className="text-sm text-primary hover:underline flex items-center justify-center gap-1 mt-2">
+              <ExternalLink className="w-3.5 h-3.5" />
+              {isHebrew ? 'צפה במשרה המלאה באתר המקור' : 'View full posting on source site'}
+            </a>
+          )}
         </div>
       )}
 
@@ -201,21 +214,21 @@ export function JobDetailsPanel({ job, onApply, onDismiss, onMarkApplied, onRefr
 
       <Separator className="my-4" />
 
-      {/* Company Info */}
-      {job.company && (
+      {/* Company Info — always show if we have a name */}
+      {(job.company || job.company_name) && (
         <div className="mb-4">
           <h3 className="font-semibold mb-2 text-sm">{isHebrew ? 'על החברה' : 'About the Company'}</h3>
           <div className="bg-muted/50 rounded-lg p-3">
             <div className="flex items-center gap-3 mb-2">
               <Avatar className="w-8 h-8 rounded-lg">
-                <AvatarImage src={job.company.logo_url || undefined} />
+                <AvatarImage src={job.company?.logo_url || undefined} />
                 <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
                   <Building2 className="w-4 h-4" />
                 </AvatarFallback>
               </Avatar>
               <div>
-                <p className="font-medium text-sm">{job.company.name}</p>
-                {job.company.website && (
+                <p className="font-medium text-sm">{job.company?.name || job.company_name}</p>
+                {job.company?.website && (
                   <a href={job.company.website} target="_blank" rel="noopener noreferrer"
                     className="text-xs text-primary hover:underline flex items-center gap-1">
                     {isHebrew ? 'לאתר החברה' : 'Visit website'}<ExternalLink className="w-3 h-3" />
@@ -223,7 +236,7 @@ export function JobDetailsPanel({ job, onApply, onDismiss, onMarkApplied, onRefr
                 )}
               </div>
             </div>
-            {job.company.description && (
+            {job.company?.description && (
               <p className="text-xs text-muted-foreground">{job.company.description}</p>
             )}
           </div>
