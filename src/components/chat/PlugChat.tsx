@@ -575,7 +575,21 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, con
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || 'Failed to get AI response');
+      const status = response.status;
+      const serverMsg = errorData.error || errorData.message || '';
+
+      // Build a clear, user-friendly error message
+      if (status === 401 || status === 403) {
+        throw new Error('AUTH_ERROR');
+      } else if (status === 429) {
+        throw new Error('RATE_LIMIT');
+      } else if (serverMsg.includes('CLAUDE_API_KEY') || serverMsg.includes('not configured')) {
+        throw new Error('API_KEY_MISSING');
+      } else if (status === 500 || status === 502 || status === 503) {
+        throw new Error(`SERVER_ERROR:${status}:${serverMsg}`);
+      } else {
+        throw new Error(`UNKNOWN_ERROR:${status}:${serverMsg}`);
+      }
     }
 
     const reader = response.body?.getReader();
@@ -669,31 +683,70 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, con
       sidebarRefreshRef.current++;
     } catch (error) {
       console.error('Error sending message:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
+      const errorCode = error instanceof Error ? error.message : 'UNKNOWN';
       const isRTL = direction === 'rtl';
-      
-      // Check if it's a session/auth error - show humorous message
-      if (errorMessage.includes('No active session') || errorMessage.includes('log in') || errorMessage.includes('Unauthorized')) {
-        toast.error(
-          isRTL 
-            ? '🔌 אופס! הכבל שלי התנתק...' 
-            : '🔌 Oops! My cable got unplugged...',
-          {
-            description: isRTL 
-              ? 'אני עובד על לחבר את עצמי מחדש. נסה שוב בעוד רגע!'
-              : "I'm working on reconnecting myself. Try again in a moment!",
-          }
-        );
+
+      // Map error codes to clear user-facing messages
+      let toastTitle: string;
+      let toastDesc: string;
+      let chatMessage: string;
+
+      if (errorCode === 'AUTH_ERROR' || errorCode.includes('No active session')) {
+        toastTitle = isRTL ? '🔌 נותקת מהמערכת' : '🔌 Session expired';
+        toastDesc = isRTL ? 'רענן את הדף והתחבר מחדש' : 'Refresh the page and log in again';
+        chatMessage = isRTL
+          ? '🔌 נראה שהחיבור שלך פג. רענן את הדף והתחבר מחדש כדי להמשיך.'
+          : '🔌 Your session expired. Refresh the page and log in again to continue.';
+      } else if (errorCode === 'RATE_LIMIT') {
+        toastTitle = isRTL ? '⏳ יותר מדי בקשות' : '⏳ Too many requests';
+        toastDesc = isRTL ? 'המתן כמה שניות ונסה שוב' : 'Wait a few seconds and try again';
+        chatMessage = isRTL
+          ? '⏳ שלחת יותר מדי הודעות ברצף. חכה כמה שניות ונסה שוב.'
+          : '⏳ Too many messages in a row. Wait a few seconds and try again.';
+      } else if (errorCode === 'API_KEY_MISSING') {
+        toastTitle = isRTL ? '⚙️ שגיאת הגדרות שרת' : '⚙️ Server configuration error';
+        toastDesc = isRTL ? 'מפתח ה-AI לא מוגדר. פנה למנהל המערכת' : 'AI API key is not configured. Contact the admin';
+        chatMessage = isRTL
+          ? '⚙️ יש בעיית הגדרות בשרת — מפתח ה-AI (CLAUDE_API_KEY) לא מוגדר. פנה למנהל המערכת.'
+          : '⚙️ Server configuration issue — the AI API key (CLAUDE_API_KEY) is not set. Contact the admin.';
+      } else if (errorCode.startsWith('SERVER_ERROR')) {
+        const parts = errorCode.split(':');
+        const statusCode = parts[1] || '500';
+        const serverDetail = parts.slice(2).join(':') || '';
+        toastTitle = isRTL ? '🔥 שגיאת שרת' : '🔥 Server error';
+        toastDesc = isRTL
+          ? `שרת ה-AI החזיר שגיאה (${statusCode}). נסה שוב בעוד רגע.`
+          : `The AI server returned an error (${statusCode}). Try again in a moment.`;
+        chatMessage = isRTL
+          ? `🔥 שגיאת שרת (${statusCode})${serverDetail ? ': ' + serverDetail : ''}. נסה שוב בעוד רגע.`
+          : `🔥 Server error (${statusCode})${serverDetail ? ': ' + serverDetail : ''}. Try again in a moment.`;
+      } else if (errorCode.startsWith('UNKNOWN_ERROR')) {
+        const parts = errorCode.split(':');
+        const statusCode = parts[1] || '?';
+        const serverDetail = parts.slice(2).join(':') || '';
+        toastTitle = isRTL ? '❌ שגיאה לא צפויה' : '❌ Unexpected error';
+        toastDesc = isRTL
+          ? `קוד שגיאה: ${statusCode}${serverDetail ? ' — ' + serverDetail : ''}`
+          : `Error code: ${statusCode}${serverDetail ? ' — ' + serverDetail : ''}`;
+        chatMessage = isRTL
+          ? `❌ שגיאה לא צפויה (${statusCode})${serverDetail ? ': ' + serverDetail : ''}. נסה שוב או פנה לתמיכה.`
+          : `❌ Unexpected error (${statusCode})${serverDetail ? ': ' + serverDetail : ''}. Try again or contact support.`;
       } else {
-        toast.error(errorMessage);
+        // Fallback for network errors, aborted requests, etc.
+        const rawMsg = error instanceof Error ? error.message : String(error);
+        toastTitle = isRTL ? '❌ שגיאה' : '❌ Error';
+        toastDesc = rawMsg;
+        chatMessage = isRTL
+          ? `❌ ${rawMsg || 'שגיאה לא ידועה. בדוק את חיבור האינטרנט ונסה שוב.'}`
+          : `❌ ${rawMsg || 'Unknown error. Check your internet connection and try again.'}`;
       }
-      
-      // Add error message to chat
+
+      toast.error(toastTitle, { description: toastDesc });
+
+      // Add error message to chat so the user sees it inline too
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
-        content: errorMessage.includes('No active session') || errorMessage.includes('Unauthorized')
-          ? (isRTL ? '🔌 אוי, מישהו שלף לי את החשמל! עובד על לחבר את עצמי מחדש...' : "🔌 Oh no, someone unplugged me! Working on reconnecting...")
-          : (t('plug.error') || 'Sorry, I encountered an error. Please try again.'),
+        content: chatMessage,
         sender: 'ai',
         timestamp: new Date(),
       }]);

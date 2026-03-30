@@ -258,15 +258,37 @@ ${context.vouches.skills?.length > 0 ? `- Skills mentioned: ${context.vouches.sk
     });
 
     if (!claudeResponse.ok) {
+      const errorText = await claudeResponse.text();
+      console.error("Claude API error:", claudeResponse.status, errorText);
+
+      let parsedError = '';
+      try { parsedError = JSON.parse(errorText)?.error?.message || ''; } catch { /* ignore */ }
+
       if (claudeResponse.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const errorText = await claudeResponse.text();
-      console.error("Claude API error:", claudeResponse.status, errorText);
-      return new Response(JSON.stringify({ error: "AI service temporarily unavailable" }), {
+      if (claudeResponse.status === 401) {
+        return new Response(JSON.stringify({ error: "Claude API key is invalid or expired. Contact admin." }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (claudeResponse.status === 400) {
+        return new Response(JSON.stringify({ error: `Claude API rejected the request: ${parsedError || 'bad request'}` }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (claudeResponse.status === 529 || claudeResponse.status === 503) {
+        return new Response(JSON.stringify({ error: "Claude API is temporarily overloaded. Try again in a moment." }), {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ error: `AI service error (${claudeResponse.status}): ${parsedError || 'unknown error'}` }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -318,8 +340,17 @@ ${context.vouches.skills?.length > 0 ? `- Skills mentioned: ${context.vouches.sk
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (error) {
-    console.error("plug-chat error:", error);
-    return new Response(JSON.stringify({ error: "Chat service temporarily unavailable. Please try again." }), {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error("plug-chat error:", errMsg);
+
+    // Return descriptive error so the client can show it
+    if (errMsg.includes('CLAUDE_API_KEY') || errMsg.includes('not configured')) {
+      return new Response(JSON.stringify({ error: "CLAUDE_API_KEY is not configured on the server. Contact admin." }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify({ error: `Chat service error: ${errMsg}` }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
