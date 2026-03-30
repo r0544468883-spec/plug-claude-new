@@ -8,6 +8,7 @@ import {
   Users, BarChart3, MapPin, Briefcase, Trophy,
 } from 'lucide-react';
 import { differenceInDays, format, subDays } from 'date-fns';
+import { STAGES, STAT_GROUPS, getStage } from './stageConfig';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -54,10 +55,7 @@ interface Props {
 
 type Tab = 'personal' | 'benchmark' | 'market';
 
-const STAGE_ORDER  = ['applied', 'screening', 'interview', 'task', 'offer', 'hired'];
-const STAGE_COLORS = ['#6366f1', '#8b5cf6', '#10b981', '#f97316', '#f59e0b', '#06b6d4'];
-const STAGE_HE     = ['הגשה', 'סינון', 'ראיון', 'מטלה', 'הצעה', 'התקבלתי'];
-const STAGE_EN     = ['Applied', 'Screening', 'Interview', 'Task', 'Offer', 'Hired'];
+// Stage config imported from stageConfig.ts — STAT_GROUPS used for funnel
 
 const PIE_COLORS = ['#6366f1', '#8b5cf6', '#10b981', '#f97316', '#f59e0b', '#06b6d4', '#ec4899'];
 
@@ -187,13 +185,31 @@ export function ApplicationsStatsPanel({ applications, userId }: Props) {
     })
   , [applications]);
 
-  // ── Stage funnel ─────────────────────────────────────────
+  // ── Stage funnel (grouped) ──────────────────────────────
   const stageFunnel = useMemo(() =>
-    STAGE_ORDER.map((stage, idx) => ({
-      stage,
-      count: applications.filter(a => STAGE_ORDER.indexOf(a.current_stage) >= idx).length,
+    STAT_GROUPS.map((group) => ({
+      key: group.key,
+      he: group.he,
+      en: group.en,
+      count: applications.filter(a => {
+        const stageDef = getStage(a.current_stage);
+        return stageDef.order >= group.minOrder;
+      }).length,
     }))
   , [applications]);
+
+  // ── Per-stage breakdown (all individual stages with counts) ──
+  const stageBreakdown = useMemo(() => {
+    const counts: Record<string, number> = {};
+    applications.forEach(a => {
+      const s = a.current_stage || 'applied';
+      counts[s] = (counts[s] || 0) + 1;
+    });
+    return STAGES.filter(s => (counts[s.slug] || 0) > 0).map(s => ({
+      ...s,
+      count: counts[s.slug] || 0,
+    }));
+  }, [applications]);
 
   // ── Source donut (Tab 1 extra) ───────────────────────────
   const sourceData = useMemo(() => {
@@ -242,7 +258,7 @@ export function ApplicationsStatsPanel({ applications, userId }: Props) {
     { id: 'market',    he: 'שוק',    en: 'Market' },
   ];
 
-  const maxStage = stageFunnel[0]?.count || 1;
+  const maxFunnelCount = stageFunnel[0]?.count || 1;
 
   return (
     <Card className="bg-card border-border">
@@ -310,30 +326,52 @@ export function ApplicationsStatsPanel({ applications, userId }: Props) {
               </div>
             )}
 
-            {/* Stage funnel */}
+            {/* Stage funnel (grouped) */}
             {personal.total > 0 && (
               <div className="bg-muted/10 rounded-lg p-3 border border-border/50">
                 <h4 className="text-sm font-medium mb-3">{isHe ? 'פאנל שלבים' : 'Stage Funnel'}</h4>
                 <div className="space-y-2">
-                  {stageFunnel.map(({ stage, count }, i) => {
+                  {stageFunnel.map(({ key, he, en, count }, i) => {
                     const pct   = personal.total > 0 ? Math.round((count / personal.total) * 100) : 0;
-                    const width = maxStage > 0 ? Math.round((count / maxStage) * 100) : 0;
+                    const width = maxFunnelCount > 0 ? Math.round((count / maxFunnelCount) * 100) : 0;
+                    const funnelColors = ['#6366f1', '#3b82f6', '#8b5cf6', '#f97316', '#10b981', '#06b6d4'];
                     return (
-                      <div key={stage}>
+                      <div key={key}>
                         <div className="flex justify-between text-xs mb-0.5">
-                          <span style={{ color: STAGE_COLORS[i] }} className="font-medium">
-                            {isHe ? STAGE_HE[i] : STAGE_EN[i]}
+                          <span style={{ color: funnelColors[i] }} className="font-medium">
+                            {isHe ? he : en}
                           </span>
                           <span className="text-muted-foreground">{count} ({pct}%)</span>
                         </div>
                         <div className="h-5 bg-muted rounded-md overflow-hidden">
                           <div
                             className="h-full rounded-md flex items-center px-2 transition-all duration-500"
-                            style={{ width: `${width}%`, minWidth: count > 0 ? '2rem' : 0, background: STAGE_COLORS[i], opacity: 0.8 }}
+                            style={{ width: `${width}%`, minWidth: count > 0 ? '2rem' : 0, background: funnelColors[i], opacity: 0.8 }}
                           >
                             {count > 0 && <span className="text-white text-xs font-bold">{count}</span>}
                           </div>
                         </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Per-stage breakdown */}
+            {stageBreakdown.length > 1 && (
+              <div className="bg-muted/10 rounded-lg p-3 border border-border/50">
+                <h4 className="text-sm font-medium mb-3">{isHe ? 'פירוט לפי שלב' : 'Stage Breakdown'}</h4>
+                <div className="space-y-1.5">
+                  {stageBreakdown.map((s) => {
+                    const pct = personal.total > 0 ? Math.round((s.count / personal.total) * 100) : 0;
+                    return (
+                      <div key={s.slug} className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2.5 h-2.5 rounded-full" style={{ background: s.chartColor }} />
+                          <span className="text-muted-foreground">{isHe ? s.he : s.en}</span>
+                        </div>
+                        <span className="font-medium">{s.count} <span className="text-muted-foreground font-normal">({pct}%)</span></span>
                       </div>
                     );
                   })}

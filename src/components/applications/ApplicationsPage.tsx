@@ -16,6 +16,7 @@ import { BulkImportDialog } from './BulkImportDialog';
 import { CompanyVouchModal } from '@/components/vouch/CompanyVouchModal';
 import { CompanyVouchToast } from '@/components/vouch/CompanyVouchToast';
 import { useCompanyVouchPrompts } from '@/hooks/useCompanyVouchPrompts';
+import { PIPELINE_STAGES, STAGE_MAP, getStage } from './stageConfig';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -447,16 +448,7 @@ export function ApplicationsPage({ initialStageFilter, onNavigate }: Application
   }, [user?.id, isRTL, t]);
 
 
-  // Pipeline stages
-  const pipelineStages = [
-    { slug: 'applied',          he: 'הגשתי',        en: 'Applied' },
-    { slug: 'screening',        he: 'סינון',         en: 'Screening' },
-    { slug: 'interview',        he: 'ראיון',         en: 'Interview' },
-    { slug: 'home_assignment',  he: 'מטלת בית',     en: 'Home Assignment' },
-    { slug: 'offer',            he: 'הצעה',          en: 'Offer' },
-    { slug: 'hired',            he: 'התקבלתי',       en: 'Hired' },
-  ];
-
+  // Stage counts from shared config
   const stageCounts = useMemo(() =>
     applications.reduce<Record<string, number>>((acc, app) => {
       const s = app.current_stage || 'applied';
@@ -464,6 +456,12 @@ export function ApplicationsPage({ initialStageFilter, onNavigate }: Application
       return acc;
     }, {}),
   [applications]);
+
+  // Only show pipeline stages that have at least 1 app, plus always show applied/offer/hired
+  const visiblePipeline = useMemo(() => {
+    const alwaysShow = new Set(['applied', 'offer', 'hired']);
+    return PIPELINE_STAGES.filter(s => alwaysShow.has(s.slug) || (stageCounts[s.slug] || 0) > 0);
+  }, [stageCounts]);
 
   if (isLoading) {
     return (
@@ -547,8 +545,8 @@ export function ApplicationsPage({ initialStageFilter, onNavigate }: Application
 
       {/* ── Clickable Pipeline ── */}
       {applications.length > 0 && (
-        <div className="flex items-center gap-0 overflow-x-auto py-1">
-          {pipelineStages.map((stage, i) => {
+        <div className="flex items-center gap-0 overflow-x-auto py-1 scrollbar-hide">
+          {visiblePipeline.map((stage, i) => {
             const count = stageCounts[stage.slug] || 0;
             const isActive = count > 0;
             const isSelected = stageFilter === stage.slug;
@@ -556,26 +554,31 @@ export function ApplicationsPage({ initialStageFilter, onNavigate }: Application
               <div key={stage.slug} className="flex items-center flex-shrink-0">
                 <button
                   onClick={() => setStageFilter(isSelected ? 'all' as any : stage.slug as any)}
-                  className="flex flex-col items-center text-center w-20 group"
+                  className="flex flex-col items-center text-center w-[4.5rem] group"
                 >
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${
                     isSelected
-                      ? 'bg-accent border-accent text-white ring-2 ring-accent/30'
+                      ? 'ring-2 ring-accent/30'
                       : isActive
-                        ? 'bg-primary border-primary text-primary-foreground group-hover:ring-2 group-hover:ring-primary/30'
+                        ? 'group-hover:ring-2 group-hover:ring-primary/30'
                         : 'bg-muted border-muted-foreground/20 text-muted-foreground group-hover:border-muted-foreground/40'
-                  }`}>
-                    {isActive ? count : i + 1}
+                  }`} style={isSelected
+                    ? { background: stage.chartColor, borderColor: stage.chartColor, color: '#fff' }
+                    : isActive
+                      ? { background: stage.chartColor + '33', borderColor: stage.chartColor, color: stage.chartColor }
+                      : undefined
+                  }>
+                    {isActive ? count : '·'}
                   </div>
                   <p className={`text-[10px] mt-1 leading-tight transition-colors ${
-                    isSelected ? 'text-accent font-semibold' : isActive ? 'text-foreground font-medium' : 'text-muted-foreground'
-                  }`}>
+                    isSelected ? 'font-semibold' : isActive ? 'text-foreground font-medium' : 'text-muted-foreground'
+                  }`} style={isSelected ? { color: stage.chartColor } : undefined}>
                     {isRTL ? stage.he : stage.en}
                   </p>
                 </button>
-                {i < pipelineStages.length - 1 && (
-                  <div className={`w-4 h-0.5 flex-shrink-0 mb-4 transition-colors ${
-                    isActive && (stageCounts[pipelineStages[i + 1]?.slug] || 0) > 0
+                {i < visiblePipeline.length - 1 && (
+                  <div className={`w-3 h-0.5 flex-shrink-0 mb-4 transition-colors ${
+                    isActive && (stageCounts[visiblePipeline[i + 1]?.slug] || 0) > 0
                       ? 'bg-primary/40'
                       : 'bg-muted-foreground/20'
                   }`} />

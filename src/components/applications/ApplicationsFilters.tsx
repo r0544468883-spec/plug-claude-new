@@ -3,9 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { STAGES } from './stageConfig';
 
 export type StatusFilter = 'all' | 'active' | 'withdrawn' | 'rejected' | 'accepted';
-export type StageFilter = 'all' | 'applied' | 'screening' | 'interview' | 'technical' | 'offer';
+export type StageFilter = 'all' | string;
 export type SortOption = 'newest' | 'oldest' | 'match_score';
 
 interface ApplicationsFiltersProps {
@@ -41,11 +42,7 @@ export function ApplicationsFilters({
 
   const stageOptions: { value: StageFilter; label: string }[] = [
     { value: 'all', label: language === 'he' ? 'כל השלבים' : 'All Stages' },
-    { value: 'applied', label: language === 'he' ? 'הוגש' : 'Applied' },
-    { value: 'screening', label: language === 'he' ? 'סינון' : 'Screening' },
-    { value: 'interview', label: language === 'he' ? 'ראיון' : 'Interview' },
-    { value: 'technical', label: language === 'he' ? 'טכני' : 'Technical' },
-    { value: 'offer', label: language === 'he' ? 'הצעה' : 'Offer' },
+    ...STAGES.map(s => ({ value: s.slug, label: language === 'he' ? s.he : s.en })),
   ];
 
   const sortOptions: { value: SortOption; label: string }[] = [

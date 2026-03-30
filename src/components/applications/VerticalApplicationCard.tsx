@@ -23,6 +23,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { STAGES, getStage } from './stageConfig';
 import MatchScoreCircle from './MatchScoreCircle';
 import SwipeableCard from './SwipeableCard';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -64,32 +65,7 @@ interface VerticalApplicationCardProps {
   onDelete?: () => void;
 }
 
-const stageConfig: Record<string, { label: { en: string; he: string }; color: string }> = {
-  applied: { 
-    label: { en: 'Applied', he: 'הוגש' }, 
-    color: 'bg-secondary text-secondary-foreground' 
-  },
-  screening: { 
-    label: { en: 'Screening', he: 'סינון' }, 
-    color: 'bg-blue-500/20 text-blue-400' 
-  },
-  interview: { 
-    label: { en: 'Interview', he: 'ראיון' }, 
-    color: 'bg-accent/20 text-accent' 
-  },
-  offer: { 
-    label: { en: 'Offer', he: 'הצעה' }, 
-    color: 'bg-primary/20 text-primary' 
-  },
-  rejected: { 
-    label: { en: 'Rejected', he: 'נדחה' }, 
-    color: 'bg-destructive/20 text-destructive' 
-  },
-  withdrawn: { 
-    label: { en: 'Withdrawn', he: 'נמשך' }, 
-    color: 'bg-muted text-muted-foreground' 
-  },
-};
+// Stage config is now imported from stageConfig.ts
 
 const VerticalApplicationCard = ({
   application,
@@ -102,7 +78,7 @@ const VerticalApplicationCard = ({
   const isMobile = useIsMobile();
   const isRTL = language === 'he';
 
-  const stage = stageConfig[application.current_stage] || stageConfig.applied;
+  const stage = getStage(application.current_stage);
   const timeAgo = formatDistanceToNow(new Date(application.created_at), {
     addSuffix: true,
     locale: isRTL ? he : enUS,
@@ -200,21 +176,21 @@ const VerticalApplicationCard = ({
                   value={application.current_stage}
                   onValueChange={(value) => onStageChange(value)}
                 >
-                  <SelectTrigger 
+                  <SelectTrigger
                     className="w-auto h-7 gap-1 px-2 border-none bg-transparent hover:bg-muted"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <SelectValue>
                       <Badge variant="secondary" className={stage.color}>
-                        {isRTL ? stage.label.he : stage.label.en}
+                        {isRTL ? stage.he : stage.en}
                       </Badge>
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent onClick={(e) => e.stopPropagation()}>
-                    {Object.entries(stageConfig).map(([key, config]) => (
-                      <SelectItem key={key} value={key}>
-                        <span className={`px-2 py-0.5 rounded text-xs ${config.color}`}>
-                          {isRTL ? config.label.he : config.label.en}
+                    {STAGES.map((s) => (
+                      <SelectItem key={s.slug} value={s.slug}>
+                        <span className={`px-2 py-0.5 rounded text-xs ${s.color}`}>
+                          {isRTL ? s.he : s.en}
                         </span>
                       </SelectItem>
                     ))}
@@ -222,7 +198,7 @@ const VerticalApplicationCard = ({
                 </Select>
               ) : (
                 <Badge variant="secondary" className={stage.color}>
-                  {isRTL ? stage.label.he : stage.label.en}
+                  {isRTL ? stage.he : stage.en}
                 </Badge>
               )}
               <div className="flex items-center gap-2">
