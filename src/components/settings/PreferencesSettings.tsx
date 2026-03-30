@@ -68,7 +68,7 @@ export function PreferencesSettings() {
   });
 
   return (
-    <Card className="bg-card border-border" data-tour="preferences">
+    <Card className="bg-card border-border" dir={isHebrew ? 'rtl' : 'ltr'} data-tour="preferences">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Settings className="w-5 h-5 text-primary" />

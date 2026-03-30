@@ -112,7 +112,6 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
         { icon: MessageSquare, label: isRTL ? 'הודעות' : 'Messages', section: 'messages', tooltipHe: 'הודעות פנימיות מקבלים ומגייסים', tooltipEn: 'Internal messages from recruiters and contacts' },
         // ── System ──
         { icon: Gem, label: isRTL ? 'הקרדיטים שלי' : 'Credits', section: 'credits' as DashboardSection, tooltipHe: 'יתרת דלק, היסטוריה ורכישה', tooltipEn: 'Fuel balance, history & purchase' },
-        { icon: Settings, label: isRTL ? 'הגדרות' : 'Settings', section: 'settings' as DashboardSection, tooltipHe: 'הגדרות חשבון ואינטגרציות', tooltipEn: 'Account settings & integrations' },
       ];
     }
 
@@ -166,13 +165,65 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
         {/* Logo */}
         <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
           <PlugLogo size="sm" />
-          <button 
+          <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden text-muted-foreground hover:text-foreground"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Mini Profile Card */}
+        {profile && (
+          <button
+            onClick={() => handleNavClick('profile-settings')}
+            className="mx-3 mt-3 mb-1 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors text-start flex items-center gap-3"
+          >
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                <span className="text-xs font-bold text-primary">
+                  {(profile.full_name || '?').charAt(0).toUpperCase()}
+                </span>
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">
+                {isRTL ? `שלום ${(profile as any).first_name || profile.full_name?.split(' ')[0] || ''}` : `Hi ${(profile as any).first_name || profile.full_name?.split(' ')[0] || ''}`}
+              </p>
+              {(() => {
+                const p = profile as any;
+                const items = [
+                  !!p?.full_name?.trim(),
+                  !!p?.avatar_url,
+                  !!p?.personal_tagline?.trim(),
+                  !!p?.about_me?.trim(),
+                  !!p?.phone?.trim(),
+                  !!(p?.cv_data && Object.keys(p.cv_data || {}).length > 0),
+                  !!(p?.linkedin_url || p?.portfolio_url || p?.github_url),
+                  !!p?.intro_video_url,
+                ];
+                const pct = Math.round((items.filter(Boolean).length / items.length) * 100);
+                if (pct >= 100) return null;
+                return (
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="flex-1 h-1.5 rounded-full bg-muted-foreground/20 overflow-hidden">
+                      <div
+                        className={cn(
+                          "h-full rounded-full transition-all",
+                          pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-400'
+                        )}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">{pct}%</span>
+                  </div>
+                );
+              })()}
+            </div>
+          </button>
+        )}
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">

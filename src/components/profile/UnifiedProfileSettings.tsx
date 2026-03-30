@@ -17,7 +17,8 @@ import { PreferencesSettings } from '@/components/settings/PreferencesSettings';
 import { PrivacySettings } from '@/components/settings/PrivacySettings';
 import { AccountSettings } from '@/components/settings/AccountSettings';
 import { IntegrationStatus } from '@/components/settings/IntegrationStatus';
-import { User, Sliders, Plug, KeyRound, Upload, Loader2 } from 'lucide-react';
+import { User, Sliders, Plug, KeyRound, Upload } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { DashboardSection } from '@/components/dashboard/DashboardLayout';
 
 interface UnifiedProfileSettingsProps {
@@ -71,8 +72,31 @@ export function UnifiedProfileSettings({ initialTab, onNavigate }: UnifiedProfil
   if (isLoading) {
     return (
       <div className="space-y-6" dir={isHebrew ? 'rtl' : 'ltr'}>
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        {/* Title skeleton */}
+        <Skeleton className="h-8 w-48" />
+        {/* Completion card skeleton */}
+        <Skeleton className="h-20 w-full rounded-lg" />
+        {/* Tabs skeleton */}
+        <Skeleton className="h-11 w-full rounded-lg" />
+        {/* Form skeleton */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-16 w-16 rounded-full" />
+            <div className="space-y-2 flex-1">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+          </div>
+          <Skeleton className="h-10 w-full" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <Skeleton className="h-10 w-full" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
         </div>
       </div>
     );

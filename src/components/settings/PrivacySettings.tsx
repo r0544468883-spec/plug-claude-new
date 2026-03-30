@@ -133,7 +133,7 @@ export function PrivacySettings() {
   });
 
   return (
-    <Card className="bg-card border-border">
+    <Card className="bg-card border-border" dir={isHebrew ? 'rtl' : 'ltr'}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Shield className="w-5 h-5 text-primary" />
