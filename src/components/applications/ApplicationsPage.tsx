@@ -545,48 +545,57 @@ export function ApplicationsPage({ initialStageFilter, onNavigate }: Application
 
       {/* ── Clickable Pipeline ── */}
       {applications.length > 0 && (
-        <div className="flex items-center gap-0 overflow-x-auto py-1 scrollbar-hide">
-          {visiblePipeline.map((stage, i) => {
-            const count = stageCounts[stage.slug] || 0;
-            const isActive = count > 0;
-            const isSelected = stageFilter === stage.slug;
-            return (
-              <div key={stage.slug} className="flex items-center flex-shrink-0">
-                <button
-                  onClick={() => setStageFilter(isSelected ? 'all' as any : stage.slug as any)}
-                  className="flex flex-col items-center text-center w-[4.5rem] group"
-                >
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${
-                    isSelected
-                      ? 'ring-2 ring-accent/30'
+        <Card className="border-border bg-card">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+              {/* "All" chip */}
+              <button
+                onClick={() => setStageFilter('all' as any)}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  stageFilter === 'all'
+                    ? 'bg-foreground text-background'
+                    : 'bg-muted text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {isRTL ? 'הכל' : 'All'} · {applications.length}
+              </button>
+
+              {visiblePipeline.map((stage) => {
+                const count = stageCounts[stage.slug] || 0;
+                const isActive = count > 0;
+                const isSelected = stageFilter === stage.slug;
+                return (
+                  <button
+                    key={stage.slug}
+                    onClick={() => setStageFilter(isSelected ? 'all' as any : stage.slug as any)}
+                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                      isSelected
+                        ? 'text-white border-transparent shadow-sm'
+                        : isActive
+                          ? 'border-transparent hover:opacity-80'
+                          : 'bg-muted/50 border-transparent text-muted-foreground'
+                    }`}
+                    style={isSelected
+                      ? { background: stage.chartColor }
                       : isActive
-                        ? 'group-hover:ring-2 group-hover:ring-primary/30'
-                        : 'bg-muted border-muted-foreground/20 text-muted-foreground group-hover:border-muted-foreground/40'
-                  }`} style={isSelected
-                    ? { background: stage.chartColor, borderColor: stage.chartColor, color: '#fff' }
-                    : isActive
-                      ? { background: stage.chartColor + '33', borderColor: stage.chartColor, color: stage.chartColor }
-                      : undefined
-                  }>
-                    {isActive ? count : '·'}
-                  </div>
-                  <p className={`text-[10px] mt-1 leading-tight transition-colors ${
-                    isSelected ? 'font-semibold' : isActive ? 'text-foreground font-medium' : 'text-muted-foreground'
-                  }`} style={isSelected ? { color: stage.chartColor } : undefined}>
-                    {isRTL ? stage.he : stage.en}
-                  </p>
-                </button>
-                {i < visiblePipeline.length - 1 && (
-                  <div className={`w-3 h-0.5 flex-shrink-0 mb-4 transition-colors ${
-                    isActive && (stageCounts[visiblePipeline[i + 1]?.slug] || 0) > 0
-                      ? 'bg-primary/40'
-                      : 'bg-muted-foreground/20'
-                  }`} />
-                )}
-              </div>
-            );
-          })}
-        </div>
+                        ? { background: stage.chartColor + '20', color: stage.chartColor }
+                        : undefined
+                    }
+                  >
+                    <span>{isRTL ? stage.he : stage.en}</span>
+                    {isActive && (
+                      <span className={`min-w-[1.25rem] h-5 flex items-center justify-center rounded-full text-[10px] font-bold px-1 ${
+                        isSelected ? 'bg-white/25' : ''
+                      }`} style={!isSelected && isActive ? { background: stage.chartColor + '30' } : undefined}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* ── Filters ── */}
