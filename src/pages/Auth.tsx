@@ -26,8 +26,8 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
   };
 
   const handleAuthSuccess = () => {
-    // Show Gmail step only for new job_seeker registrations
-    if (isNewRegistration && selectedRole === 'job_seeker') {
+    // Show integrations step for all new registrations
+    if (isNewRegistration) {
       setStep('gmail-connect');
     } else {
       onSuccess();

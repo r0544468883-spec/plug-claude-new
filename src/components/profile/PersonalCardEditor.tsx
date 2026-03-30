@@ -15,7 +15,7 @@ import { PhotoUpload } from './PhotoUpload';
 import { IntroVideoUpload } from './IntroVideoUpload';
 import { PersonalCardPreview } from './PersonalCardPreview';
 import { ResumeUpload } from '@/components/documents/ResumeUpload';
-import { User, Sparkles, Eye, Loader2, Save, FileText, Link2, Calendar, Shield, Users2, CreditCard, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { User, Sparkles, Eye, Loader2, Save, FileText, Link2, Calendar, Shield, Users2, CreditCard, CheckCircle2, AlertCircle, X, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 // Helper text for fields that need explanation
@@ -117,6 +117,8 @@ export function PersonalCardEditor() {
     race_ethnicity: '',
     veteran_status: '',
     disability_status: '',
+    // Custom links (Linktree-style)
+    custom_links: [] as { label: string; url: string }[],
   });
 
   // Track saved data to detect unsaved changes
@@ -164,6 +166,7 @@ export function PersonalCardEditor() {
         race_ethnicity: p.race_ethnicity || '',
         veteran_status: p.veteran_status || '',
         disability_status: p.disability_status || '',
+        custom_links: Array.isArray(p.custom_links) ? p.custom_links : [],
       };
       setFormData(data);
       setSavedData(data);
@@ -261,6 +264,7 @@ export function PersonalCardEditor() {
           race_ethnicity: formData.race_ethnicity || null,
           veteran_status: formData.veteran_status || null,
           disability_status: formData.disability_status || null,
+          custom_links: formData.custom_links.filter(l => l.url.trim()),
         } as any)
         .eq('user_id', user.id);
 
@@ -472,9 +476,13 @@ export function PersonalCardEditor() {
                     <Link2 className="w-4 h-4 text-primary" />
                     <span>{isHebrew ? 'לינקים מקצועיים' : 'Professional Links'}</span>
                   </div>
-                  <SectionStatus {...sectionStats.links} />
+                  <SectionStatus
+                    filled={[formData.linkedin_url, formData.github_url, formData.portfolio_url, ...formData.custom_links.map(l => l.url)].filter(Boolean).length}
+                    total={3 + formData.custom_links.length}
+                  />
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-2">
+                  {/* Fixed links */}
                   <div className="grid gap-4 sm:grid-cols-1">
                     <div className="space-y-2">
                       <Label htmlFor="linkedin_url">LinkedIn</Label>
@@ -489,6 +497,69 @@ export function PersonalCardEditor() {
                       <Input id="portfolio_url" type="url" value={formData.portfolio_url} onChange={set('portfolio_url')} placeholder="https://" dir="ltr" />
                     </div>
                   </div>
+
+                  {/* Custom links (Linktree-style) */}
+                  {formData.custom_links.length > 0 && (
+                    <div className="space-y-3 pt-2 border-t border-border">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        {isHebrew ? 'לינקים נוספים' : 'Additional Links'}
+                      </p>
+                      {formData.custom_links.map((link, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <Input
+                            value={link.label}
+                            onChange={(e) => {
+                              const updated = [...formData.custom_links];
+                              updated[idx] = { ...updated[idx], label: e.target.value };
+                              setFormData(prev => ({ ...prev, custom_links: updated }));
+                            }}
+                            placeholder={isHebrew ? 'שם (למשל: Dribbble)' : 'Label (e.g. Dribbble)'}
+                            className="w-1/3"
+                          />
+                          <Input
+                            value={link.url}
+                            onChange={(e) => {
+                              const updated = [...formData.custom_links];
+                              updated[idx] = { ...updated[idx], url: e.target.value };
+                              setFormData(prev => ({ ...prev, custom_links: updated }));
+                            }}
+                            placeholder="https://..."
+                            dir="ltr"
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 text-muted-foreground hover:text-destructive shrink-0"
+                            onClick={() => {
+                              const updated = formData.custom_links.filter((_, i) => i !== idx);
+                              setFormData(prev => ({ ...prev, custom_links: updated }));
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add link button */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 w-full"
+                    onClick={() => {
+                      setFormData(prev => ({
+                        ...prev,
+                        custom_links: [...prev.custom_links, { label: '', url: '' }],
+                      }));
+                    }}
+                  >
+                    <Plus className="w-4 h-4" />
+                    {isHebrew ? 'הוסף לינק' : 'Add Link'}
+                  </Button>
                 </AccordionContent>
               </AccordionItem>
 
