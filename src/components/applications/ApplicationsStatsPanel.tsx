@@ -205,19 +205,32 @@ export function ApplicationsStatsPanel({ applications, userId }: Props) {
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [applications]);
 
+  const [benchmarkError, setBenchmarkError]   = useState(false);
+  const [percentileError, setPercentileError] = useState(false);
+
   // ── Fetch effects ────────────────────────────────────────
   useEffect(() => {
-    if (activeTab === 'market' && !benchmarks && !loadingBenchmark) {
+    if (activeTab === 'market' && !benchmarks && !loadingBenchmark && !benchmarkError) {
       setLoadingBenchmark(true);
-      supabase.rpc('get_market_benchmarks').then(({ data }) => {
-        if (data) setBenchmarks(data as MarketBenchmarks);
+      supabase.rpc('get_market_benchmarks').then(({ data, error }) => {
+        if (error || !data) {
+          console.warn('[StatsPanel] get_market_benchmarks failed:', error?.message || 'no data');
+          setBenchmarkError(true);
+        } else {
+          setBenchmarks(data as MarketBenchmarks);
+        }
         setLoadingBenchmark(false);
       });
     }
-    if (activeTab === 'benchmark' && !percentile && !loadingPercentile) {
+    if (activeTab === 'benchmark' && !percentile && !loadingPercentile && !percentileError) {
       setLoadingPercentile(true);
-      supabase.rpc('get_user_percentile_stats', { p_user_id: userId }).then(({ data }) => {
-        if (data) setPercentile(data as PercentileStats);
+      supabase.rpc('get_user_percentile_stats', { p_user_id: userId }).then(({ data, error }) => {
+        if (error || !data) {
+          console.warn('[StatsPanel] get_user_percentile_stats failed:', error?.message || 'no data');
+          setPercentileError(true);
+        } else {
+          setPercentile(data as PercentileStats);
+        }
         setLoadingPercentile(false);
       });
     }
@@ -363,9 +376,15 @@ export function ApplicationsStatsPanel({ applications, userId }: Props) {
                 {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
               </div>
             ) : !percentile ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">
-                {isHe ? 'טוען נתוני השוואה...' : 'Loading benchmark data...'}
-              </p>
+              <div className="py-6 text-center text-muted-foreground">
+                <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">
+                  {isHe ? 'נתוני השוואה עדיין לא זמינים' : 'Benchmark data not available yet'}
+                </p>
+                <p className="text-xs mt-1 text-muted-foreground/60">
+                  {isHe ? 'הנתונים ייווצרו כשיצטברו מספיק משתמשים' : 'Data will be generated once enough users accumulate'}
+                </p>
+              </div>
             ) : percentile.insufficient_data ? (
               <div className="py-6 text-center text-muted-foreground">
                 <Trophy className="w-8 h-8 mx-auto mb-2 opacity-30" />
@@ -479,9 +498,15 @@ export function ApplicationsStatsPanel({ applications, userId }: Props) {
                 {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
               </div>
             ) : !benchmarks ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">
-                {isHe ? 'טוען נתוני שוק...' : 'Loading market data...'}
-              </p>
+              <div className="py-6 text-center text-muted-foreground">
+                <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">
+                  {isHe ? 'נתוני שוק עדיין לא זמינים' : 'Market data not available yet'}
+                </p>
+                <p className="text-xs mt-1 text-muted-foreground/60">
+                  {isHe ? 'הנתונים ייווצרו כשיצטברו מספיק משתמשים במערכת' : 'Data will be generated once enough users join the platform'}
+                </p>
+              </div>
             ) : (
               <div className="space-y-4">
 
