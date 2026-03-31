@@ -4,6 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Wand2, Briefcase, Minimize2, Maximize2, SpellCheck, Loader2, Target } from 'lucide-react';
+import { toast } from 'sonner';
 
 type Action = 'improve' | 'professional' | 'shorten' | 'expand' | 'fix_grammar' | 'ats_optimize';
 type FieldName = 'summary' | 'bullets' | 'description' | 'title' | 'generic';
@@ -101,7 +102,7 @@ export function CVInlineAI({
         onChange(newValue);
       }
     } catch {
-      // silent — user can retry
+      toast.error(isHe ? 'שגיאה בשיפור הטקסט — נסה שוב' : 'Failed to improve text — try again');
     } finally {
       setLoadingAction(null);
       setShowToolbar(false);
@@ -135,7 +136,7 @@ export function CVInlineAI({
       const { result } = await res.json();
       if (result) onChange(result);
     } catch {
-      // silent
+      toast.error(isHe ? 'שגיאה באופטימיזציית ATS — נסה שוב' : 'ATS optimization failed — try again');
     } finally {
       setLoadingAction(null);
     }
@@ -188,6 +189,14 @@ export function CVInlineAI({
         <Input
           {...(sharedProps as React.ComponentProps<typeof Input>)}
         />
+      )}
+
+      {/* AI discoverability hint */}
+      {isMultiline && value.length > 0 && !showToolbar && loadingAction === null && (
+        <p className="mt-0.5 text-[10px] text-muted-foreground/60 flex items-center gap-1">
+          <Wand2 className="w-2.5 h-2.5" />
+          {isHe ? 'סמן טקסט לשיפור עם AI' : 'Select text to improve with AI'}
+        </p>
       )}
 
       {/* ATS Optimize button — shown below multiline fields when showAtsButton=true */}

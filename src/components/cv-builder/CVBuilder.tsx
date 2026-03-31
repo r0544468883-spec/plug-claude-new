@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Save, CheckCircle, Loader2, Monitor, FileText, Upload as UploadIcon, Download, Sparkles, Wand2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { debounce } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { exportToPdf } from './utils/exportToPdf';
@@ -99,6 +100,17 @@ export const CVBuilder = () => {
       setShowMobileWarning(true);
     }
   }, [isMobile]);
+
+  // Warn user before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isSaving) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isSaving]);
 
   // Load CV data from profile and existing resume
   useEffect(() => {
@@ -351,11 +363,40 @@ export const CVBuilder = () => {
 
   if (isLoadingResume) {
     return (
-      <div className="h-[calc(100vh-4rem)] flex flex-col items-center justify-center gap-3">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="text-muted-foreground">
-          {language === 'he' ? 'טוען קורות חיים...' : 'Loading resume...'}
-        </p>
+      <div className="h-[calc(100vh-4rem)] flex flex-col">
+        {/* Skeleton header */}
+        <div className="flex items-center justify-between px-4 py-2 border-b bg-background">
+          <Skeleton className="h-6 w-40" />
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-9 w-28" />
+            <Skeleton className="h-9 w-28" />
+            <Skeleton className="h-9 w-24" />
+          </div>
+        </div>
+        {/* Skeleton body — editor + preview */}
+        <div className="flex-1 flex">
+          <div className="w-2/5 border-e p-4 space-y-4">
+            <Skeleton className="h-10 w-full rounded-lg" />
+            <div className="space-y-3">
+              <Skeleton className="h-8 w-3/4" />
+              <div className="grid grid-cols-2 gap-3">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+            <Skeleton className="h-10 w-full rounded-lg" />
+            <Skeleton className="h-10 w-full rounded-lg" />
+          </div>
+          <div className="flex-1 p-6 flex justify-center bg-muted/30">
+            <Skeleton className="w-[210mm] max-w-full h-[500px] rounded-lg" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -378,17 +419,17 @@ export const CVBuilder = () => {
               </div>
             </div>
             <DialogTitle className="text-center text-lg">
-              {language === 'he' ? '⚠️ לא מומלץ במובייל' : '⚠️ Not Recommended on Mobile'}
+              {language === 'he' ? '🖥️ רגע, לא ככה...' : '🖥️ Hold on, not like this...'}
             </DialogTitle>
             <DialogDescription className="text-center mt-2 leading-relaxed">
               {language === 'he'
-                ? 'בונה קורות החיים מיועד לשימוש על מחשב. חוויית העריכה המלאה אינה זמינה על מסך קטן.'
-                : 'The CV Builder is designed for desktop use. The full editing experience is not available on small screens.'}
+                ? 'בניית קורות חיים על מובייל זה כמו לנסות לצייר מונה ליזה על מפית — טכנית אפשרי, אבל התוצאה... 😅'
+                : 'Building a CV on mobile is like painting the Mona Lisa on a napkin — technically possible, but the result... 😅'}
             </DialogDescription>
-            <p className="text-center text-xs text-muted-foreground mt-1">
+            <p className="text-center text-sm text-muted-foreground mt-2">
               {language === 'he'
-                ? 'מומלץ להמשיך ממחשב נייד או טאבלט.'
-                : 'We recommend continuing from a laptop or tablet.'}
+                ? '💡 פתח את PLUG על מחשב נייד או טאבלט לחוויה הטובה ביותר'
+                : '💡 Open PLUG on a laptop or tablet for the best experience'}
             </p>
           </DialogHeader>
           <DialogFooter className="flex-col gap-2 sm:flex-col mt-2">

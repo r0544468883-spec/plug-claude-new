@@ -2,11 +2,13 @@ import { ReactNode, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { usePresenceTracker } from '@/hooks/usePresenceTracker';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { PlugFAB } from '@/components/chat/PlugFAB';
 import { PlugNudgePopup } from '@/components/nudge/PlugNudgePopup';
 import { PlugLogo } from '@/components/PlugLogo';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { GiveVouchDialog } from '@/components/vouch/GiveVouchDialog';
 import { MessageBadge } from '@/components/messaging/MessageBadge';
@@ -15,7 +17,7 @@ import { NavTooltip } from '@/components/ui/nav-tooltip';
 import { VisibleToHRBanner } from '@/components/sidebar/VisibleToHRBanner';
 // PlugFloatingHint removed - notifications now in NotificationBell
 import {
-  LayoutDashboard, Users, Briefcase, FileText, MessageSquare, Settings, LogOut, Menu, X, User, Search, ArrowLeft, ArrowRight, Heart, FileEdit, Route, Sparkles, Mic, Newspaper, Video, Globe, DollarSign, Building2, Target, Calendar, LayoutGrid, Gem, ClipboardList, BarChart3, UserSearch
+  LayoutDashboard, Users, Briefcase, FileText, MessageSquare, Settings, LogOut, Menu, X, User, Search, ArrowLeft, ArrowRight, Heart, FileEdit, Route, Sparkles, Mic, Newspaper, Video, Globe, DollarSign, Building2, Target, Calendar, LayoutGrid, Gem, ClipboardList, BarChart3, UserSearch, Monitor
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -45,7 +47,9 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
   const { t, direction, language } = useLanguage();
   const isRTL = language === 'he';
   usePresenceTracker();
+  const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showMobileCVWarning, setShowMobileCVWarning] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -56,6 +60,12 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
   const isSocialSection = SOCIAL_SECTIONS.includes(currentSection);
 
   const handleNavClick = (section: DashboardSection) => {
+    // Intercept CV Builder on mobile — show humorous warning
+    if (section === 'cv-builder' && isMobile) {
+      setShowMobileCVWarning(true);
+      setSidebarOpen(false);
+      return;
+    }
     if (section === 'credits') {
       navigate('/credits');
       setSidebarOpen(false);
@@ -373,6 +383,51 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
       {/* Global Plug FAB - accessible from every screen */}
       <PlugFAB contextPage="dashboard" />
       <PlugNudgePopup />
+
+      {/* Mobile CV Builder Warning */}
+      <Dialog open={showMobileCVWarning} onOpenChange={setShowMobileCVWarning}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <div className="flex justify-center mb-3">
+              <div className="p-4 rounded-full bg-amber-500/10">
+                <Monitor className="w-10 h-10 text-amber-500" />
+              </div>
+            </div>
+            <DialogTitle className="text-center text-lg">
+              {isRTL ? '🖥️ רגע, לא ככה...' : '🖥️ Hold on, not like this...'}
+            </DialogTitle>
+            <DialogDescription className="text-center mt-2 leading-relaxed">
+              {isRTL
+                ? 'בניית קורות חיים על מובייל זה כמו לנסות לצייר מונה ליזה על מפית — טכנית אפשרי, אבל התוצאה... 😅'
+                : 'Building a CV on mobile is like painting the Mona Lisa on a napkin — technically possible, but the result... 😅'}
+            </DialogDescription>
+            <p className="text-center text-sm text-muted-foreground mt-2">
+              {isRTL
+                ? '💡 פתח את PLUG על מחשב נייד או טאבלט לחוויה הטובה ביותר'
+                : '💡 Open PLUG on a laptop or tablet for the best experience'}
+            </p>
+          </DialogHeader>
+          <DialogFooter className="flex-col gap-2 sm:flex-col mt-2">
+            <Button
+              onClick={() => {
+                setShowMobileCVWarning(false);
+                onSectionChange('cv-builder');
+              }}
+              variant="outline"
+              className="w-full"
+            >
+              {isRTL ? 'סבבה, אני מעדיף לסכן את זה 🤷' : 'Fine, I\'ll risk it 🤷'}
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full text-muted-foreground"
+              onClick={() => setShowMobileCVWarning(false)}
+            >
+              {isRTL ? 'טוב, אפתח במחשב' : 'OK, I\'ll use a computer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -77,7 +77,7 @@ export const SkillsSelector = ({
       <div className="space-y-3">
         <Label className="text-sm font-medium">
           {isHe ? '💻 כישורים טכניים' : '💻 Technical Skills'}
-          <span className="text-muted-foreground text-xs mr-2">
+          <span className="text-muted-foreground text-xs me-2">
             ({technicalSkills.length} {isHe ? 'נבחרו' : 'selected'})
           </span>
         </Label>
@@ -157,7 +157,7 @@ export const SkillsSelector = ({
       <div className="space-y-3">
         <Label className="text-sm font-medium">
           {isHe ? '🤝 כישורים רכים' : '🤝 Soft Skills'}
-          <span className="text-muted-foreground text-xs mr-2">
+          <span className="text-muted-foreground text-xs me-2">
             ({softSkills.length} {isHe ? 'נבחרו' : 'selected'})
           </span>
         </Label>

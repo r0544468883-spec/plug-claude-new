@@ -12,6 +12,7 @@ import { SkillsSelector } from './SkillsSelector';
 import { LanguageSelector } from './LanguageSelector';
 import { CVInlineAI } from './CVInlineAI';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import {
   DndContext,
   closestCenter,
@@ -218,7 +219,18 @@ export const CVEditorPanel = ({ data, onChange }: CVEditorPanelProps) => {
   };
 
   const removeExperience = (id: string) => {
-    onChange({ ...data, experience: data.experience.filter((e) => e.id !== id) });
+    const removed = data.experience.find((e) => e.id === id);
+    const newData = { ...data, experience: data.experience.filter((e) => e.id !== id) };
+    onChange(newData);
+    if (removed) {
+      toast(isHe ? 'ניסיון תעסוקתי נמחק' : 'Experience removed', {
+        action: {
+          label: isHe ? 'ביטול' : 'Undo',
+          onClick: () => onChange({ ...newData, experience: [...newData.experience, removed] }),
+        },
+        duration: 5000,
+      });
+    }
   };
 
   const handleExpDragEnd = (event: DragEndEvent) => {
@@ -240,7 +252,18 @@ export const CVEditorPanel = ({ data, onChange }: CVEditorPanelProps) => {
   };
 
   const removeEducation = (id: string) => {
-    onChange({ ...data, education: data.education.filter((e) => e.id !== id) });
+    const removed = data.education.find((e) => e.id === id);
+    const newData = { ...data, education: data.education.filter((e) => e.id !== id) };
+    onChange(newData);
+    if (removed) {
+      toast(isHe ? 'השכלה נמחקה' : 'Education removed', {
+        action: {
+          label: isHe ? 'ביטול' : 'Undo',
+          onClick: () => onChange({ ...newData, education: [...newData.education, removed] }),
+        },
+        duration: 5000,
+      });
+    }
   };
 
   const handleEduDragEnd = (event: DragEndEvent) => {
@@ -267,7 +290,18 @@ export const CVEditorPanel = ({ data, onChange }: CVEditorPanelProps) => {
     onChange({ ...data, projects: data.projects.map((p) => p.id === id ? { ...p, [field]: value } : p) });
   };
   const removeProject = (id: string) => {
-    onChange({ ...data, projects: data.projects.filter((p) => p.id !== id) });
+    const removed = data.projects.find((p) => p.id === id);
+    const newData = { ...data, projects: data.projects.filter((p) => p.id !== id) };
+    onChange(newData);
+    if (removed) {
+      toast(isHe ? 'פרויקט נמחק' : 'Project removed', {
+        action: {
+          label: isHe ? 'ביטול' : 'Undo',
+          onClick: () => onChange({ ...newData, projects: [...newData.projects, removed] }),
+        },
+        duration: 5000,
+      });
+    }
   };
 
   const cvDir = (data.settings.cvLanguage ?? 'en') === 'he' ? 'rtl' : 'ltr';
@@ -313,8 +347,15 @@ export const CVEditorPanel = ({ data, onChange }: CVEditorPanelProps) => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>{isHe ? 'שם מלא' : 'Full Name'}</Label>
-                  <Input value={data.personalInfo.fullName} onChange={(e) => updatePersonalInfo('fullName', e.target.value)} />
+                  <Label>{isHe ? 'שם מלא' : 'Full Name'} <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={data.personalInfo.fullName}
+                    onChange={(e) => updatePersonalInfo('fullName', e.target.value)}
+                    className={!data.personalInfo.fullName.trim() ? 'border-destructive/50' : ''}
+                  />
+                  {!data.personalInfo.fullName.trim() && (
+                    <p className="text-[10px] text-destructive mt-0.5">{isHe ? 'שדה חובה' : 'Required'}</p>
+                  )}
                 </div>
                 <div>
                   <Label>{isHe ? 'תפקיד' : 'Title'}</Label>
@@ -328,8 +369,16 @@ export const CVEditorPanel = ({ data, onChange }: CVEditorPanelProps) => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>{isHe ? 'אימייל' : 'Email'}</Label>
-                  <Input type="email" value={data.personalInfo.email} onChange={(e) => updatePersonalInfo('email', e.target.value)} />
+                  <Label>{isHe ? 'אימייל' : 'Email'} <span className="text-destructive">*</span></Label>
+                  <Input
+                    type="email"
+                    value={data.personalInfo.email}
+                    onChange={(e) => updatePersonalInfo('email', e.target.value)}
+                    className={!data.personalInfo.email.trim() ? 'border-destructive/50' : ''}
+                  />
+                  {!data.personalInfo.email.trim() && (
+                    <p className="text-[10px] text-destructive mt-0.5">{isHe ? 'שדה חובה' : 'Required'}</p>
+                  )}
                 </div>
                 <div>
                   <Label>{isHe ? 'טלפון' : 'Phone'}</Label>
@@ -377,7 +426,7 @@ export const CVEditorPanel = ({ data, onChange }: CVEditorPanelProps) => {
                 </SortableContext>
               </DndContext>
               <Button variant="outline" className="w-full" onClick={addExperience}>
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="w-4 h-4 me-2" />
                 {isHe ? 'הוסף ניסיון' : 'Add Experience'}
               </Button>
             </AccordionContent>
@@ -405,7 +454,7 @@ export const CVEditorPanel = ({ data, onChange }: CVEditorPanelProps) => {
                 </SortableContext>
               </DndContext>
               <Button variant="outline" className="w-full" onClick={addEducation}>
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="w-4 h-4 me-2" />
                 {isHe ? 'הוסף השכלה' : 'Add Education'}
               </Button>
             </AccordionContent>
@@ -470,7 +519,7 @@ export const CVEditorPanel = ({ data, onChange }: CVEditorPanelProps) => {
                 </div>
               ))}
               <Button variant="outline" className="w-full" onClick={addProject}>
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="w-4 h-4 me-2" />
                 {isHe ? 'הוסף פרויקט' : 'Add Project'}
               </Button>
             </AccordionContent>

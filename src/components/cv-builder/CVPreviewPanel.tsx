@@ -81,7 +81,7 @@ export const CVPreviewPanel = ({ data, onChange, onOpenAIDesign }: CVPreviewPane
 
   return (
     <div className="h-full flex flex-col bg-muted/30">
-      {/* Controls - 2 rows */}
+      {/* Controls - 2 compact rows */}
       <div className="p-3 border-b bg-background space-y-2">
         {/* Row 1: Template, Preset, Accent Color, ATS Score */}
         <div className="flex flex-wrap gap-3 items-center">
@@ -151,7 +151,7 @@ export const CVPreviewPanel = ({ data, onChange, onOpenAIDesign }: CVPreviewPane
           </Popover>
 
           {/* CV Language Toggle */}
-          <div className="flex items-center rounded-md border overflow-hidden h-8 ml-auto">
+          <div className="flex items-center rounded-md border overflow-hidden h-8 ms-auto">
             <button
               onClick={() => updateSettings('cvLanguage', 'en')}
               className={`px-2.5 h-full text-xs font-medium transition-colors ${
@@ -235,13 +235,13 @@ export const CVPreviewPanel = ({ data, onChange, onOpenAIDesign }: CVPreviewPane
           </Popover>
         </div>
 
-        {/* Row 2: Font, Size, Spacing, Orientation, Export */}
-        <div className="flex flex-wrap gap-3 items-center">
-          {/* Font Family — names rendered in their own typeface */}
-          <div className="flex items-center gap-2">
-            <Type className="w-4 h-4 text-muted-foreground" />
+        {/* Row 2: Font, Size, Spacing, Orientation, Backgrounds, Headings, Export */}
+        <div className="flex flex-wrap gap-2 items-center">
+          {/* Font Family */}
+          <div className="flex items-center gap-1.5">
+            <Type className="w-3.5 h-3.5 text-muted-foreground" />
             <Select value={data.settings.fontFamily} onValueChange={(v) => updateSettings('fontFamily', v as FontFamily)}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-32 h-8 text-xs">
                 <span style={{ fontFamily: fontFamilies[data.settings.fontFamily]?.stack }}>
                   {isHe ? fontFamilies[data.settings.fontFamily]?.nameHe : fontFamilies[data.settings.fontFamily]?.name}
                 </span>
@@ -271,7 +271,7 @@ export const CVPreviewPanel = ({ data, onChange, onOpenAIDesign }: CVPreviewPane
 
           {/* Font Size */}
           <Select value={data.settings.fontSize} onValueChange={(v) => updateSettings('fontSize', v as 'small' | 'medium' | 'large')}>
-            <SelectTrigger className="w-24">
+            <SelectTrigger className="w-20 h-8 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -282,49 +282,36 @@ export const CVPreviewPanel = ({ data, onChange, onOpenAIDesign }: CVPreviewPane
           </Select>
 
           {/* Spacing */}
-          <div className="flex items-center gap-2">
-            <AlignJustify className="w-4 h-4 text-muted-foreground" />
-            <Select value={data.settings.spacing} onValueChange={(v) => updateSettings('spacing', v as Spacing)}>
-              <SelectTrigger className="w-28">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="compact">{isHe ? 'צפוף' : 'Compact'}</SelectItem>
-                <SelectItem value="normal">{isHe ? 'רגיל' : 'Normal'}</SelectItem>
-                <SelectItem value="spacious">{isHe ? 'מרווח' : 'Spacious'}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={data.settings.spacing} onValueChange={(v) => updateSettings('spacing', v as Spacing)}>
+            <SelectTrigger className="w-24 h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="compact">{isHe ? 'צפוף' : 'Compact'}</SelectItem>
+              <SelectItem value="normal">{isHe ? 'רגיל' : 'Normal'}</SelectItem>
+              <SelectItem value="spacious">{isHe ? 'מרווח' : 'Spacious'}</SelectItem>
+            </SelectContent>
+          </Select>
 
           {/* Orientation */}
-          <div className="flex items-center gap-2">
-            <Maximize2 className="w-4 h-4 text-muted-foreground" />
-            <Select value={data.settings.orientation} onValueChange={(v) => updateSettings('orientation', v as Orientation)}>
-              <SelectTrigger className="w-28">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="portrait">{isHe ? 'לאורך' : 'Portrait'}</SelectItem>
-                <SelectItem value="landscape">{isHe ? 'לרוחב' : 'Landscape'}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={data.settings.orientation} onValueChange={(v) => updateSettings('orientation', v as Orientation)}>
+            <SelectTrigger className="w-24 h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="portrait">{isHe ? 'לאורך' : 'Portrait'}</SelectItem>
+              <SelectItem value="landscape">{isHe ? 'לרוחב' : 'Landscape'}</SelectItem>
+            </SelectContent>
+          </Select>
 
-          {/* Export Button */}
-          <Button onClick={handleExportPDF} disabled={isExporting} className="ml-auto">
-            <Download className="w-4 h-4 mr-2" />
-            {isHe ? 'הורד PDF' : 'Download PDF'}
-          </Button>
-        </div>
+          {/* Separator */}
+          <div className="w-px h-5 bg-border" />
 
-        {/* Row 3: Background Patterns + Heading Color */}
-        <div className="flex flex-wrap gap-3 items-center">
-          {/* Background patterns — Popover with visual previews */}
+          {/* Background patterns — Popover */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2 h-8 px-3">
+              <Button variant="outline" size="sm" className="gap-1.5 h-8 px-2.5" title={isHe ? 'רקעים' : 'Backgrounds'}>
                 <Layers className="w-3.5 h-3.5 text-muted-foreground" />
-                <span className="text-xs">{isHe ? 'רקעים' : 'Backgrounds'}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-72 p-3" align="start">
@@ -350,7 +337,7 @@ export const CVPreviewPanel = ({ data, onChange, onOpenAIDesign }: CVPreviewPane
                       }}
                     >
                       {isSelected && (
-                        <div className="absolute top-1 right-1 w-3.5 h-3.5 bg-primary rounded-full flex items-center justify-center">
+                        <div className="absolute top-1 end-1 w-3.5 h-3.5 bg-primary rounded-full flex items-center justify-center">
                           <Check className="w-2 h-2 text-white" />
                         </div>
                       )}
@@ -365,18 +352,16 @@ export const CVPreviewPanel = ({ data, onChange, onOpenAIDesign }: CVPreviewPane
           </Popover>
 
           {/* Heading color picker */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">{isHe ? 'כותרות:' : 'Headings:'}</span>
-            <div className="relative">
+          <div className="flex items-center gap-1.5">
+            <div className="relative" title={isHe ? 'צבע כותרות' : 'Heading color'}>
               <input
                 type="color"
                 value={data.settings.headingColor ?? data.settings.accentColor}
                 onChange={(e) => updateSettings('headingColor', e.target.value)}
-                className="w-7 h-7 rounded-full border border-border cursor-pointer p-0 opacity-0 absolute inset-0"
-                title={isHe ? 'צבע כותרות' : 'Heading color'}
+                className="w-6 h-6 rounded-full border border-border cursor-pointer p-0 opacity-0 absolute inset-0"
               />
               <div
-                className="w-7 h-7 rounded-full border-2 border-border shadow-sm pointer-events-none"
+                className="w-6 h-6 rounded-full border-2 border-border shadow-sm pointer-events-none"
                 style={{ backgroundColor: data.settings.headingColor ?? data.settings.accentColor }}
               />
             </div>
@@ -384,12 +369,17 @@ export const CVPreviewPanel = ({ data, onChange, onOpenAIDesign }: CVPreviewPane
               <button
                 onClick={() => updateSettings('headingColor', undefined)}
                 className="text-[10px] text-muted-foreground hover:text-foreground underline"
-                title={isHe ? 'אפס' : 'Reset'}
               >
                 {isHe ? 'אפס' : 'Reset'}
               </button>
             )}
           </div>
+
+          {/* Export Button */}
+          <Button onClick={handleExportPDF} disabled={isExporting} size="sm" className="ms-auto h-8 gap-1.5">
+            <Download className="w-3.5 h-3.5" />
+            {isHe ? 'הורד PDF' : 'PDF'}
+          </Button>
         </div>
       </div>
 

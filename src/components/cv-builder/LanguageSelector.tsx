@@ -61,7 +61,7 @@ export const LanguageSelector = ({ languages, onChange }: LanguageSelectorProps)
     <div className="space-y-4">
       <Label className="text-sm font-medium">
         {isHe ? '🌍 שפות' : '🌍 Languages'}
-        <span className="text-muted-foreground text-xs mr-2">
+        <span className="text-muted-foreground text-xs me-2">
           ({languages.length} {isHe ? 'נבחרו' : 'selected'})
         </span>
       </Label>
