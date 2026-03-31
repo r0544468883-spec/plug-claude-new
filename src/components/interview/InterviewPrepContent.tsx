@@ -62,6 +62,24 @@ interface PersonalizedTip {
   description: string;
 }
 
+type SeniorityLevel = 'junior' | 'mid' | 'senior' | 'executive';
+
+interface FeedbackDimensions {
+  substance: number;
+  structure: number;
+  relevance: number;
+  credibility: number;
+  differentiation: number;
+}
+
+interface TextFeedback {
+  score: number;
+  dimensions?: FeedbackDimensions;
+  feedback: string;
+  improvements: string[];
+  priorityMove?: string;
+}
+
 interface HistoryEntry {
   id: string;
   jobTitle: string;
@@ -107,16 +125,22 @@ export function InterviewPrepContent() {
   // Question language — independent of UI language
   const [questionLang, setQuestionLang] = useState<'he' | 'en'>(isRTL ? 'he' : 'en');
 
-  // Seniority level
-  type SeniorityLevel = 'junior' | 'mid' | 'senior' | 'executive';
-  const inferredSeniority = (): SeniorityLevel => {
+  // Seniority level — infer from profile
+  const inferSeniority = (): SeniorityLevel => {
     const yrs = userProfile?.experience_years ?? 0;
     if (yrs <= 3) return 'junior';
     if (yrs <= 8) return 'mid';
     if (yrs <= 15) return 'senior';
     return 'executive';
   };
-  const [seniority, setSeniority] = useState<SeniorityLevel>(inferredSeniority());
+  const [seniority, setSeniority] = useState<SeniorityLevel>('mid');
+
+  // Update seniority when profile loads
+  useEffect(() => {
+    if (userProfile?.experience_years != null) {
+      setSeniority(inferSeniority());
+    }
+  }, [userProfile?.experience_years]);
 
   // URL extraction state
   const [isExtractingUrl, setIsExtractingUrl] = useState(false);
@@ -125,20 +149,6 @@ export function InterviewPrepContent() {
 
   // Text session answers + AI feedback
   const [textAnswers, setTextAnswers] = useState<Record<number, string>>({});
-  interface FeedbackDimensions {
-    substance: number;
-    structure: number;
-    relevance: number;
-    credibility: number;
-    differentiation: number;
-  }
-  interface TextFeedback {
-    score: number;
-    dimensions?: FeedbackDimensions;
-    feedback: string;
-    improvements: string[];
-    priorityMove?: string;
-  }
   const [textFeedbacks, setTextFeedbacks] = useState<Record<number, TextFeedback>>({});
   const [isGettingFeedback, setIsGettingFeedback] = useState(false);
 
