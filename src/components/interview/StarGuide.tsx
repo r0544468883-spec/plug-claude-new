@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import {
   Target,
   Users,
@@ -12,6 +14,9 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
+  Copy,
+  Check,
+  Play,
 } from 'lucide-react';
 
 interface StoryCategory {
@@ -165,10 +170,15 @@ const storyCategories: StoryCategory[] = [
   },
 ];
 
-export function StarGuide() {
+interface StarGuideProps {
+  onPracticeCategory?: (categoryTitle: string) => void;
+}
+
+export function StarGuide({ onPracticeCategory }: StarGuideProps) {
   const { language } = useLanguage();
   const isRTL = language === 'he';
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const toggleCategory = (id: string) => {
     setExpandedCategory(expandedCategory === id ? null : id);
@@ -283,10 +293,28 @@ export function StarGuide() {
 
                       {/* STAR Template */}
                       <div className="rounded-lg bg-muted/30 border border-border p-4 space-y-2">
-                        <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                          <Lightbulb className="w-3.5 h-3.5 text-primary" />
-                          {isRTL ? 'תבנית תשובה:' : 'Answer template:'}
-                        </p>
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                            <Lightbulb className="w-3.5 h-3.5 text-primary" />
+                            {isRTL ? 'תבנית תשובה:' : 'Answer template:'}
+                          </p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs gap-1.5"
+                            onClick={() => {
+                              const template = isRTL ? cat.templateHe : cat.templateEn;
+                              const text = `S: ${template.s}\nT: ${template.t}\nA: ${template.a}\nR: ${template.r}`;
+                              navigator.clipboard.writeText(text);
+                              setCopiedId(cat.id);
+                              toast.success(isRTL ? 'תבנית הועתקה' : 'Template copied');
+                              setTimeout(() => setCopiedId(null), 2000);
+                            }}
+                          >
+                            {copiedId === cat.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                            {copiedId === cat.id ? (isRTL ? 'הועתק' : 'Copied') : (isRTL ? 'העתק' : 'Copy')}
+                          </Button>
+                        </div>
                         {(['s', 't', 'a', 'r'] as const).map((key) => {
                           const template = isRTL ? cat.templateHe : cat.templateEn;
                           const labels: Record<string, string> = isRTL
@@ -300,6 +328,17 @@ export function StarGuide() {
                           );
                         })}
                       </div>
+
+                      {/* Practice this category button */}
+                      {onPracticeCategory && (
+                        <Button
+                          onClick={() => onPracticeCategory(isRTL ? cat.titleHe : cat.titleEn)}
+                          className="w-full gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground"
+                        >
+                          <Play className="w-4 h-4" />
+                          {isRTL ? `תתאמן על ${cat.titleHe}` : `Practice ${cat.titleEn}`}
+                        </Button>
+                      )}
                     </div>
                   )}
                 </CardContent>

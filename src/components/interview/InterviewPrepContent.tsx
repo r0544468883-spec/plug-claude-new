@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { Progress } from '@/components/ui/progress';
 import {
   Mic,
@@ -43,6 +44,8 @@ import {
   Languages,
   Star,
   Trophy,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { toast } from 'sonner';
@@ -136,6 +139,7 @@ export function InterviewPrepContent() {
   const [textAnswers, setTextAnswers] = useState<Record<number, string>>({});
   const [textFeedbacks, setTextFeedbacks] = useState<Record<number, TextFeedback>>({});
   const [isGettingFeedback, setIsGettingFeedback] = useState(false);
+  const [showStarReminder, setShowStarReminder] = useState(false);
 
   // Tips state
   const [personalizedTips, setPersonalizedTips] = useState<PersonalizedTip[]>([]);
@@ -297,9 +301,19 @@ export function InterviewPrepContent() {
   };
 
   const clearHistory = () => {
+    const backup = [...history];
     setHistory([]);
     localStorage.removeItem(HISTORY_KEY);
-    toast.success(isRTL ? 'ההיסטוריה נמחקה' : 'History cleared');
+    toast(isRTL ? 'ההיסטוריה נמחקה' : 'History cleared', {
+      action: {
+        label: isRTL ? 'ביטול' : 'Undo',
+        onClick: () => {
+          setHistory(backup);
+          localStorage.setItem(HISTORY_KEY, JSON.stringify(backup));
+        },
+      },
+      duration: 5000,
+    });
   };
 
   const restoreFromHistory = (entry: HistoryEntry) => {
@@ -835,6 +849,23 @@ export function InterviewPrepContent() {
                 </span>
               </div>
               <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} />
+              {/* Question navigator dots */}
+              <div className="flex items-center justify-center gap-1.5 pt-1">
+                {questions.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentQuestionIndex(i)}
+                    className={`w-2.5 h-2.5 rounded-full transition-all ${
+                      i === currentQuestionIndex
+                        ? 'bg-primary scale-125'
+                        : textAnswers[i]?.trim()
+                          ? 'bg-green-500/60 hover:bg-green-500'
+                          : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                    }`}
+                    title={`${isRTL ? 'שאלה' : 'Question'} ${i + 1}`}
+                  />
+                ))}
+              </div>
             </div>
 
             {/* Current Question */}
@@ -875,6 +906,32 @@ export function InterviewPrepContent() {
                     {isRTL ? 'קבל משוב AI' : 'AI Feedback'}
                   </Button>
                 </div>
+                {/* STAR Reminder */}
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+                  onClick={() => setShowStarReminder(prev => !prev)}
+                >
+                  <Target className="w-3.5 h-3.5 text-primary" />
+                  <span className="font-medium">{isRTL ? 'תזכורת STAR' : 'STAR Reminder'}</span>
+                  {showStarReminder ? <ChevronUp className="w-3 h-3 ms-auto" /> : <ChevronDown className="w-3 h-3 ms-auto" />}
+                </button>
+                {showStarReminder && (
+                  <div className="grid grid-cols-4 gap-2 text-xs">
+                    {([
+                      { letter: 'S', he: 'מצב — 1-2 משפטים', en: 'Situation — 1-2 sentences', cls: 'text-blue-600 bg-blue-500/10 border-blue-500/20' },
+                      { letter: 'T', he: 'משימה — משפט אחד', en: 'Task — 1 sentence', cls: 'text-amber-600 bg-amber-500/10 border-amber-500/20' },
+                      { letter: 'A', he: 'פעולה — 2-3 משפטים', en: 'Action — 2-3 sentences', cls: 'text-green-600 bg-green-500/10 border-green-500/20' },
+                      { letter: 'R', he: 'תוצאה + מספרים', en: 'Result + metrics', cls: 'text-purple-600 bg-purple-500/10 border-purple-500/20' },
+                    ] as const).map((s) => (
+                      <div key={s.letter} className={`rounded-lg border p-2 text-center ${s.cls}`}>
+                        <div className="font-black text-sm">{s.letter}</div>
+                        <div className="opacity-75 leading-tight">{isRTL ? s.he : s.en}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <Textarea
                   value={textAnswers[currentQuestionIndex] ?? ''}
                   onChange={(e) => setTextAnswers(prev => ({ ...prev, [currentQuestionIndex]: e.target.value }))}
@@ -1089,35 +1146,47 @@ export function InterviewPrepContent() {
         )}
       </Card>
 
-      {/* Static Tips */}
-      <div>
-        <h3 className="text-sm font-medium text-muted-foreground mb-3">
-          {isRTL ? 'טיפים כלליים' : 'General Tips'}
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {staticTips.map((tip, index) => (
-            <Card key={index} className="bg-card border-border">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <tip.icon className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-1">{isRTL ? tip.titleHe : tip.titleEn}</h3>
-                    <p className="text-sm text-muted-foreground">{isRTL ? tip.descHe : tip.descEn}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+      {/* Collapsible Sections */}
+      <Accordion type="multiple" defaultValue={['general-tips']}>
+        {/* Static Tips */}
+        <AccordionItem value="general-tips" className="border rounded-lg px-1 mb-3">
+          <AccordionTrigger className="px-4 hover:no-underline">
+            <span className="flex items-center gap-2 text-sm font-semibold">
+              <Lightbulb className="w-4 h-4 text-primary" />
+              {isRTL ? 'טיפים כלליים' : 'General Tips'}
+              <Badge variant="secondary" className="text-xs">{staticTips.length}</Badge>
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="px-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {staticTips.map((tip, index) => (
+                <Card key={index} className="bg-card border-border">
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <tip.icon className="w-6 h-6 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold mb-1">{isRTL ? tip.titleHe : tip.titleEn}</h3>
+                        <p className="text-sm text-muted-foreground">{isRTL ? tip.descHe : tip.descEn}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
 
-      {/* Questions to Ask the Interviewer */}
-      <div>
-        <h3 className="text-sm font-medium text-muted-foreground mb-3">
-          {isRTL ? 'שאלות לשאול את המראיין' : 'Questions to Ask the Interviewer'}
-        </h3>
+        {/* Questions to Ask the Interviewer */}
+        <AccordionItem value="questions-to-ask" className="border rounded-lg px-1 mb-3">
+          <AccordionTrigger className="px-4 hover:no-underline">
+            <span className="flex items-center gap-2 text-sm font-semibold">
+              <Users className="w-4 h-4 text-primary" />
+              {isRTL ? 'שאלות לשאול את המראיין' : 'Questions to Ask the Interviewer'}
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="px-4">
         <div className="space-y-4">
           {([
             {
@@ -1182,13 +1251,18 @@ export function InterviewPrepContent() {
             </Card>
           ))}
         </div>
-      </div>
+          </AccordionContent>
+        </AccordionItem>
 
-      {/* Tough Questions */}
-      <div>
-        <h3 className="text-sm font-medium text-muted-foreground mb-3">
-          {isRTL ? 'איך לענות על שאלות קשות' : 'How to Handle Tough Questions'}
-        </h3>
+        {/* Tough Questions */}
+        <AccordionItem value="tough-questions" className="border rounded-lg px-1 mb-3">
+          <AccordionTrigger className="px-4 hover:no-underline">
+            <span className="flex items-center gap-2 text-sm font-semibold">
+              <Brain className="w-4 h-4 text-primary" />
+              {isRTL ? 'איך לענות על שאלות קשות' : 'How to Handle Tough Questions'}
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="px-4">
         <div className="space-y-4">
           {([
             {
@@ -1249,7 +1323,9 @@ export function InterviewPrepContent() {
             </Card>
           ))}
         </div>
-      </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 
@@ -1392,7 +1468,10 @@ export function InterviewPrepContent() {
         </TabsContent>
 
         <TabsContent value="star-guide" className="mt-6">
-          <StarGuide />
+          <StarGuide onPracticeCategory={(category) => {
+            setActiveTab('practice');
+            toast.info(isRTL ? `בחרת לתרגל: ${category}` : `Selected category: ${category}`);
+          }} />
         </TabsContent>
 
         <TabsContent value="tips" className="mt-6">
