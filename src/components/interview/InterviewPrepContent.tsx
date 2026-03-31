@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -424,23 +424,26 @@ export function InterviewPrepContent() {
       const { data, error } = await supabase.functions.invoke('generate-interview-tips', {
         body: {
           userContext: {
-            bio: userProfile?.bio || userProfile?.about_me || '',
+            bio: userProfile?.bio || (userProfile as any)?.about_me || '',
             summary: cvData?.personalInfo?.summary || '',
             experience: cvData?.experience?.slice(0, 3) || [],
             skills: cvData?.skills || [],
-            experienceYears: userProfile?.experience_years || 0,
+            experienceYears: (userProfile as any)?.experience_years || 0,
           },
           recentJobs: (myApplications ?? []).slice(0, 5).map((a: any) => ({
             title: a.jobs?.title || '',
             company: a.jobs?.company?.name || '',
           })),
-          jobTitle,
-          companyName,
+          jobTitle: jobTitle || '',
+          companyName: companyName || '',
           language,
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Edge function failed');
+      }
 
       const tips: PersonalizedTip[] = data?.tips ?? [];
       if (tips.length === 0) throw new Error('No tips returned');
@@ -1042,7 +1045,7 @@ export function InterviewPrepContent() {
 
   // ─── Tips Tab ─────────────────────────────────────────────────────────────
 
-  const staticTips = [
+  const allStaticTips = [
     {
       icon: Target,
       titleHe: 'שיטת STAR',
@@ -1071,7 +1074,55 @@ export function InterviewPrepContent() {
       descHe: 'הכן 3–5 שאלות שמראות עניין עמוק בתפקיד, בצוות ובאתגרים של החברה.',
       descEn: 'Prepare 3–5 questions that show genuine interest in the role, team, and company challenges.',
     },
+    {
+      icon: Mic,
+      titleHe: 'תרגל בקול',
+      titleEn: 'Practice Out Loud',
+      descHe: 'אמור את התשובות בקול רם, לא רק בראש. זה חושף ניסוחים מסורבלים ובונה ביטחון.',
+      descEn: 'Say your answers out loud, not just in your head. It reveals awkward phrasing and builds confidence.',
+    },
+    {
+      icon: Trophy,
+      titleHe: 'הדגש הישגים מספריים',
+      titleEn: 'Quantify Achievements',
+      descHe: 'במקום "שיפרתי ביצועים", אמור "הפחתתי זמן עיבוד ב-30%". מספרים עושים רושם.',
+      descEn: 'Instead of "improved performance", say "reduced processing time by 30%". Numbers make an impression.',
+    },
+    {
+      icon: Briefcase,
+      titleHe: 'הכן "מעלית פיץ\'"',
+      titleEn: 'Prepare Your Elevator Pitch',
+      descHe: 'הכן סיכום של 30–60 שניות על עצמך שמדגיש ערך, ניסיון רלוונטי ותשוקה לתפקיד.',
+      descEn: 'Prepare a 30–60 second summary of yourself highlighting value, relevant experience, and passion for the role.',
+    },
+    {
+      icon: Star,
+      titleHe: 'סיים בחוזק',
+      titleEn: 'Close Strong',
+      descHe: 'חזור על הסיבות למה אתה המועמד הנכון, בקש בבירור את הצעד הבא, ושלח מייל תודה.',
+      descEn: 'Recap why you\'re the right fit, clearly ask about next steps, and send a thank-you email.',
+    },
+    {
+      icon: BookOpen,
+      titleHe: 'הכן סיפורי הצלחה',
+      titleEn: 'Prepare Success Stories',
+      descHe: 'הכן 5–6 סיפורים מוכנים (STAR) שמכסים: הנהגה, פתרון בעיות, שיתוף פעולה, כישלון ולמידה.',
+      descEn: 'Have 5–6 ready stories (STAR format) covering: leadership, problem-solving, collaboration, failure & learning.',
+    },
+    {
+      icon: Zap,
+      titleHe: 'הגע 10 דקות מוקדם',
+      titleEn: 'Arrive 10 Minutes Early',
+      descHe: 'הגעה מוקדמת נותנת לך זמן להירגע, לסדר מחשבות ולהתרשם מהסביבה.',
+      descEn: 'Arriving early gives you time to settle, organize your thoughts, and observe the environment.',
+    },
   ];
+
+  // Shuffle tips on each mount/refresh — show 4 random tips
+  const staticTips = useMemo(() => {
+    const shuffled = [...allStaticTips].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 4);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const renderTipsTab = () => (
     <div className="space-y-6">
@@ -1468,10 +1519,7 @@ export function InterviewPrepContent() {
         </TabsContent>
 
         <TabsContent value="star-guide" className="mt-6">
-          <StarGuide onPracticeCategory={(category) => {
-            setActiveTab('practice');
-            toast.info(isRTL ? `בחרת לתרגל: ${category}` : `Selected category: ${category}`);
-          }} />
+          <StarGuide />
         </TabsContent>
 
         <TabsContent value="tips" className="mt-6">

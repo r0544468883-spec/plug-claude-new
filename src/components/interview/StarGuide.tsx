@@ -3,6 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import {
   Target,
@@ -17,6 +18,8 @@ import {
   Copy,
   Check,
   Play,
+  X,
+  Save,
 } from 'lucide-react';
 
 interface StoryCategory {
@@ -170,18 +173,192 @@ const storyCategories: StoryCategory[] = [
   },
 ];
 
-interface StarGuideProps {
-  onPracticeCategory?: (categoryTitle: string) => void;
+const STAR_STORAGE_KEY = 'plug-star-practice';
+
+interface StarAnswers {
+  s: string;
+  t: string;
+  a: string;
+  r: string;
 }
 
-export function StarGuide({ onPracticeCategory }: StarGuideProps) {
+type SavedStories = Record<string, Record<number, StarAnswers>>;
+
+function loadSavedStories(): SavedStories {
+  try {
+    return JSON.parse(localStorage.getItem(STAR_STORAGE_KEY) || '{}');
+  } catch { return {}; }
+}
+
+function saveSavedStories(stories: SavedStories) {
+  localStorage.setItem(STAR_STORAGE_KEY, JSON.stringify(stories));
+}
+
+export function StarGuide() {
   const { language } = useLanguage();
   const isRTL = language === 'he';
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Inline practice state
+  const [practicingCategory, setPracticingCategory] = useState<string | null>(null);
+  const [practiceQuestionIndex, setPracticeQuestionIndex] = useState(0);
+  const [starAnswers, setStarAnswers] = useState<StarAnswers>({ s: '', t: '', a: '', r: '' });
+  const [savedStories] = useState<SavedStories>(() => loadSavedStories());
+
   const toggleCategory = (id: string) => {
     setExpandedCategory(expandedCategory === id ? null : id);
+  };
+
+  const startPractice = (categoryId: string, questionIndex: number = 0) => {
+    setPracticingCategory(categoryId);
+    setPracticeQuestionIndex(questionIndex);
+    // Load saved answer if exists
+    const saved = loadSavedStories();
+    const existing = saved[categoryId]?.[questionIndex];
+    setStarAnswers(existing || { s: '', t: '', a: '', r: '' });
+  };
+
+  const closePractice = () => {
+    setPracticingCategory(null);
+    setPracticeQuestionIndex(0);
+    setStarAnswers({ s: '', t: '', a: '', r: '' });
+  };
+
+  const handleSaveStory = () => {
+    if (!practicingCategory) return;
+    const hasContent = starAnswers.s.trim() || starAnswers.t.trim() || starAnswers.a.trim() || starAnswers.r.trim();
+    if (!hasContent) {
+      toast.error(isRTL ? 'כתוב לפחות חלק אחד מהתשובה' : 'Write at least one part of the answer');
+      return;
+    }
+    const stories = loadSavedStories();
+    if (!stories[practicingCategory]) stories[practicingCategory] = {};
+    stories[practicingCategory][practiceQuestionIndex] = { ...starAnswers };
+    saveSavedStories(stories);
+    toast.success(isRTL ? 'הסיפור נשמר!' : 'Story saved!');
+  };
+
+  const handleCopyFull = () => {
+    const labels = isRTL
+      ? { s: 'מצב:', t: 'משימה:', a: 'פעולה:', r: 'תוצאה:' }
+      : { s: 'Situation:', t: 'Task:', a: 'Action:', r: 'Result:' };
+    const text = `S — ${labels.s}\n${starAnswers.s}\n\nT — ${labels.t}\n${starAnswers.t}\n\nA — ${labels.a}\n${starAnswers.a}\n\nR — ${labels.r}\n${starAnswers.r}`;
+    navigator.clipboard.writeText(text);
+    toast.success(isRTL ? 'תשובה הועתקה' : 'Answer copied');
+  };
+
+  const switchQuestion = (categoryId: string, qIndex: number) => {
+    // Save current before switching
+    if (practicingCategory) {
+      const hasContent = starAnswers.s.trim() || starAnswers.t.trim() || starAnswers.a.trim() || starAnswers.r.trim();
+      if (hasContent) {
+        const stories = loadSavedStories();
+        if (!stories[practicingCategory]) stories[practicingCategory] = {};
+        stories[practicingCategory][practiceQuestionIndex] = { ...starAnswers };
+        saveSavedStories(stories);
+      }
+    }
+    setPracticeQuestionIndex(qIndex);
+    const saved = loadSavedStories();
+    const existing = saved[categoryId]?.[qIndex];
+    setStarAnswers(existing || { s: '', t: '', a: '', r: '' });
+  };
+
+  // Render inline practice panel
+  const renderPracticePanel = (cat: StoryCategory) => {
+    const question = cat.questions[practiceQuestionIndex];
+    const template = isRTL ? cat.templateHe : cat.templateEn;
+    const starParts = [
+      { key: 's' as const, letter: 'S', labelHe: 'Situation — מצב', labelEn: 'Situation', color: 'border-blue-500/30 bg-blue-500/5', textColor: 'text-blue-600' },
+      { key: 't' as const, letter: 'T', labelHe: 'Task — משימה', labelEn: 'Task', color: 'border-amber-500/30 bg-amber-500/5', textColor: 'text-amber-600' },
+      { key: 'a' as const, letter: 'A', labelHe: 'Action — פעולה', labelEn: 'Action', color: 'border-green-500/30 bg-green-500/5', textColor: 'text-green-600' },
+      { key: 'r' as const, letter: 'R', labelHe: 'Result — תוצאה', labelEn: 'Result', color: 'border-purple-500/30 bg-purple-500/5', textColor: 'text-purple-600' },
+    ];
+
+    const saved = loadSavedStories();
+
+    return (
+      <div className="mt-4 space-y-4 border-t border-primary/20 pt-4">
+        {/* Practice header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Play className="w-4 h-4 text-primary" />
+            <h4 className="text-sm font-semibold">{isRTL ? 'תרגול STAR' : 'STAR Practice'}</h4>
+          </div>
+          <Button variant="ghost" size="sm" onClick={closePractice} className="h-7 w-7 p-0">
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+
+        {/* Question selector */}
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground font-medium">
+            {isRTL ? 'בחר שאלה לתרגול:' : 'Choose a question to practice:'}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {cat.questions.map((q, i) => {
+              const hasSaved = !!saved[cat.id]?.[i];
+              return (
+                <button
+                  key={i}
+                  onClick={() => switchQuestion(cat.id, i)}
+                  className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
+                    i === practiceQuestionIndex
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : hasSaved
+                        ? 'bg-green-500/10 border-green-500/30 text-green-600 hover:bg-green-500/20'
+                        : 'bg-muted/50 border-border hover:border-primary/50'
+                  }`}
+                >
+                  {hasSaved && i !== practiceQuestionIndex && <Check className="w-3 h-3 inline me-1" />}
+                  {isRTL ? `שאלה ${i + 1}` : `Q${i + 1}`}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Selected question */}
+        <div className="rounded-lg bg-primary/5 border border-primary/20 p-4">
+          <p className="text-sm font-medium">{isRTL ? question.he : question.en}</p>
+        </div>
+
+        {/* STAR structured fields */}
+        <div className="space-y-3">
+          {starParts.map((part) => (
+            <div key={part.key} className={`rounded-lg border p-3 ${part.color}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`font-black text-lg ${part.textColor}`}>{part.letter}</span>
+                <span className={`text-xs font-semibold ${part.textColor}`}>
+                  {isRTL ? part.labelHe : part.labelEn}
+                </span>
+              </div>
+              <Textarea
+                value={starAnswers[part.key]}
+                onChange={(e) => setStarAnswers(prev => ({ ...prev, [part.key]: e.target.value }))}
+                placeholder={template[part.key]}
+                rows={2}
+                className="bg-background/80 border-0 text-sm resize-none focus-visible:ring-1"
+                dir={isRTL ? 'rtl' : 'ltr'}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex gap-2">
+          <Button onClick={handleSaveStory} className="flex-1 gap-2" size="sm">
+            <Save className="w-4 h-4" />
+            {isRTL ? 'שמור סיפור' : 'Save Story'}
+          </Button>
+          <Button variant="outline" onClick={handleCopyFull} size="sm" className="gap-2">
+            <Copy className="w-4 h-4" />
+            {isRTL ? 'העתק' : 'Copy'}
+          </Button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -247,9 +424,12 @@ export function StarGuide({ onPracticeCategory }: StarGuideProps) {
         <div className="space-y-3">
           {storyCategories.map((cat) => {
             const isExpanded = expandedCategory === cat.id;
+            const isPracticing = practicingCategory === cat.id;
             const Icon = cat.icon;
+            const saved = savedStories[cat.id] || {};
+            const savedCount = Object.keys(saved).length;
             return (
-              <Card key={cat.id} className="bg-card border-border">
+              <Card key={cat.id} className={`bg-card border-border ${isPracticing ? 'border-primary/40 ring-1 ring-primary/20' : ''}`}>
                 <CardContent className="p-0">
                   {/* Header — always visible */}
                   <button
@@ -263,6 +443,11 @@ export function StarGuide({ onPracticeCategory }: StarGuideProps) {
                       <h4 className="font-semibold">{isRTL ? cat.titleHe : cat.titleEn}</h4>
                       <p className="text-xs text-muted-foreground truncate">{isRTL ? cat.descHe : cat.descEn}</p>
                     </div>
+                    {savedCount > 0 && (
+                      <Badge variant="secondary" className="shrink-0 text-xs bg-green-500/10 text-green-600 border-green-500/20">
+                        {savedCount}/{cat.questions.length} {isRTL ? 'מוכנים' : 'ready'}
+                      </Badge>
+                    )}
                     <Badge variant="secondary" className="shrink-0 text-xs">
                       {cat.questions.length} {isRTL ? 'שאלות' : 'Q\'s'}
                     </Badge>
@@ -282,12 +467,16 @@ export function StarGuide({ onPracticeCategory }: StarGuideProps) {
                           {isRTL ? 'שאלות נפוצות בקטגוריה:' : 'Common questions in this category:'}
                         </p>
                         <ul className="space-y-1.5">
-                          {cat.questions.map((q, i) => (
-                            <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
-                              <span className="text-primary font-bold text-xs mt-0.5">{i + 1}.</span>
-                              <span>{isRTL ? q.he : q.en}</span>
-                            </li>
-                          ))}
+                          {cat.questions.map((q, i) => {
+                            const hasSaved = !!loadSavedStories()[cat.id]?.[i];
+                            return (
+                              <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                                <span className="text-primary font-bold text-xs mt-0.5">{i + 1}.</span>
+                                <span className="flex-1">{isRTL ? q.he : q.en}</span>
+                                {hasSaved && <Check className="w-3.5 h-3.5 text-green-500 shrink-0 mt-0.5" />}
+                              </li>
+                            );
+                          })}
                         </ul>
                       </div>
 
@@ -329,10 +518,12 @@ export function StarGuide({ onPracticeCategory }: StarGuideProps) {
                         })}
                       </div>
 
-                      {/* Practice this category button */}
-                      {onPracticeCategory && (
+                      {/* Practice button or inline practice panel */}
+                      {isPracticing ? (
+                        renderPracticePanel(cat)
+                      ) : (
                         <Button
-                          onClick={() => onPracticeCategory(isRTL ? cat.titleHe : cat.titleEn)}
+                          onClick={() => startPractice(cat.id)}
                           className="w-full gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground"
                         >
                           <Play className="w-4 h-4" />
