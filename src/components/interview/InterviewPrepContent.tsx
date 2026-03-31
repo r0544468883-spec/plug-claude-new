@@ -125,22 +125,7 @@ export function InterviewPrepContent() {
   // Question language — independent of UI language
   const [questionLang, setQuestionLang] = useState<'he' | 'en'>(isRTL ? 'he' : 'en');
 
-  // Seniority level — infer from profile
-  const inferSeniority = (): SeniorityLevel => {
-    const yrs = userProfile?.experience_years ?? 0;
-    if (yrs <= 3) return 'junior';
-    if (yrs <= 8) return 'mid';
-    if (yrs <= 15) return 'senior';
-    return 'executive';
-  };
   const [seniority, setSeniority] = useState<SeniorityLevel>('mid');
-
-  // Update seniority when profile loads
-  useEffect(() => {
-    if (userProfile?.experience_years != null) {
-      setSeniority(inferSeniority());
-    }
-  }, [userProfile?.experience_years]);
 
   // URL extraction state
   const [isExtractingUrl, setIsExtractingUrl] = useState(false);
@@ -205,6 +190,17 @@ export function InterviewPrepContent() {
     },
     enabled: !!user?.id,
   });
+
+  // Seniority level — infer from profile (must be after userProfile query)
+  useEffect(() => {
+    if (userProfile?.experience_years != null) {
+      const yrs = userProfile.experience_years;
+      if (yrs <= 3) setSeniority('junior');
+      else if (yrs <= 8) setSeniority('mid');
+      else if (yrs <= 15) setSeniority('senior');
+      else setSeniority('executive');
+    }
+  }, [userProfile?.experience_years]);
 
   const handleSelectApplication = (appId: string) => {
     const app = myApplications?.find((a: any) => a.id === appId);
