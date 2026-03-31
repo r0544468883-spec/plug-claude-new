@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { jobTitle, companyName, jobDescription, language } = await req.json();
+    const { jobTitle, companyName, jobDescription, language, seniority } = await req.json();
 
     if (!jobTitle) {
       return new Response(
@@ -32,15 +32,34 @@ serve(async (req) => {
 
     const isHebrew = language === 'he';
 
+    // Seniority calibration
+    const seniorityLabels: Record<string, { he: string; en: string; guidanceHe: string; guidanceEn: string }> = {
+      junior:    { he: 'ג\'וניור (0-3 שנים)', en: 'Junior (0-3 years)',
+                   guidanceHe: 'שאל שאלות בסיסיות יותר — על למידה, מוטיבציה, עבודת צוות ופרויקטים אקדמיים. התמקד בפוטנציאל.',
+                   guidanceEn: 'Ask more foundational questions — about learning, motivation, teamwork, and academic projects. Focus on potential.' },
+      mid:       { he: 'מיד-לבל (4-8 שנים)', en: 'Mid-Level (4-8 years)',
+                   guidanceHe: 'שאל על הישגים מדידים, פתרון בעיות ממשיות, והתפתחות מקצועית. צפה לדוגמאות קונקרטיות.',
+                   guidanceEn: 'Ask about measurable achievements, real problem-solving, and professional growth. Expect concrete examples.' },
+      senior:    { he: 'סניור (8-15 שנים)', en: 'Senior (8-15 years)',
+                   guidanceHe: 'שאל על חשיבה מערכתית, הובלת פרויקטים, החלטות ארכיטקטוניות, והשפעה ארגונית. צפה לעומק ולהשלכות עקיפות.',
+                   guidanceEn: 'Ask about systems thinking, leading projects, architectural decisions, and organizational impact. Expect depth and second-order effects.' },
+      executive: { he: 'מנהל בכיר (15+ שנים)', en: 'Executive (15+ years)',
+                   guidanceHe: 'שאל על חזון, אסטרטגיה, ניהול P&L, פיתוח תרבות ארגונית, וניהול שינוי. צפה להשפעה ברמת העסק.',
+                   guidanceEn: 'Ask about vision, strategy, P&L management, culture building, and change management. Expect business-level impact.' },
+    };
+    const seniorityInfo = seniorityLabels[seniority || 'mid'] || seniorityLabels.mid;
+
     // Build prompt for generating interview questions
     const systemPrompt = isHebrew
       ? `אתה מומחה גיוס עם ניסיון רב בראיונות עבודה. עליך ליצור שאלות ראיון מקצועיות ורלוונטיות.
          צור 8 שאלות ראיון עבור תפקיד "${jobTitle}"${companyName ? ` בחברת ${companyName}` : ''}.
+         רמת הוותק של המועמד: ${seniorityInfo.he}. ${seniorityInfo.guidanceHe}
          חלק את השאלות ל-3 קטגוריות: behavioral (התנהגותי), technical (טכני), situational (סיטואציוני).
          לכל שאלה, הוסף טיפ קצר למועמד.
          החזר JSON עם מערך questions שכל אובייקט מכיל: id, question, category, tip.`
       : `You are an expert recruiter with extensive interview experience. Create professional, relevant interview questions.
          Generate 8 interview questions for a "${jobTitle}" position${companyName ? ` at ${companyName}` : ''}.
+         Candidate seniority level: ${seniorityInfo.en}. ${seniorityInfo.guidanceEn}
          Divide questions into 3 categories: behavioral, technical, situational.
          For each question, add a brief tip for the candidate.
          Return JSON with a questions array where each object has: id, question, category, tip.`;

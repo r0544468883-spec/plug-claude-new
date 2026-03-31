@@ -42,10 +42,13 @@ import {
   ExternalLink,
   Languages,
   Star,
+  Trophy,
 } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { StarGuide } from './StarGuide';
+import { PracticeSummary } from './PracticeSummary';
 
 interface InterviewQuestion {
   id: string;
@@ -99,9 +102,21 @@ export function InterviewPrepContent() {
   const [sessionStarted, setSessionStarted] = useState(false);
   const [practiceMode, setPracticeMode] = useState<PracticeMode>('none');
   const [preferredMode, setPreferredMode] = useState<PracticeMode>('none');
+  const [showSummary, setShowSummary] = useState(false);
 
   // Question language — independent of UI language
   const [questionLang, setQuestionLang] = useState<'he' | 'en'>(isRTL ? 'he' : 'en');
+
+  // Seniority level
+  type SeniorityLevel = 'junior' | 'mid' | 'senior' | 'executive';
+  const inferredSeniority = (): SeniorityLevel => {
+    const yrs = userProfile?.experience_years ?? 0;
+    if (yrs <= 3) return 'junior';
+    if (yrs <= 8) return 'mid';
+    if (yrs <= 15) return 'senior';
+    return 'executive';
+  };
+  const [seniority, setSeniority] = useState<SeniorityLevel>(inferredSeniority());
 
   // URL extraction state
   const [isExtractingUrl, setIsExtractingUrl] = useState(false);
@@ -110,7 +125,21 @@ export function InterviewPrepContent() {
 
   // Text session answers + AI feedback
   const [textAnswers, setTextAnswers] = useState<Record<number, string>>({});
-  const [textFeedbacks, setTextFeedbacks] = useState<Record<number, { score: number; feedback: string; improvements: string[] }>>({});
+  interface FeedbackDimensions {
+    substance: number;
+    structure: number;
+    relevance: number;
+    credibility: number;
+    differentiation: number;
+  }
+  interface TextFeedback {
+    score: number;
+    dimensions?: FeedbackDimensions;
+    feedback: string;
+    improvements: string[];
+    priorityMove?: string;
+  }
+  const [textFeedbacks, setTextFeedbacks] = useState<Record<number, TextFeedback>>({});
   const [isGettingFeedback, setIsGettingFeedback] = useState(false);
 
   // Tips state
@@ -320,7 +349,7 @@ export function InterviewPrepContent() {
           'apikey': anonKey,
           'Authorization': `Bearer ${session?.access_token || anonKey}`,
         },
-        body: JSON.stringify({ jobTitle, companyName, jobDescription, language: questionLang }),
+        body: JSON.stringify({ jobTitle, companyName, jobDescription, language: questionLang, seniority }),
       });
       const data = await res.json();
 
@@ -436,7 +465,7 @@ export function InterviewPrepContent() {
       const res = await fetch(`${supabaseUrl}/functions/v1/interview-answer-feedback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'apikey': anonKey, 'Authorization': `Bearer ${session?.access_token || anonKey}` },
-        body: JSON.stringify({ question: q.question, answer: answerText, category: q.category, language: questionLang, jobTitle }),
+        body: JSON.stringify({ question: q.question, answer: answerText, category: q.category, language: questionLang, jobTitle, seniority }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -449,11 +478,29 @@ export function InterviewPrepContent() {
   };
 
   const handlePracticeComplete = () => {
-    toast.success(isRTL ? 'כל הכבוד! סיימת את האימון' : 'Great job! You completed the practice');
+    setShowSummary(true);
+    setPracticeMode('none');
+  };
+
+  const handleSummaryRetry = () => {
+    setShowSummary(false);
+    setCurrentQuestionIndex(0);
+    setTextAnswers({});
+    setTextFeedbacks({});
+    setPracticeMode('none');
+  };
+
+  const handleSummaryNewJob = () => {
+    setShowSummary(false);
     setSessionStarted(false);
     setPracticeMode('none');
     setQuestions([]);
     setCurrentQuestionIndex(0);
+    setJobTitle('');
+    setCompanyName('');
+    setJobDescription('');
+    setTextAnswers({});
+    setTextFeedbacks({});
   };
 
   // ─── Active session overlays ──────────────────────────────────────────────
@@ -586,6 +633,25 @@ export function InterviewPrepContent() {
                     🇬🇧 English
                   </Button>
                 </div>
+              </div>
+
+              {/* Seniority Level */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Briefcase className="w-3.5 h-3.5" />
+                  {isRTL ? 'רמת ותק' : 'Seniority Level'}
+                </Label>
+                <Select value={seniority} onValueChange={(v) => setSeniority(v as SeniorityLevel)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="junior">{isRTL ? 'Junior (0-3 שנים)' : 'Junior (0-3 years)'}</SelectItem>
+                    <SelectItem value="mid">{isRTL ? 'Mid-Level (4-8 שנים)' : 'Mid-Level (4-8 years)'}</SelectItem>
+                    <SelectItem value="senior">{isRTL ? 'Senior (8-15 שנים)' : 'Senior (8-15 years)'}</SelectItem>
+                    <SelectItem value="executive">{isRTL ? 'Executive (15+ שנים)' : 'Executive (15+ years)'}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -729,6 +795,17 @@ export function InterviewPrepContent() {
             ))}
           </div>
         </div>
+      ) : showSummary ? (
+        /* Practice Summary */
+        <PracticeSummary
+          jobTitle={jobTitle}
+          companyName={companyName}
+          totalQuestions={questions.length}
+          answeredQuestions={Object.keys(textAnswers).filter(k => textAnswers[Number(k)]?.trim()).length}
+          feedbacks={textFeedbacks}
+          onRetry={handleSummaryRetry}
+          onNewJob={handleSummaryNewJob}
+        />
       ) : (
         /* Text Interview Session */
         <AnimatePresence mode="wait">
@@ -800,14 +877,21 @@ export function InterviewPrepContent() {
                   dir={questionLang === 'he' ? 'rtl' : 'ltr'}
                 />
 
-                {/* AI Feedback for text mode */}
+                {/* AI Feedback for text mode — 5 dimensions */}
                 {textFeedbacks[currentQuestionIndex] && (() => {
                   const fb = textFeedbacks[currentQuestionIndex];
                   const sc = fb.score;
                   const scoreCls = sc >= 7 ? 'text-green-500' : sc >= 4 ? 'text-yellow-500' : 'text-red-500';
                   const bgCls = sc >= 7 ? 'border-green-500/30 bg-green-500/5' : sc >= 4 ? 'border-yellow-500/30 bg-yellow-500/5' : 'border-red-500/30 bg-red-500/5';
+                  const dimLabels: { key: keyof FeedbackDimensions; he: string; en: string }[] = [
+                    { key: 'substance', he: 'תוכן', en: 'Substance' },
+                    { key: 'structure', he: 'מבנה', en: 'Structure' },
+                    { key: 'relevance', he: 'רלוונטיות', en: 'Relevance' },
+                    { key: 'credibility', he: 'אמינות', en: 'Credibility' },
+                    { key: 'differentiation', he: 'ייחודיות', en: 'Differentiation' },
+                  ];
                   return (
-                    <div className={`rounded-lg border-2 p-4 space-y-2 ${bgCls}`}>
+                    <div className={`rounded-lg border-2 p-4 space-y-3 ${bgCls}`}>
                       <div className="flex items-center gap-3 flex-wrap">
                         <span className={`text-xl font-bold ${scoreCls}`}>{sc}/10</span>
                         <div className="flex gap-0.5">
@@ -819,7 +903,39 @@ export function InterviewPrepContent() {
                           <Sparkles className="w-3 h-3" />{isRTL ? 'משוב AI' : 'AI Feedback'}
                         </span>
                       </div>
+
+                      {/* 5 Dimension bars */}
+                      {fb.dimensions && (
+                        <div className="space-y-1.5">
+                          {dimLabels.map(({ key, he, en }) => {
+                            const val = fb.dimensions![key];
+                            const barCls = val >= 4 ? 'bg-green-500' : val >= 3 ? 'bg-yellow-500' : 'bg-red-500';
+                            return (
+                              <div key={key} className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground w-20 shrink-0 text-end">{isRTL ? he : en}</span>
+                                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                                  <div className={`h-full rounded-full transition-all ${barCls}`} style={{ width: `${(val / 5) * 100}%` }} />
+                                </div>
+                                <span className="text-xs font-semibold w-5 text-end">{val}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
                       <p className="text-sm leading-relaxed">{fb.feedback}</p>
+
+                      {/* Priority Move */}
+                      {fb.priorityMove && (
+                        <div className="flex items-start gap-2 p-2.5 rounded-lg bg-primary/5 border border-primary/15">
+                          <Target className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs font-semibold text-primary mb-0.5">{isRTL ? 'מהלך עדיפות:' : 'Priority Move:'}</p>
+                            <p className="text-sm text-muted-foreground">{fb.priorityMove}</p>
+                          </div>
+                        </div>
+                      )}
+
                       {fb.improvements?.length > 0 && (
                         <div className="space-y-1">
                           <p className="text-xs font-semibold text-muted-foreground">{isRTL ? 'להשתפר:' : 'To improve:'}</p>
@@ -839,10 +955,19 @@ export function InterviewPrepContent() {
                   <Button variant="outline" onClick={handlePrevQuestion} disabled={currentQuestionIndex === 0}>
                     {isRTL ? 'הקודם' : 'Previous'}
                   </Button>
-                  <Button onClick={handleNextQuestion} disabled={currentQuestionIndex === questions.length - 1} className="gap-2">
-                    {isRTL ? 'הבא' : 'Next'}
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    {currentQuestionIndex === questions.length - 1 ? (
+                      <Button onClick={handlePracticeComplete} className="gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground">
+                        <Trophy className="w-4 h-4" />
+                        {isRTL ? 'סיים אימון' : 'Finish Practice'}
+                      </Button>
+                    ) : (
+                      <Button onClick={handleNextQuestion} className="gap-2">
+                        {isRTL ? 'הבא' : 'Next'}
+                        <ArrowRight className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -981,6 +1106,144 @@ export function InterviewPrepContent() {
           ))}
         </div>
       </div>
+
+      {/* Questions to Ask the Interviewer */}
+      <div>
+        <h3 className="text-sm font-medium text-muted-foreground mb-3">
+          {isRTL ? 'שאלות לשאול את המראיין' : 'Questions to Ask the Interviewer'}
+        </h3>
+        <div className="space-y-4">
+          {([
+            {
+              categoryHe: 'למנהל המגייס',
+              categoryEn: 'For the Hiring Manager',
+              icon: '👔',
+              questions: [
+                { he: 'איך נראית הצלחה בתפקיד ב-30/60/90 הימים הראשונים?', en: 'What does success look like at 30/60/90 days?' },
+                { he: 'מה האתגרים הגדולים ביותר שעומדים בפני הצוות?', en: 'What are the biggest challenges facing the team?' },
+                { he: 'איך נמדד ביצוע בתפקיד הזה?', en: 'How is performance measured in this role?' },
+                { he: 'מה המבנה של הצוות?', en: 'What is the team structure?' },
+              ],
+            },
+            {
+              categoryHe: 'לחברי הצוות',
+              categoryEn: 'For Team Members',
+              icon: '👥',
+              questions: [
+                { he: 'איך נראה יום/שבוע טיפוסי?', en: 'What does a typical day/week look like?' },
+                { he: 'מה הכי מהנה לך בעבודה כאן?', en: 'What do you enjoy most about working here?' },
+                { he: 'איך צוותים משתפים פעולה?', en: 'How do teams collaborate?' },
+                { he: 'מה היית רוצה שעובד חדש ידע?', en: 'What would you want a new hire to know?' },
+              ],
+            },
+            {
+              categoryHe: 'למנהלים בכירים',
+              categoryEn: 'For Executives',
+              icon: '🎯',
+              questions: [
+                { he: 'מה האסטרטגיה של החברה לשנה הקרובה?', en: "What's the company strategy for the next year?" },
+                { he: 'איך הצוות הזה תורם ליעדי החברה?', en: 'How does this team contribute to company goals?' },
+                { he: 'מה ממשיך לרגש אותך בחברה?', en: 'What keeps you excited about the company?' },
+              ],
+            },
+            {
+              categoryHe: 'מה לא לשאול',
+              categoryEn: 'What NOT to Ask',
+              icon: '🚫',
+              questions: [
+                { he: 'שאלות על שכר והטבות (שלב מוקדם מדי)', en: 'Questions about salary/benefits (too early)' },
+                { he: 'שאלות שאפשר בקלות לגגל', en: 'Questions you could easily Google' },
+                { he: 'שאלות שליליות על בעיות בחברה', en: 'Negative questions about company problems' },
+                { he: 'שאלות סגורות (כן/לא)', en: 'Yes/no questions' },
+              ],
+            },
+          ] as const).map((group, gi) => (
+            <Card key={gi} className={`bg-card border-border ${gi === 3 ? 'border-destructive/20' : ''}`}>
+              <CardContent className="p-5">
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <span>{group.icon}</span>
+                  {isRTL ? group.categoryHe : group.categoryEn}
+                </h4>
+                <ul className="space-y-2">
+                  {group.questions.map((q, qi) => (
+                    <li key={qi} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <ChevronRight className={`w-4 h-4 mt-0.5 shrink-0 ${gi === 3 ? 'text-destructive' : 'text-primary'}`} />
+                      <span>{isRTL ? q.he : q.en}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Tough Questions */}
+      <div>
+        <h3 className="text-sm font-medium text-muted-foreground mb-3">
+          {isRTL ? 'איך לענות על שאלות קשות' : 'How to Handle Tough Questions'}
+        </h3>
+        <div className="space-y-4">
+          {([
+            {
+              questionHe: 'מה החולשה הגדולה ביותר שלך?',
+              questionEn: 'What is your greatest weakness?',
+              formulaHe: 'חולשה אמיתית + מודעות עצמית + צעדים לשיפור',
+              formulaEn: 'Real weakness + Self-awareness + Improvement steps',
+              exampleHe: 'אני נוטה להיות מדויק מדי בפרטים, מה שלפעמים מאט אותי. למדתי להגדיר מגבלות זמן ולבקש משוב על מתי "מספיק טוב".',
+              exampleEn: 'I tend to be overly detail-oriented, sometimes slowing down. I\'ve set time limits and ask for feedback on sufficiency.',
+            },
+            {
+              questionHe: 'למה אתה עוזב את העבודה הנוכחית?',
+              questionEn: 'Why are you leaving your current job?',
+              formulaHe: 'חיובי (מוכוון צמיחה) + מבט קדימה (לא תלונות) + קצר',
+              formulaEn: 'Positive (growth-focused) + Forward-looking (not complaints) + Brief',
+              exampleHe: 'למדתי המון ב[חברה], אבל אני מחפש [הזדמנות] שלא קיימת במסלול שלי. התפקיד הזה מציע בדיוק את זה.',
+              exampleEn: 'I\'ve learned a lot at [Company], but I\'m seeking [opportunity] unavailable in my current path. This role offers exactly that.',
+            },
+            {
+              questionHe: 'ספר לי על פעם שנכשלת',
+              questionEn: 'Tell me about a time you failed',
+              formulaHe: 'כישלון אמיתי (לא humble brag) + מה למדת + איך יישמת את הלקח',
+              formulaEn: 'Real failure (not humble brag) + What you learned + How you applied the learning',
+              exampleHe: 'השקתי פיצ\'ר בלי מחקר משתמשים. טכנית מצוין, אבל מבלבל — רק 10% אימצו. למדתי שחשוב לבנות את הדבר הנכון, לא רק נכון. מאז אני תמיד עושה לפחות 10 ראיונות משתמשים לפני החלטות גדולות.',
+              exampleEn: 'I launched a feature without user research. Technically sound but confusing — only 10% adopted. I learned building the right thing matters most. Now I always do at least 10 user interviews before major decisions.',
+            },
+            {
+              questionHe: 'מה ציפיות השכר שלך?',
+              questionEn: 'What are your salary expectations?',
+              formulaHe: 'הסט את השיחה + אם לוחצים: טווח מחקרי + גמישות',
+              formulaEn: 'Deflect politely + If pressed: research-based range + flexibility',
+              exampleHe: 'אני גמיש לגבי התגמול ומתמקד בתפקיד הנכון. אפשר לשתף את הטווח שתוקצב?',
+              exampleEn: 'I\'m flexible on compensation, focused on the right role. Can you share the range budgeted for this position?',
+            },
+          ] as const).map((item, i) => (
+            <Card key={i} className="bg-card border-border">
+              <CardContent className="p-5">
+                <h4 className="font-semibold mb-2 text-base">
+                  {isRTL ? `"${item.questionHe}"` : `"${item.questionEn}"`}
+                </h4>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/10">
+                    <Lightbulb className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                    <p className="text-sm font-medium text-primary">
+                      {isRTL ? item.formulaHe : item.formulaEn}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/40 border border-border">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">
+                      {isRTL ? 'דוגמה:' : 'Example:'}
+                    </p>
+                    <p className="text-sm text-muted-foreground italic leading-relaxed">
+                      {isRTL ? item.exampleHe : item.exampleEn}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
     </div>
   );
 
@@ -1094,10 +1357,14 @@ export function InterviewPrepContent() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="practice" className="gap-2">
             <Play className="w-4 h-4" />
             {isRTL ? 'אימון' : 'Practice'}
+          </TabsTrigger>
+          <TabsTrigger value="star-guide" className="gap-2">
+            <Target className="w-4 h-4" />
+            {isRTL ? 'מדריך STAR' : 'STAR Guide'}
           </TabsTrigger>
           <TabsTrigger value="tips" className="gap-2">
             <BookOpen className="w-4 h-4" />
@@ -1116,6 +1383,10 @@ export function InterviewPrepContent() {
 
         <TabsContent value="practice" className="mt-6">
           {renderPracticeTab()}
+        </TabsContent>
+
+        <TabsContent value="star-guide" className="mt-6">
+          <StarGuide />
         </TabsContent>
 
         <TabsContent value="tips" className="mt-6">
