@@ -52,6 +52,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { StarGuide } from './StarGuide';
 import { PracticeSummary } from './PracticeSummary';
+import { getRandomTips } from './interviewTipsBank';
 
 interface InterviewQuestion {
   id: string;
@@ -1045,84 +1046,8 @@ export function InterviewPrepContent() {
 
   // ─── Tips Tab ─────────────────────────────────────────────────────────────
 
-  const allStaticTips = [
-    {
-      icon: Target,
-      titleHe: 'שיטת STAR',
-      titleEn: 'STAR Method',
-      descHe: 'Situation, Task, Action, Result — מבנה מוכח לתשובות התנהגותיות שמראה חשיבה מסודרת.',
-      descEn: 'Situation, Task, Action, Result — a proven structure for behavioral answers that shows organized thinking.',
-    },
-    {
-      icon: Clock,
-      titleHe: 'ניהול זמן',
-      titleEn: 'Time Management',
-      descHe: 'שמור על תשובות של 2–3 דקות. לא קצר מדי שנראה שאין לך מה לספר, לא ארוך מדי שתאבד את תשומת הלב.',
-      descEn: 'Keep answers 2–3 minutes. Not too short (seems like nothing to say), not too long (loses attention).',
-    },
-    {
-      icon: Users,
-      titleHe: 'חקור את החברה',
-      titleEn: 'Research the Company',
-      descHe: 'הכר את הערכים, התרבות, המוצרים והחדשות האחרונות. שלב את הידע הזה בתשובותיך.',
-      descEn: "Know the company's values, culture, products, and recent news. Weave this into your answers.",
-    },
-    {
-      icon: Brain,
-      titleHe: 'שאל שאלות חכמות',
-      titleEn: 'Ask Smart Questions',
-      descHe: 'הכן 3–5 שאלות שמראות עניין עמוק בתפקיד, בצוות ובאתגרים של החברה.',
-      descEn: 'Prepare 3–5 questions that show genuine interest in the role, team, and company challenges.',
-    },
-    {
-      icon: Mic,
-      titleHe: 'תרגל בקול',
-      titleEn: 'Practice Out Loud',
-      descHe: 'אמור את התשובות בקול רם, לא רק בראש. זה חושף ניסוחים מסורבלים ובונה ביטחון.',
-      descEn: 'Say your answers out loud, not just in your head. It reveals awkward phrasing and builds confidence.',
-    },
-    {
-      icon: Trophy,
-      titleHe: 'הדגש הישגים מספריים',
-      titleEn: 'Quantify Achievements',
-      descHe: 'במקום "שיפרתי ביצועים", אמור "הפחתתי זמן עיבוד ב-30%". מספרים עושים רושם.',
-      descEn: 'Instead of "improved performance", say "reduced processing time by 30%". Numbers make an impression.',
-    },
-    {
-      icon: Briefcase,
-      titleHe: 'הכן "מעלית פיץ\'"',
-      titleEn: 'Prepare Your Elevator Pitch',
-      descHe: 'הכן סיכום של 30–60 שניות על עצמך שמדגיש ערך, ניסיון רלוונטי ותשוקה לתפקיד.',
-      descEn: 'Prepare a 30–60 second summary of yourself highlighting value, relevant experience, and passion for the role.',
-    },
-    {
-      icon: Star,
-      titleHe: 'סיים בחוזק',
-      titleEn: 'Close Strong',
-      descHe: 'חזור על הסיבות למה אתה המועמד הנכון, בקש בבירור את הצעד הבא, ושלח מייל תודה.',
-      descEn: 'Recap why you\'re the right fit, clearly ask about next steps, and send a thank-you email.',
-    },
-    {
-      icon: BookOpen,
-      titleHe: 'הכן סיפורי הצלחה',
-      titleEn: 'Prepare Success Stories',
-      descHe: 'הכן 5–6 סיפורים מוכנים (STAR) שמכסים: הנהגה, פתרון בעיות, שיתוף פעולה, כישלון ולמידה.',
-      descEn: 'Have 5–6 ready stories (STAR format) covering: leadership, problem-solving, collaboration, failure & learning.',
-    },
-    {
-      icon: Zap,
-      titleHe: 'הגע 10 דקות מוקדם',
-      titleEn: 'Arrive 10 Minutes Early',
-      descHe: 'הגעה מוקדמת נותנת לך זמן להירגע, לסדר מחשבות ולהתרשם מהסביבה.',
-      descEn: 'Arriving early gives you time to settle, organize your thoughts, and observe the environment.',
-    },
-  ];
-
-  // Shuffle tips on each mount/refresh — show 4 random tips
-  const staticTips = useMemo(() => {
-    const shuffled = [...allStaticTips].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 4);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Pick 6 random tips from the 80+ tip bank on each mount
+  const staticTips = useMemo(() => getRandomTips(6), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const renderTipsTab = () => (
     <div className="space-y-6">

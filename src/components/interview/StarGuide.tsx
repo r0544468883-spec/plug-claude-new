@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useCredits } from '@/contexts/CreditsContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Target,
   Users,
@@ -20,6 +22,10 @@ import {
   Play,
   X,
   Save,
+  Sparkles,
+  Loader2,
+  Star,
+  Zap,
 } from 'lucide-react';
 
 interface StoryCategory {
@@ -33,6 +39,13 @@ interface StoryCategory {
   questions: { he: string; en: string }[];
   templateHe: { s: string; t: string; a: string; r: string };
   templateEn: { s: string; t: string; a: string; r: string };
+}
+
+interface AIFeedback {
+  score: number;
+  feedback: string;
+  dimensions?: { substance: number; structure: number; relevance: number; credibility: number; differentiation: number };
+  priorityMove?: string;
 }
 
 const storyCategories: StoryCategory[] = [
@@ -196,6 +209,7 @@ function saveSavedStories(stories: SavedStories) {
 
 export function StarGuide() {
   const { language } = useLanguage();
+  const { deductCredits, canAfford, getCost } = useCredits();
   const isRTL = language === 'he';
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -206,6 +220,12 @@ export function StarGuide() {
   const [starAnswers, setStarAnswers] = useState<StarAnswers>({ s: '', t: '', a: '', r: '' });
   const [savedStories] = useState<SavedStories>(() => loadSavedStories());
 
+  // AI feedback state
+  const [aiFeedback, setAiFeedback] = useState<AIFeedback | null>(null);
+  const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
+
+  const feedbackCost = getCost('AI_INTERVIEW');
+
   const toggleCategory = (id: string) => {
     setExpandedCategory(expandedCategory === id ? null : id);
   };
@@ -213,7 +233,7 @@ export function StarGuide() {
   const startPractice = (categoryId: string, questionIndex: number = 0) => {
     setPracticingCategory(categoryId);
     setPracticeQuestionIndex(questionIndex);
-    // Load saved answer if exists
+    setAiFeedback(null);
     const saved = loadSavedStories();
     const existing = saved[categoryId]?.[questionIndex];
     setStarAnswers(existing || { s: '', t: '', a: '', r: '' });
@@ -223,6 +243,7 @@ export function StarGuide() {
     setPracticingCategory(null);
     setPracticeQuestionIndex(0);
     setStarAnswers({ s: '', t: '', a: '', r: '' });
+    setAiFeedback(null);
   };
 
   const handleSaveStory = () => {
@@ -249,7 +270,6 @@ export function StarGuide() {
   };
 
   const switchQuestion = (categoryId: string, qIndex: number) => {
-    // Save current before switching
     if (practicingCategory) {
       const hasContent = starAnswers.s.trim() || starAnswers.t.trim() || starAnswers.a.trim() || starAnswers.r.trim();
       if (hasContent) {
@@ -260,9 +280,126 @@ export function StarGuide() {
       }
     }
     setPracticeQuestionIndex(qIndex);
+    setAiFeedback(null);
     const saved = loadSavedStories();
     const existing = saved[categoryId]?.[qIndex];
     setStarAnswers(existing || { s: '', t: '', a: '', r: '' });
+  };
+
+  // AI Feedback
+  const handleGetAIFeedback = async (cat: StoryCategory) => {
+    const fullAnswer = `Situation: ${starAnswers.s}\nTask: ${starAnswers.t}\nAction: ${starAnswers.a}\nResult: ${starAnswers.r}`;
+    if (!starAnswers.s.trim() && !starAnswers.t.trim() && !starAnswers.a.trim() && !starAnswers.r.trim()) {
+      toast.error(isRTL ? 'כתוב את התשובה לפני בקשת משוב' : 'Write your answer before requesting feedback');
+      return;
+    }
+
+    if (!canAfford(feedbackCost)) {
+      toast.error(isRTL ? 'אין מספיק דלק. עבור לדף הקרדיטים.' : 'Not enough fuel. Go to Credits.');
+      return;
+    }
+
+    const result = await deductCredits('ai_interview');
+    if (!result.success) {
+      if (!result.error?.toLowerCase().includes('cancel')) {
+        toast.error(isRTL ? 'שגיאה בניכוי קרדיטים' : 'Credit deduction failed');
+      }
+      return;
+    }
+
+    setIsLoadingFeedback(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const question = cat.questions[practiceQuestionIndex];
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/interview-answer-feedback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': anonKey,
+          'Authorization': `Bearer ${session?.access_token || anonKey}`,
+        },
+        body: JSON.stringify({
+          question: isRTL ? question.he : question.en,
+          answer: fullAnswer,
+          category: 'behavioral',
+          language,
+          jobTitle: '',
+          seniority: 'mid',
+        }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setAiFeedback(data);
+    } catch {
+      toast.error(isRTL ? 'שגיאה בקבלת משוב AI' : 'Error getting AI feedback');
+    } finally {
+      setIsLoadingFeedback(false);
+    }
+  };
+
+  // Render AI feedback panel
+  const renderFeedback = () => {
+    if (!aiFeedback) return null;
+    const sc = aiFeedback.score;
+    const scoreCls = sc >= 7 ? 'text-green-500' : sc >= 4 ? 'text-yellow-500' : 'text-red-500';
+    const bgCls = sc >= 7 ? 'border-green-500/30 bg-green-500/5' : sc >= 4 ? 'border-yellow-500/30 bg-yellow-500/5' : 'border-red-500/30 bg-red-500/5';
+
+    const dimLabels: { key: keyof NonNullable<AIFeedback['dimensions']>; he: string; en: string }[] = [
+      { key: 'substance', he: 'תוכן', en: 'Substance' },
+      { key: 'structure', he: 'מבנה', en: 'Structure' },
+      { key: 'relevance', he: 'רלוונטיות', en: 'Relevance' },
+      { key: 'credibility', he: 'אמינות', en: 'Credibility' },
+      { key: 'differentiation', he: 'ייחודיות', en: 'Differentiation' },
+    ];
+
+    return (
+      <div className={`rounded-lg border-2 p-4 space-y-3 ${bgCls}`}>
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className={`text-xl font-bold ${scoreCls}`}>{sc}/10</span>
+          <div className="flex gap-0.5">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <Star key={i} className={`w-3 h-3 ${i < sc ? scoreCls : 'text-muted-foreground/30'}`} fill={i < sc ? 'currentColor' : 'none'} />
+            ))}
+          </div>
+          <span className="text-xs text-muted-foreground ms-auto flex items-center gap-1">
+            <Sparkles className="w-3 h-3" />{isRTL ? 'משוב AI' : 'AI Feedback'}
+          </span>
+        </div>
+
+        {aiFeedback.dimensions && (
+          <div className="space-y-1.5">
+            {dimLabels.map(({ key, he, en }) => {
+              const val = aiFeedback.dimensions![key];
+              const barCls = val >= 4 ? 'bg-green-500' : val >= 3 ? 'bg-yellow-500' : 'bg-red-500';
+              return (
+                <div key={key} className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground w-20 shrink-0 text-end">{isRTL ? he : en}</span>
+                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all ${barCls}`} style={{ width: `${(val / 5) * 100}%` }} />
+                  </div>
+                  <span className="text-xs font-semibold w-5 text-end">{val}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <p className="text-sm leading-relaxed">{aiFeedback.feedback}</p>
+
+        {aiFeedback.priorityMove && (
+          <div className="flex items-start gap-2 p-2.5 rounded-lg bg-primary/5 border border-primary/15">
+            <Target className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-semibold text-primary mb-0.5">{isRTL ? 'מהלך עדיפות:' : 'Priority Move:'}</p>
+              <p className="text-sm text-muted-foreground">{aiFeedback.priorityMove}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   // Render inline practice panel
@@ -297,7 +434,7 @@ export function StarGuide() {
             {isRTL ? 'בחר שאלה לתרגול:' : 'Choose a question to practice:'}
           </p>
           <div className="flex flex-wrap gap-2">
-            {cat.questions.map((q, i) => {
+            {cat.questions.map((_, i) => {
               const hasSaved = !!saved[cat.id]?.[i];
               return (
                 <button
@@ -348,15 +485,40 @@ export function StarGuide() {
 
         {/* Action buttons */}
         <div className="flex gap-2">
-          <Button onClick={handleSaveStory} className="flex-1 gap-2" size="sm">
+          <Button onClick={handleSaveStory} variant="outline" className="flex-1 gap-2" size="sm">
             <Save className="w-4 h-4" />
-            {isRTL ? 'שמור סיפור' : 'Save Story'}
+            {isRTL ? 'שמור' : 'Save'}
           </Button>
           <Button variant="outline" onClick={handleCopyFull} size="sm" className="gap-2">
             <Copy className="w-4 h-4" />
             {isRTL ? 'העתק' : 'Copy'}
           </Button>
+          <Button
+            onClick={() => handleGetAIFeedback(cat)}
+            disabled={isLoadingFeedback}
+            className="flex-1 gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground"
+            size="sm"
+          >
+            {isLoadingFeedback ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4" />
+            )}
+            {isRTL ? 'משוב AI' : 'AI Feedback'}
+            <Badge variant="secondary" className="text-[10px] py-0 px-1.5 bg-white/20">
+              <Zap className="w-2.5 h-2.5 me-0.5" />{feedbackCost}
+            </Badge>
+          </Button>
         </div>
+
+        {/* AI Feedback result */}
+        {isLoadingFeedback && (
+          <div className="text-center py-4">
+            <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mb-2" />
+            <p className="text-xs text-muted-foreground">{isRTL ? 'מנתח את התשובה שלך...' : 'Analyzing your answer...'}</p>
+          </div>
+        )}
+        {renderFeedback()}
       </div>
     );
   };
@@ -431,12 +593,12 @@ export function StarGuide() {
             return (
               <Card key={cat.id} className={`bg-card border-border ${isPracticing ? 'border-primary/40 ring-1 ring-primary/20' : ''}`}>
                 <CardContent className="p-0">
-                  {/* Header — always visible */}
+                  {/* Header */}
                   <button
                     className="w-full p-5 flex items-center gap-4 text-start hover:bg-muted/30 transition-colors rounded-xl"
                     onClick={() => toggleCategory(cat.id)}
                   >
-                    <div className={`w-10 h-10 rounded-xl bg-muted/60 flex items-center justify-center shrink-0`}>
+                    <div className="w-10 h-10 rounded-xl bg-muted/60 flex items-center justify-center shrink-0">
                       <Icon className={`w-5 h-5 ${cat.color}`} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -445,7 +607,7 @@ export function StarGuide() {
                     </div>
                     {savedCount > 0 && (
                       <Badge variant="secondary" className="shrink-0 text-xs bg-green-500/10 text-green-600 border-green-500/20">
-                        {savedCount}/{cat.questions.length} {isRTL ? 'מוכנים' : 'ready'}
+                        {savedCount}/{cat.questions.length}
                       </Badge>
                     )}
                     <Badge variant="secondary" className="shrink-0 text-xs">
@@ -474,6 +636,14 @@ export function StarGuide() {
                                 <span className="text-primary font-bold text-xs mt-0.5">{i + 1}.</span>
                                 <span className="flex-1">{isRTL ? q.he : q.en}</span>
                                 {hasSaved && <Check className="w-3.5 h-3.5 text-green-500 shrink-0 mt-0.5" />}
+                                {!isPracticing && (
+                                  <button
+                                    onClick={() => startPractice(cat.id, i)}
+                                    className="text-primary text-xs hover:underline shrink-0"
+                                  >
+                                    {isRTL ? 'תרגל' : 'Practice'}
+                                  </button>
+                                )}
                               </li>
                             );
                           })}
@@ -481,42 +651,44 @@ export function StarGuide() {
                       </div>
 
                       {/* STAR Template */}
-                      <div className="rounded-lg bg-muted/30 border border-border p-4 space-y-2">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                            <Lightbulb className="w-3.5 h-3.5 text-primary" />
-                            {isRTL ? 'תבנית תשובה:' : 'Answer template:'}
-                          </p>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2 text-xs gap-1.5"
-                            onClick={() => {
-                              const template = isRTL ? cat.templateHe : cat.templateEn;
-                              const text = `S: ${template.s}\nT: ${template.t}\nA: ${template.a}\nR: ${template.r}`;
-                              navigator.clipboard.writeText(text);
-                              setCopiedId(cat.id);
-                              toast.success(isRTL ? 'תבנית הועתקה' : 'Template copied');
-                              setTimeout(() => setCopiedId(null), 2000);
-                            }}
-                          >
-                            {copiedId === cat.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
-                            {copiedId === cat.id ? (isRTL ? 'הועתק' : 'Copied') : (isRTL ? 'העתק' : 'Copy')}
-                          </Button>
+                      {!isPracticing && (
+                        <div className="rounded-lg bg-muted/30 border border-border p-4 space-y-2">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                              <Lightbulb className="w-3.5 h-3.5 text-primary" />
+                              {isRTL ? 'תבנית תשובה:' : 'Answer template:'}
+                            </p>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs gap-1.5"
+                              onClick={() => {
+                                const tpl = isRTL ? cat.templateHe : cat.templateEn;
+                                const text = `S: ${tpl.s}\nT: ${tpl.t}\nA: ${tpl.a}\nR: ${tpl.r}`;
+                                navigator.clipboard.writeText(text);
+                                setCopiedId(cat.id);
+                                toast.success(isRTL ? 'תבנית הועתקה' : 'Template copied');
+                                setTimeout(() => setCopiedId(null), 2000);
+                              }}
+                            >
+                              {copiedId === cat.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                              {copiedId === cat.id ? (isRTL ? 'הועתק' : 'Copied') : (isRTL ? 'העתק' : 'Copy')}
+                            </Button>
+                          </div>
+                          {(['s', 't', 'a', 'r'] as const).map((key) => {
+                            const tpl = isRTL ? cat.templateHe : cat.templateEn;
+                            const labels: Record<string, string> = isRTL
+                              ? { s: 'S — מצב:', t: 'T — משימה:', a: 'A — פעולה:', r: 'R — תוצאה:' }
+                              : { s: 'S — Situation:', t: 'T — Task:', a: 'A — Action:', r: 'R — Result:' };
+                            return (
+                              <div key={key} className="text-sm">
+                                <span className="font-semibold text-primary">{labels[key]}</span>{' '}
+                                <span className="text-muted-foreground italic">{tpl[key]}</span>
+                              </div>
+                            );
+                          })}
                         </div>
-                        {(['s', 't', 'a', 'r'] as const).map((key) => {
-                          const template = isRTL ? cat.templateHe : cat.templateEn;
-                          const labels: Record<string, string> = isRTL
-                            ? { s: 'S — מצב:', t: 'T — משימה:', a: 'A — פעולה:', r: 'R — תוצאה:' }
-                            : { s: 'S — Situation:', t: 'T — Task:', a: 'A — Action:', r: 'R — Result:' };
-                          return (
-                            <div key={key} className="text-sm">
-                              <span className="font-semibold text-primary">{labels[key]}</span>{' '}
-                              <span className="text-muted-foreground italic">{template[key]}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      )}
 
                       {/* Practice button or inline practice panel */}
                       {isPracticing ? (

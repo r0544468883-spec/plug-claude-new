@@ -1,4 +1,5 @@
 import { useMemo, useRef, useEffect, useState } from 'react';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ScheduleCalendar } from '@/components/dashboard/ScheduleCalendar';
@@ -504,34 +505,40 @@ export default function Dashboard() {
         return withBackButton(<PostJobForm onSuccess={() => setCurrentSection('overview')} />);
       case 'cv-builder':
         return withBackButton(
-          <div className="space-y-4">
-            <CVBuilder />
-            {/* Collapsible chat panel */}
-            <div id="cv-plug-chat" className="border rounded-lg overflow-hidden">
-              <button
-                onClick={() => setCvChatCollapsed(prev => !prev)}
-                className="w-full flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-accent/10 to-primary/10 hover:from-accent/15 hover:to-primary/15 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-accent" />
+          <ResizablePanelGroup direction="vertical" className="min-h-[600px]">
+            <ResizablePanel defaultSize={65} minSize={30}>
+              <div className="h-full overflow-auto">
+                <CVBuilder />
+              </div>
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={35} minSize={10} collapsible collapsedSize={4}
+              onCollapse={() => setCvChatCollapsed(true)}
+              onExpand={() => setCvChatCollapsed(false)}
+            >
+              {cvChatCollapsed ? (
+                <div className="h-full flex items-center justify-center bg-gradient-to-r from-accent/10 to-primary/10 cursor-pointer"
+                  onClick={() => setCvChatCollapsed(false)}
+                >
+                  <Sparkles className="w-4 h-4 text-accent me-2" />
                   <span className="text-sm font-medium">{isRTL ? 'צ\'אט עם Plug' : 'Chat with Plug'}</span>
+                  <ChevronUp className="w-4 h-4 ms-2 text-muted-foreground" />
                 </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <span className="text-xs">
-                    {cvChatCollapsed
-                      ? (isRTL ? 'הרחב צ\'אט' : 'Expand chat')
-                      : (isRTL ? 'מזער צ\'אט' : 'Minimize chat')}
-                  </span>
-                  {cvChatCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-                </div>
-              </button>
-              {!cvChatCollapsed && (
-                <div className="border-t">
-                  <PlugChat contextPage="cv-builder" />
+              ) : (
+                <div className="h-full flex flex-col border-t overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-accent/10 to-primary/10 shrink-0">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-accent" />
+                      <span className="text-sm font-medium">{isRTL ? 'צ\'אט עם Plug' : 'Chat with Plug'}</span>
+                    </div>
+                  </div>
+                  <div className="flex-1 overflow-auto">
+                    <PlugChat contextPage="cv-builder" />
+                  </div>
                 </div>
               )}
-            </div>
-          </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         );
       case 'interview-prep':
         return withBackButton(<InterviewPrepContent />);
