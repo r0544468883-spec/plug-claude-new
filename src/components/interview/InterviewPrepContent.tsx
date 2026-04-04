@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -405,6 +405,8 @@ export function InterviewPrepContent() {
 
   // ─── Generate Personalized Tips ──────────────────────────────────────────
 
+  const tipsAutoTriggered = useRef(false);
+
   const handleGenerateTips = async () => {
     if (!canAfford(tipsCost)) {
       toast.error(isRTL ? 'אין מספיק דלק. עבור לדף הקרדיטים לטעינה.' : 'Not enough fuel. Go to Credits to top up.');
@@ -422,6 +424,13 @@ export function InterviewPrepContent() {
     setIsGeneratingTips(true);
     try {
       const cvData = (userProfile?.cv_data as any) ?? {};
+
+      // Pick 6 random tips from bank to personalize
+      const selectedBankTips = getRandomTips(6).map(t => ({
+        title: isRTL ? t.titleHe : t.titleEn,
+        description: isRTL ? t.descHe : t.descEn,
+      }));
+
       const { data, error } = await supabase.functions.invoke('generate-interview-tips', {
         body: {
           userContext: {
@@ -438,6 +447,7 @@ export function InterviewPrepContent() {
           jobTitle: jobTitle || '',
           companyName: companyName || '',
           language,
+          baseTips: selectedBankTips,
         },
       });
 
@@ -450,7 +460,7 @@ export function InterviewPrepContent() {
       if (tips.length === 0) throw new Error('No tips returned');
 
       setPersonalizedTips(tips);
-      toast.success(isRTL ? 'טיפים חדשים נוצרו!' : 'New tips generated!');
+      toast.success(isRTL ? 'טיפים מותאמים אישית נוצרו!' : 'Personalized tips generated!');
     } catch (err) {
       console.error('Error generating tips:', err);
       toast.error(isRTL ? 'שגיאה ביצירת טיפים. נסה שוב.' : 'Error generating tips. Please try again.');
@@ -458,6 +468,14 @@ export function InterviewPrepContent() {
       setIsGeneratingTips(false);
     }
   };
+
+  // Auto-generate personalized tips when Tips tab is first viewed
+  useEffect(() => {
+    if (activeTab === 'tips' && !tipsAutoTriggered.current && personalizedTips.length === 0 && !isGeneratingTips && userProfile) {
+      tipsAutoTriggered.current = true;
+      handleGenerateTips();
+    }
+  }, [activeTab, userProfile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
@@ -1080,8 +1098,8 @@ export function InterviewPrepContent() {
           </div>
           <CardDescription>
             {isRTL
-              ? 'לחץ על "רענן טיפים" לקבלת המלצות ספציפיות מותאמות לקורות החיים והניסיון שלך'
-              : 'Click "Refresh Tips" to get specific recommendations tailored to your CV and experience'}
+              ? 'טיפים מותאמים אישית לפי הקורות חיים והניסיון שלך. לחץ "רענן" לקבלת טיפים חדשים.'
+              : 'Tips personalized from your CV and experience. Click "Refresh" for new ones.'}
           </CardDescription>
         </CardHeader>
 
@@ -1103,7 +1121,7 @@ export function InterviewPrepContent() {
           </CardContent>
         )}
 
-        {personalizedTips.length === 0 && !isGeneratingTips && (
+        {personalizedTips.length === 0 && !isGeneratingTips && !userProfile && (
           <CardContent>
             <div className="text-center py-4 text-muted-foreground text-sm">
               <Lightbulb className="w-8 h-8 mx-auto mb-2 opacity-40" />

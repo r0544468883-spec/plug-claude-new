@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { userContext, recentJobs, jobTitle, companyName, language } = await req.json();
+    const { userContext, recentJobs, jobTitle, companyName, language, baseTips } = await req.json();
 
     const CLAUDE_API_KEY = Deno.env.get('CLAUDE_API_KEY');
     if (!CLAUDE_API_KEY) {
@@ -59,8 +59,33 @@ serve(async (req) => {
       companyName ? `Target company: ${companyName}` : '',
     ].filter(Boolean).join('\n') || (isHe ? 'תפקיד לא צוין' : 'No specific role specified');
 
+    // If baseTips provided, personalize them; otherwise generate from scratch
+    const hasBaseTips = Array.isArray(baseTips) && baseTips.length > 0;
+
+    const baseTipsStr = hasBaseTips
+      ? baseTips.map((t: any, i: number) => `${i + 1}. "${t.title}" — ${t.description}`).join('\n')
+      : '';
+
     const systemPrompt = isHe
-      ? `אתה מאמן קריירה מומחה ומנוסה בהכנה לראיונות עבודה.
+      ? hasBaseTips
+        ? `אתה מאמן קריירה מומחה ומנוסה בהכנה לראיונות עבודה.
+קיבלת רשימה של טיפים כלליים לראיון עבודה. תפקידך להתאים אותם אישית למועמד הספציפי הזה.
+
+כללים חשובים:
+- התאם כל טיפ לניסיון, כישורים ורקע המועמד
+- השתמש בפרטים אמיתיים מהקורות חיים שלו (שמות חברות, תפקידים, כישורים)
+- הפוך טיפים גנריים לספציפיים. לדוגמה: במקום "הדגש הישגים" → "ספר על איך הובלת את פרויקט X ב-[חברה] והשגת Y"
+- אם אין מספיק מידע על המועמד, שמור על הטיפ הכללי אבל הוסף הקשר רלוונטי
+- שמור על הכותרת הקצרה (עד 5 מילים), אבל שנה את התיאור להיות אישי
+- החזר בדיוק את אותו מספר טיפים שקיבלת
+
+החזר JSON בלבד בפורמט הזה (ללא markdown, ללא הסברים):
+{
+  "tips": [
+    {"title": "כותרת קצרה", "description": "2-3 משפטים ספציפיים ומותאמים אישית"}
+  ]
+}`
+        : `אתה מאמן קריירה מומחה ומנוסה בהכנה לראיונות עבודה.
 תפקידך לייצר 6 טיפים מותאמים אישית לראיון עבודה, בהתבסס על הפרופיל וניסיון המשתמש.
 כל טיפ חייב להיות ספציפי, מעשי, ומתבסס על הנתונים האמיתיים של המשתמש.
 
@@ -77,7 +102,25 @@ serve(async (req) => {
 - הצע אסטרטגיות לגשר על פערים אפשריים
 - המלץ על דוגמאות קונקרטיות מהקורות חיים לשתף בראיון
 - כל טיפ בעברית, ספציפי ומדויק`
-      : `You are an expert career coach specializing in interview preparation.
+      : hasBaseTips
+        ? `You are an expert career coach specializing in interview preparation.
+You received a list of general interview tips. Your job is to personalize them for this specific candidate.
+
+Important rules:
+- Tailor each tip to the candidate's experience, skills, and background
+- Use real details from their CV (company names, roles, skills)
+- Transform generic tips into specific ones. Example: instead of "Highlight achievements" → "Talk about how you led project X at [Company] and achieved Y"
+- If there isn't enough info about the candidate, keep the general tip but add relevant context
+- Keep titles short (up to 5 words), but change the description to be personal
+- Return exactly the same number of tips you received
+
+Return ONLY JSON in this format (no markdown, no explanations):
+{
+  "tips": [
+    {"title": "Short title", "description": "2-3 specific, personalized sentences"}
+  ]
+}`
+        : `You are an expert career coach specializing in interview preparation.
 Generate 6 personalized interview tips based on the user's actual profile and experience.
 Each tip must be specific, actionable, and reference the user's real background.
 
@@ -95,7 +138,9 @@ Guidelines:
 - Recommend concrete examples from their CV to share
 - Make each tip specific and directly relevant to their situation`;
 
-    const userPrompt = `User Profile:\n${userContextStr}\n\n${targetJobStr}\n\nGenerate 6 personalized interview preparation tips.`;
+    const userPrompt = hasBaseTips
+      ? `User Profile:\n${userContextStr}\n\n${targetJobStr}\n\nGeneral tips to personalize:\n${baseTipsStr}\n\nPersonalize each tip for this candidate using their real experience and background.`
+      : `User Profile:\n${userContextStr}\n\n${targetJobStr}\n\nGenerate 6 personalized interview preparation tips.`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -131,7 +176,6 @@ Guidelines:
       }
     } catch {
       console.error('Failed to parse tips response:', content);
-      // Fallback tips
       tips = isHe ? [
         { title: 'השתמש בשיטת STAR', description: 'לכל שאלה התנהגותית, ענה עם Situation, Task, Action, Result. זה מראה חשיבה מסודרת ומשכנעת.' },
         { title: 'הדגש הישגים מספרתיים', description: 'במקום לומר "שיפרתי ביצועים", אמור "הפחתתי זמן עיבוד ב-30%". מספרים עושים רושם.' },
