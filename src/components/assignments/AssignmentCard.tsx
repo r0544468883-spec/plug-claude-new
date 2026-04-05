@@ -57,6 +57,8 @@ interface AssignmentCardProps {
   onRequestAccess: (template: AssignmentTemplate) => void;
   onEdit?: (template: AssignmentTemplate) => void;
   onDelete?: (template: AssignmentTemplate) => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: (templateId: string) => void;
 }
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -119,6 +121,8 @@ export function AssignmentCard({
   onRequestAccess,
   onEdit,
   onDelete,
+  isFavorite,
+  onToggleFavorite,
 }: AssignmentCardProps) {
   const { language } = useLanguage();
   const isHebrew = language === 'he';
@@ -295,6 +299,15 @@ export function AssignmentCard({
 
         {/* Actions */}
         <div className="flex items-center gap-2 mt-auto">
+          {onToggleFavorite && (
+            <button
+              onClick={() => onToggleFavorite(template.id)}
+              className={`transition-colors ${isFavorite ? 'text-yellow-500' : 'text-muted-foreground hover:text-yellow-500'}`}
+              title={isFavorite ? 'Remove from favorites' : 'Save for later'}
+            >
+              <Star className={`w-4 h-4 ${isFavorite ? 'fill-yellow-500' : ''}`} />
+            </button>
+          )}
           {template.file_url && (
             <a
               href={template.file_url}

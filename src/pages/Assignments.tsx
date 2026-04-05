@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Header } from '@/components/Header';
-import { Loader2, Plus, ClipboardList, ArrowLeft, ArrowRight, Search, Sparkles, BookOpen, Send, Info, X } from 'lucide-react';
+import { Loader2, Plus, ClipboardList, ArrowLeft, ArrowRight, Search, Sparkles, BookOpen, Send, Info, X, Star } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
@@ -22,7 +22,7 @@ import { RequestAccessDialog } from '@/components/assignments/RequestAccessDialo
 import { useNavigate } from 'react-router-dom';
 import type { AssignmentTemplate, AssignmentSubmission } from '@/components/assignments/AssignmentCard';
 
-type TabId = 'all' | 'my-submissions' | 'my-posts';
+type TabId = 'all' | 'my-submissions' | 'my-posts' | 'favorites';
 
 export default function Assignments() {
   const { user } = useAuth();
@@ -42,6 +42,9 @@ export default function Assignments() {
   const [mySubmissions, setMySubmissions] = useState<Map<string, AssignmentSubmission>>(new Map());
   const [submissionCounts, setSubmissionCounts] = useState<Map<string, number>>(new Map());
   const [myAccessRequests, setMyAccessRequests] = useState<Map<string, 'pending' | 'approved' | 'rejected'>>(new Map());
+  const [favorites, setFavorites] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('plug_assignment_favorites') || '[]')); } catch { return new Set(); }
+  });
   const [userSkills, setUserSkills] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -208,6 +211,15 @@ export default function Assignments() {
     }
   };
 
+  const toggleFavorite = (templateId: string) => {
+    setFavorites(prev => {
+      const next = new Set(prev);
+      if (next.has(templateId)) { next.delete(templateId); } else { next.add(templateId); }
+      try { localStorage.setItem('plug_assignment_favorites', JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
+
   const handleAccessRequested = (templateId: string) => {
     setMyAccessRequests(prev => new Map(prev).set(templateId, 'pending'));
   };
@@ -255,6 +267,7 @@ export default function Assignments() {
     const filtered = templates.filter(t => {
       if (tab === 'my-submissions') return mySubmissions.has(t.id);
       if (tab === 'my-posts') return t.created_by === user?.id;
+      if (tab === 'favorites') return favorites.has(t.id);
       return true;
     }).filter(t =>
       posterFilter === 'all' || (t.profiles as any)?.full_name === posterFilter
@@ -283,10 +296,11 @@ export default function Assignments() {
       });
     }
     return filtered;
-  }, [templates, tab, mySubmissions, user, posterFilter, search, sortBy, calcMatchScore]);
+  }, [templates, tab, mySubmissions, favorites, user, posterFilter, domainFilter, search, sortBy, calcMatchScore]);
 
   const myPostsCount = templates.filter(t => t.created_by === user?.id).length;
   const mySubsCount = user ? templates.filter(t => mySubmissions.has(t.id)).length : 0;
+  const favCount = templates.filter(t => favorites.has(t.id)).length;
 
   return (
     <div className="min-h-screen bg-background" dir={isHebrew ? 'rtl' : 'ltr'}>
@@ -377,6 +391,8 @@ export default function Assignments() {
                   onRequestAccess={handleRequestAccess}
                   onEdit={setEditTarget}
                   onDelete={setDeleteTarget}
+                  isFavorite={favorites.has(template.id)}
+                  onToggleFavorite={toggleFavorite}
                 />
               ))}
             </div>
@@ -389,6 +405,7 @@ export default function Assignments() {
           {([
             { id: 'all', label: isHebrew ? 'כל המטלות' : 'All Assignments', count: templates.length },
             ...(user ? [{ id: 'my-submissions', label: isHebrew ? 'הגשות שלי' : 'My Submissions', count: mySubsCount }] : []),
+            ...(favCount > 0 ? [{ id: 'favorites', label: isHebrew ? 'שמורים' : 'Saved', count: favCount }] : []),
             ...(myPostsCount > 0 ? [{ id: 'my-posts', label: isHebrew ? 'פרסמתי' : 'Posted by Me', count: myPostsCount }] : []),
           ] as { id: TabId; label: string; count: number }[]).map(t => (
             <button
@@ -546,6 +563,20 @@ export default function Assignments() {
                   {isHebrew
                     ? 'חפש מטלות שמתאימות לכישורים שלך והגש פתרונות כדי להוכיח את היכולות שלך'
                     : 'Find assignments that match your skills and submit solutions to showcase your abilities'}
+                </p>
+                <Button onClick={() => setTab('all')} variant="outline" className="gap-2 mt-2">
+                  <Search className="w-4 h-4" />
+                  {isHebrew ? 'חפש מטלות' : 'Browse Assignments'}
+                </Button>
+              </>
+            ) : tab === 'favorites' ? (
+              <>
+                <Star className="w-14 h-14 opacity-20" />
+                <p className="text-lg font-medium">{isHebrew ? 'אין מטלות שמורות' : 'No saved assignments'}</p>
+                <p className="text-sm text-center max-w-xs">
+                  {isHebrew
+                    ? 'לחץ על הכוכב בכרטיס מטלה כדי לשמור אותה לעתיד'
+                    : 'Click the star on an assignment card to save it for later'}
                 </p>
                 <Button onClick={() => setTab('all')} variant="outline" className="gap-2 mt-2">
                   <Search className="w-4 h-4" />
