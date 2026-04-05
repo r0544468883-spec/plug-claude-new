@@ -206,9 +206,9 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
   // Combine & prioritize followed content
   const allPosts = useMemo(() => {
     const real = [...(dbPosts || []), ...(assignmentPosts || [])];
-    // Sort by date
-    real.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     const combined = real.length >= 5 ? real : [...real, ...mockPosts];
+    // Sort ALL posts by date so newest always appear first
+    combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     if (!followedIds?.userIds.length && !followedIds?.companyIds.length) return combined;
 
