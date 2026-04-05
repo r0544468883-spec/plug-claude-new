@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Clock, Users, Eye, Download, ChevronRight, CheckCircle2, Pencil, Star, AlertCircle, Lock, Trash2, Building2, Heart, Inbox, Bookmark } from 'lucide-react';
+import { Clock, Users, Eye, Download, ChevronRight, CheckCircle2, Pencil, Star, AlertCircle, Lock, Trash2, Building2, Heart, Inbox, Bookmark, MessageCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export interface AssignmentTemplate {
@@ -62,6 +62,8 @@ interface AssignmentCardProps {
   isLiked?: boolean;
   likesCount?: number;
   onToggleLike?: (templateId: string) => void;
+  commentsCount?: number;
+  onOpenComments?: (templateId: string) => void;
 }
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -129,6 +131,8 @@ export function AssignmentCard({
   isLiked,
   likesCount = 0,
   onToggleLike,
+  commentsCount = 0,
+  onOpenComments,
 }: AssignmentCardProps) {
   const { language } = useLanguage();
   const isHebrew = language === 'he';
@@ -314,6 +318,15 @@ export function AssignmentCard({
               >
                 <Heart className={`w-4 h-4 ${isLiked ? 'fill-red-500' : ''}`} />
                 {likesCount > 0 && <span>{likesCount}</span>}
+              </button>
+            )}
+            {onOpenComments && (
+              <button
+                onClick={() => onOpenComments(template.id)}
+                className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                <MessageCircle className="w-4 h-4" />
+                {commentsCount > 0 && <span>{commentsCount}</span>}
               </button>
             )}
             {onToggleFavorite && (

@@ -31,6 +31,7 @@ const POST_TYPE_ACCENT: Record<string, string> = {
   visual: 'border-s-amber-500',
   question: 'border-s-cyan-500',
   event: 'border-s-pink-500',
+  assignment: 'border-s-emerald-500',
 };
 
 export function FeedCard({ post }: FeedCardProps) {

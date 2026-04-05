@@ -19,6 +19,7 @@ import { CreateAssignmentDialog } from '@/components/assignments/CreateAssignmen
 import { SubmitSolutionDialog } from '@/components/assignments/SubmitSolutionDialog';
 import { SubmissionsViewDialog } from '@/components/assignments/SubmissionsViewDialog';
 import { RequestAccessDialog } from '@/components/assignments/RequestAccessDialog';
+import { AssignmentCommentsDialog } from '@/components/assignments/AssignmentCommentsDialog';
 import { useNavigate } from 'react-router-dom';
 import type { AssignmentTemplate, AssignmentSubmission } from '@/components/assignments/AssignmentCard';
 
@@ -62,6 +63,8 @@ export default function Assignments() {
   const [submitTarget, setSubmitTarget] = useState<AssignmentTemplate | null>(null);
   const [viewTarget, setViewTarget] = useState<AssignmentTemplate | null>(null);
   const [requestTarget, setRequestTarget] = useState<AssignmentTemplate | null>(null);
+  const [commentsTargetId, setCommentsTargetId] = useState<string | null>(null);
+  const [commentCounts, setCommentCounts] = useState<Map<string, number>>(new Map());
 
   // Fetch user skills from profile
   useEffect(() => {
@@ -164,6 +167,19 @@ export default function Assignments() {
             countMap.set(r.template_id, (countMap.get(r.template_id) ?? 0) + 1);
           });
           setSubmissionCounts(countMap);
+        }
+
+        // Comment counts
+        const { data: commentData } = await supabase
+          .from('assignment_comments' as any)
+          .select('template_id')
+          .in('template_id', ids);
+        if (commentData) {
+          const cMap = new Map<string, number>();
+          (commentData as { template_id: string }[]).forEach(r => {
+            cMap.set(r.template_id, (cMap.get(r.template_id) ?? 0) + 1);
+          });
+          setCommentCounts(cMap);
         }
       }
     } finally {
@@ -417,6 +433,8 @@ export default function Assignments() {
                   isLiked={myLikes.has(template.id)}
                   likesCount={likeCounts.get(template.id) ?? 0}
                   onToggleLike={toggleLike}
+                  commentsCount={commentCounts.get(template.id) ?? 0}
+                  onOpenComments={setCommentsTargetId}
                 />
               ))}
             </div>
@@ -701,6 +719,12 @@ export default function Assignments() {
         onOpenChange={(o) => { if (!o) setEditTarget(null); }}
         onSuccess={fetchData}
         editTemplate={editTarget ?? undefined}
+      />
+
+      <AssignmentCommentsDialog
+        templateId={commentsTargetId}
+        open={!!commentsTargetId}
+        onOpenChange={(o) => { if (!o) setCommentsTargetId(null); }}
       />
 
       {/* Delete confirmation */}

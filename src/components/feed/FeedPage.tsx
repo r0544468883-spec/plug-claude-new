@@ -168,11 +168,46 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
     enabled: !!user?.id,
   });
 
+  // Fetch recent assignments for the feed
+  const { data: assignmentPosts } = useQuery({
+    queryKey: ['feed-assignments'],
+    queryFn: async () => {
+      const { data: assignments } = await supabase
+        .from('assignment_templates' as any)
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (!assignments?.length) return [];
+
+      const creatorIds = [...new Set((assignments as any[]).map(a => a.created_by))];
+      const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', creatorIds);
+      const nameMap: Record<string, string> = {};
+      profiles?.forEach((p: any) => { nameMap[p.id] = p.full_name; });
+
+      return (assignments as any[]).map((a): FeedPost => ({
+        id: `assignment-${a.id}`,
+        recruiterName: nameMap[a.created_by] || 'User',
+        recruiterAvatar: (nameMap[a.created_by] || 'U').charAt(0).toUpperCase(),
+        companyName: a.company_name || '',
+        postType: 'assignment',
+        content: `📋 New assignment: "${a.title}"\n${a.description?.slice(0, 200) || ''}${a.description?.length > 200 ? '...' : ''}`,
+        contentHe: `📋 מטלה חדשה: "${a.title}"\n${a.description?.slice(0, 200) || ''}${a.description?.length > 200 ? '...' : ''}`,
+        likes: 0,
+        comments: 0,
+        createdAt: a.created_at,
+        authorId: a.created_by,
+      }));
+    },
+  });
+
   const mockPosts = useMemo(() => generateFeedPosts(companyNames || []), [companyNames]);
 
   // Combine & prioritize followed content
   const allPosts = useMemo(() => {
-    const real = dbPosts || [];
+    const real = [...(dbPosts || []), ...(assignmentPosts || [])];
+    // Sort by date
+    real.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     const combined = real.length >= 5 ? real : [...real, ...mockPosts];
 
     if (!followedIds?.userIds.length && !followedIds?.companyIds.length) return combined;
@@ -188,7 +223,7 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
       }
     }
     return [...followed, ...rest];
-  }, [dbPosts, mockPosts, followedIds]);
+  }, [dbPosts, assignmentPosts, mockPosts, followedIds]);
 
   // Trending = sorted by engagement
   const trendingPosts = useMemo(() => {
