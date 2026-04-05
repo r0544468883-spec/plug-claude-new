@@ -129,38 +129,54 @@ export function CreateAssignmentDialog({ open, onOpenChange, onSuccess, editTemp
         fileUrl = urlData?.signedUrl ?? null;
       }
 
-      const payload: Record<string, any> = {
+      // Core fields that always exist in DB
+      const corePayload: Record<string, any> = {
         title: title.trim(),
         description: description.trim(),
         difficulty: difficulty || null,
         estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
       };
 
-      if (tags.length > 0) payload.tags = tags;
-      if (deadline) payload.deadline = deadline;
-      if (accessMode !== 'public') payload.access_mode = accessMode;
-      if (companyName.trim()) payload.company_name = companyName.trim();
-      if (domain.trim()) payload.domain = domain.trim();
+      // Optional fields — added via migrations, may not exist yet
+      const extraFields: Record<string, any> = {};
+      if (tags.length > 0) extraFields.tags = tags;
+      if (deadline) extraFields.deadline = deadline;
+      if (accessMode !== 'public') extraFields.access_mode = accessMode;
+      if (companyName.trim()) extraFields.company_name = companyName.trim();
+      if (domain.trim()) extraFields.domain = domain.trim();
+
+      // Try with all fields first, fall back to core-only if columns don't exist
+      const tryInsertOrUpdate = async (payload: Record<string, any>) => {
+        if (isEdit && editTemplate) {
+          if (fileUrl) payload.file_url = fileUrl;
+          const { error } = await supabase
+            .from('assignment_templates' as any)
+            .update(payload)
+            .eq('id', editTemplate.id);
+          return { data: null, error };
+        } else {
+          payload.created_by = user.id;
+          payload.file_url = fileUrl;
+          const { data, error } = await supabase
+            .from('assignment_templates' as any)
+            .insert(payload)
+            .select('id')
+            .single();
+          return { data, error };
+        }
+      };
+
+      let result = await tryInsertOrUpdate({ ...corePayload, ...extraFields });
+      // If failed due to missing column, retry with core fields only
+      if (result.error?.message?.includes('schema cache')) {
+        result = await tryInsertOrUpdate({ ...corePayload });
+      }
+      if (result.error) throw result.error;
 
       if (isEdit && editTemplate) {
-        // Update existing
-        if (fileUrl) payload.file_url = fileUrl;
-        const { error } = await supabase
-          .from('assignment_templates' as any)
-          .update(payload)
-          .eq('id', editTemplate.id);
-        if (error) throw error;
         toast.success(isHebrew ? 'המטלה עודכנה!' : 'Assignment updated!');
       } else {
-        // Create new
-        payload.created_by = user.id;
-        payload.file_url = fileUrl;
-        const { data: newAssignment, error } = await supabase
-          .from('assignment_templates' as any)
-          .insert(payload)
-          .select('id')
-          .single();
-        if (error) throw error;
+        const newAssignment = result.data;
 
         // Notify followers
         const { data: followers } = await supabase
