@@ -78,25 +78,42 @@ export default function Assignments() {
     try {
       let query = supabase
         .from('assignment_templates' as any)
-        .select('*, profiles(full_name, avatar_url, visible_to_hr, role)')
+        .select('*')
         .eq('is_active', true);
 
       if (difficultyFilter !== 'all') query = query.eq('difficulty', difficultyFilter);
-      if (tagFilter !== 'all') query = (query as any).contains('tags', [tagFilter]);
       if (sortBy === 'popular') {
         query = query.order('view_count', { ascending: false });
       } else {
         query = query.order('created_at', { ascending: false });
       }
 
-      const { data: tmplData } = await query;
+      const { data: tmplData, error: tmplError } = await query;
+      if (tmplError) { console.error('Fetch templates error:', tmplError); }
       const allFetched = (tmplData as AssignmentTemplate[]) ?? [];
 
+      // Fetch profiles for all creators
+      const creatorIds = [...new Set(allFetched.map(t => t.created_by))];
+      let profilesMap = new Map<string, any>();
+      if (creatorIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url, visible_to_hr, role')
+          .in('id', creatorIds);
+        (profilesData ?? []).forEach((p: any) => profilesMap.set(p.id, p));
+      }
+
+      // Attach profiles to templates
+      const withProfiles = allFetched.map(t => ({
+        ...t,
+        profiles: profilesMap.get(t.created_by) ?? null,
+      }));
+
       // Client-side visibility filter: hide assignments from non-visible job seekers
-      const tmpl = allFetched.filter(t => {
+      const tmpl = withProfiles.filter(t => {
         if (t.created_by === user?.id) return true;
         const poster = t.profiles as any;
-        if (poster?.role && poster.role !== 'job_seeker') return true; // HR/companies always visible
+        if (poster?.role && poster.role !== 'job_seeker') return true;
         return poster?.visible_to_hr === true;
       });
 
@@ -145,7 +162,7 @@ export default function Assignments() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, difficultyFilter, tagFilter, sortBy]);
+  }, [user, difficultyFilter, sortBy]);
 
   useEffect(() => {
     fetchData();
