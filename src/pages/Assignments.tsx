@@ -246,7 +246,8 @@ export default function Assignments() {
       return (
         t.title.toLowerCase().includes(q) ||
         t.description?.toLowerCase().includes(q) ||
-        ((t as any).tags ?? []).some((tag: string) => tag.toLowerCase().includes(q))
+        ((t as any).tags ?? []).some((tag: string) => tag.toLowerCase().includes(q)) ||
+        ((t as any).company_name ?? '').toLowerCase().includes(q)
       );
     });
 
@@ -393,7 +394,7 @@ export default function Assignments() {
             <Input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder={isHebrew ? 'חפש לפי כותרת, תיאור או כישור...' : 'Search by title, description or skill...'}
+              placeholder={isHebrew ? 'חפש לפי כותרת, חברה, תיאור או כישור...' : 'Search by title, company, description or skill...'}
               className="ps-9"
             />
           </div>

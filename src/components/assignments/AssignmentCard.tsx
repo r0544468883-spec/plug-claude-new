@@ -89,6 +89,14 @@ const DOMAIN_LABELS: Record<string, { he: string; en: string }> = {
   mobile: { he: 'מובייל', en: 'Mobile' },
   qa: { he: 'בדיקות', en: 'QA' },
   security: { he: 'אבטחה', en: 'Security' },
+  ai_ml: { he: 'AI / למידת מכונה', en: 'AI / ML' },
+  blockchain: { he: 'בלוקצ׳יין', en: 'Blockchain' },
+  embedded: { he: 'מערכות משובצות', en: 'Embedded' },
+  gaming: { he: 'גיימינג', en: 'Gaming' },
+  cloud: { he: 'ענן', en: 'Cloud' },
+  marketing: { he: 'שיווק', en: 'Marketing' },
+  hr: { he: 'משאבי אנוש', en: 'HR' },
+  finance: { he: 'פיננסים', en: 'Finance' },
   other: { he: 'אחר', en: 'Other' },
 };
 

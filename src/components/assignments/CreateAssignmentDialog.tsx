@@ -251,6 +251,14 @@ export function CreateAssignmentDialog({ open, onOpenChange, onSuccess, editTemp
                   <SelectItem value="mobile">{isHebrew ? 'מובייל' : 'Mobile'}</SelectItem>
                   <SelectItem value="qa">{isHebrew ? 'בדיקות' : 'QA'}</SelectItem>
                   <SelectItem value="security">{isHebrew ? 'אבטחה' : 'Security'}</SelectItem>
+                  <SelectItem value="ai_ml">{isHebrew ? 'AI / למידת מכונה' : 'AI / Machine Learning'}</SelectItem>
+                  <SelectItem value="blockchain">{isHebrew ? 'בלוקצ׳יין' : 'Blockchain'}</SelectItem>
+                  <SelectItem value="embedded">{isHebrew ? 'מערכות משובצות' : 'Embedded Systems'}</SelectItem>
+                  <SelectItem value="gaming">{isHebrew ? 'גיימינג' : 'Gaming'}</SelectItem>
+                  <SelectItem value="cloud">{isHebrew ? 'ענן' : 'Cloud'}</SelectItem>
+                  <SelectItem value="marketing">{isHebrew ? 'שיווק' : 'Marketing'}</SelectItem>
+                  <SelectItem value="hr">{isHebrew ? 'משאבי אנוש' : 'HR'}</SelectItem>
+                  <SelectItem value="finance">{isHebrew ? 'פיננסים' : 'Finance'}</SelectItem>
                   <SelectItem value="other">{isHebrew ? 'אחר' : 'Other'}</SelectItem>
                 </SelectContent>
               </Select>
