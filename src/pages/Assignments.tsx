@@ -684,6 +684,13 @@ export default function Assignments() {
                 onRequestAccess={handleRequestAccess}
                 onEdit={setEditTarget}
                 onDelete={setDeleteTarget}
+                isFavorite={favorites.has(template.id)}
+                onToggleFavorite={toggleFavorite}
+                isLiked={myLikes.has(template.id)}
+                likesCount={likeCounts.get(template.id) ?? 0}
+                onToggleLike={toggleLike}
+                commentsCount={commentCounts.get(template.id) ?? 0}
+                onOpenComments={setCommentsTargetId}
               />
             ))}
           </div>
