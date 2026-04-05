@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Header } from '@/components/Header';
-import { Loader2, Plus, ClipboardList, ArrowLeft, ArrowRight, Search, Sparkles, BookOpen, Send } from 'lucide-react';
+import { Loader2, Plus, ClipboardList, ArrowLeft, ArrowRight, Search, Sparkles, BookOpen, Send, Info, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
@@ -44,6 +44,9 @@ export default function Assignments() {
   const [userSkills, setUserSkills] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    try { return localStorage.getItem('plug_assignments_onboarding_dismissed') !== 'true'; } catch { return true; }
+  });
   const [showCreate, setShowCreate] = useState(false);
   const [editTarget, setEditTarget] = useState<AssignmentTemplate | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AssignmentTemplate | null>(null);
@@ -296,6 +299,40 @@ export default function Assignments() {
             </Button>
           )}
         </div>
+
+        {/* Onboarding banner */}
+        {showOnboarding && (
+          <div className="relative rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-2">
+            <button
+              onClick={() => { setShowOnboarding(false); try { localStorage.setItem('plug_assignments_onboarding_dismissed', 'true'); } catch {} }}
+              className="absolute top-3 end-3 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="flex items-center gap-2">
+              <Info className="w-5 h-5 text-primary flex-shrink-0" />
+              <h2 className="font-semibold text-sm">
+                {isHebrew ? 'ברוכים הבאים ללוח המטלות!' : 'Welcome to the Assignments Board!'}
+              </h2>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {isHebrew
+                ? 'כאן חברות ומגייסים מפרסמים מטלות טכניות — ואתם יכולים להגיש פתרונות כדי להוכיח את הכישורים שלכם. זו הדרך הטובה ביותר להתבלט מול מגייסים ולהשיג את העבודה הבאה שלכם.'
+                : 'Companies and recruiters post technical challenges here — and you can submit solutions to prove your skills. This is the best way to stand out to recruiters and land your next job.'}
+            </p>
+            <div className="flex flex-wrap gap-4 text-xs text-muted-foreground pt-1">
+              <span>
+                {isHebrew ? '📋 חפשו מטלות שמתאימות לכישורים שלכם' : '📋 Find assignments that match your skills'}
+              </span>
+              <span>
+                {isHebrew ? '📤 הגישו פתרונות ותבלטו' : '📤 Submit solutions and stand out'}
+              </span>
+              <span>
+                {isHebrew ? '🏢 חברות? פרסמו מטלות כדי למצוא מועמדים' : '🏢 Companies? Post challenges to find talent'}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Recommended section */}
         {tab === 'all' && recommended.length > 0 && !search && posterFilter === 'all' && (

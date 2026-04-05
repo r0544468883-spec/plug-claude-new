@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Clock, Users, Eye, Download, ChevronRight, CheckCircle2, Pencil, Star, AlertCircle, Lock, Trash2 } from 'lucide-react';
+import { Clock, Users, Eye, Download, ChevronRight, CheckCircle2, Pencil, Star, AlertCircle, Lock, Trash2, Building2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export interface AssignmentTemplate {
@@ -21,6 +21,8 @@ export interface AssignmentTemplate {
   tags?: string[];
   deadline?: string | null;
   access_mode?: 'public' | 'request_only';
+  company_name?: string | null;
+  domain?: string | null;
   profiles?: {
     full_name: string | null;
     avatar_url: string | null;
@@ -74,6 +76,20 @@ const STATUS_LABELS: Record<string, { he: string; en: string; color: string }> =
   viewed: { he: 'נצפה', en: 'Viewed', color: 'text-blue-600' },
   starred: { he: 'מסומן ⭐', en: 'Starred ⭐', color: 'text-yellow-600' },
   rejected: { he: 'לא מתאים', en: 'Not a fit', color: 'text-red-500' },
+};
+
+const DOMAIN_LABELS: Record<string, { he: string; en: string }> = {
+  frontend: { he: 'פרונטאנד', en: 'Frontend' },
+  backend: { he: 'בקאנד', en: 'Backend' },
+  fullstack: { he: 'פולסטאק', en: 'Full Stack' },
+  data: { he: 'דאטה', en: 'Data' },
+  devops: { he: 'דבאופס', en: 'DevOps' },
+  design: { he: 'עיצוב', en: 'Design' },
+  product: { he: 'מוצר', en: 'Product' },
+  mobile: { he: 'מובייל', en: 'Mobile' },
+  qa: { he: 'בדיקות', en: 'QA' },
+  security: { he: 'אבטחה', en: 'Security' },
+  other: { he: 'אחר', en: 'Other' },
 };
 
 function daysUntil(dateStr: string): number {
@@ -170,6 +186,23 @@ export function AssignmentCard({
             </Badge>
           )}
         </div>
+
+        {/* Company + Domain */}
+        {(template.company_name || template.domain) && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {template.company_name && (
+              <span className="flex items-center gap-1">
+                <Building2 className="w-3 h-3" />
+                {template.company_name}
+              </span>
+            )}
+            {template.domain && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
+                {DOMAIN_LABELS[template.domain]?.[isHebrew ? 'he' : 'en'] ?? template.domain}
+              </Badge>
+            )}
+          </div>
+        )}
 
         {/* Tags */}
         {template.tags && template.tags.length > 0 && (

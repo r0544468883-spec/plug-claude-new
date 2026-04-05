@@ -11,13 +11,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Upload, X, Tag, Lock, Pencil } from 'lucide-react';
+import { Loader2, Plus, Upload, X, Tag, Lock, Pencil, Building2, Briefcase } from 'lucide-react';
 
 interface CreateAssignmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
-  editTemplate?: { id: string; title: string; description: string; tags?: string[]; difficulty: string | null; estimated_hours: number | null; deadline?: string | null; access_mode?: 'public' | 'request_only'; };
+  editTemplate?: { id: string; title: string; description: string; tags?: string[]; difficulty: string | null; estimated_hours: number | null; deadline?: string | null; access_mode?: 'public' | 'request_only'; company_name?: string | null; domain?: string | null; };
 }
 
 const SUGGESTED_SKILLS = [
@@ -38,6 +38,8 @@ export function CreateAssignmentDialog({ open, onOpenChange, onSuccess, editTemp
   const [estimatedHours, setEstimatedHours] = useState('');
   const [deadline, setDeadline] = useState('');
   const [accessMode, setAccessMode] = useState<'public' | 'request_only'>('public');
+  const [companyName, setCompanyName] = useState('');
+  const [domain, setDomain] = useState('');
   const [briefFile, setBriefFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [suggestedTags, setSuggestedTags] = useState<string[]>(SUGGESTED_SKILLS);
@@ -56,6 +58,8 @@ export function CreateAssignmentDialog({ open, onOpenChange, onSuccess, editTemp
     setEstimatedHours(editTemplate.estimated_hours?.toString() ?? '');
     setDeadline(editTemplate.deadline ?? '');
     setAccessMode(editTemplate.access_mode ?? 'public');
+    setCompanyName(editTemplate.company_name ?? '');
+    setDomain(editTemplate.domain ?? '');
   }, [open, editTemplate?.id]);
 
   // Fetch user profile skills + visibility
@@ -87,6 +91,7 @@ export function CreateAssignmentDialog({ open, onOpenChange, onSuccess, editTemp
     setTitle(''); setDescription(''); setTags([]); setTagInput('');
     setDifficulty(''); setEstimatedHours(''); setDeadline('');
     setAccessMode('public'); setBriefFile(null);
+    setCompanyName(''); setDomain('');
   };
 
   const addTag = (tag: string) => {
@@ -132,6 +137,8 @@ export function CreateAssignmentDialog({ open, onOpenChange, onSuccess, editTemp
         estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
         deadline: deadline || null,
         access_mode: accessMode,
+        company_name: companyName.trim() || null,
+        domain: domain.trim() || null,
       };
 
       if (isEdit && editTemplate) {
@@ -178,9 +185,10 @@ export function CreateAssignmentDialog({ open, onOpenChange, onSuccess, editTemp
       reset();
       onSuccess();
       onOpenChange(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error(isHebrew ? 'שגיאה בפרסום המטלה' : 'Failed to publish assignment');
+      const msg = err?.message || '';
+      toast.error(isHebrew ? `שגיאה בפרסום המטלה: ${msg}` : `Failed to publish assignment: ${msg}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -207,6 +215,45 @@ export function CreateAssignmentDialog({ open, onOpenChange, onSuccess, editTemp
               onChange={(e) => setTitle(e.target.value)}
               placeholder={isHebrew ? 'למשל: אתגר React Performance' : 'e.g. React Performance Challenge'}
             />
+          </div>
+
+          {/* Company + Domain */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5" />
+                {isHebrew ? 'שם חברה' : 'Company Name'}
+              </Label>
+              <Input
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder={isHebrew ? 'למשל: Google' : 'e.g. Google'}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                <Briefcase className="w-3.5 h-3.5" />
+                {isHebrew ? 'תחום' : 'Domain'}
+              </Label>
+              <Select value={domain} onValueChange={setDomain}>
+                <SelectTrigger>
+                  <SelectValue placeholder={isHebrew ? 'בחר תחום...' : 'Select domain...'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="frontend">{isHebrew ? 'פרונטאנד' : 'Frontend'}</SelectItem>
+                  <SelectItem value="backend">{isHebrew ? 'בקאנד' : 'Backend'}</SelectItem>
+                  <SelectItem value="fullstack">{isHebrew ? 'פולסטאק' : 'Full Stack'}</SelectItem>
+                  <SelectItem value="data">{isHebrew ? 'דאטה' : 'Data'}</SelectItem>
+                  <SelectItem value="devops">{isHebrew ? 'דבאופס' : 'DevOps'}</SelectItem>
+                  <SelectItem value="design">{isHebrew ? 'עיצוב' : 'Design'}</SelectItem>
+                  <SelectItem value="product">{isHebrew ? 'מוצר' : 'Product'}</SelectItem>
+                  <SelectItem value="mobile">{isHebrew ? 'מובייל' : 'Mobile'}</SelectItem>
+                  <SelectItem value="qa">{isHebrew ? 'בדיקות' : 'QA'}</SelectItem>
+                  <SelectItem value="security">{isHebrew ? 'אבטחה' : 'Security'}</SelectItem>
+                  <SelectItem value="other">{isHebrew ? 'אחר' : 'Other'}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Description */}
