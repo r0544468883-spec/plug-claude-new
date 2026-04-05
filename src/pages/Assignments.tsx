@@ -78,7 +78,7 @@ export default function Assignments() {
     try {
       let query = supabase
         .from('assignment_templates' as any)
-        .select('*, profiles!created_by(full_name, avatar_url, visible_to_hr, role)')
+        .select('*, profiles(full_name, avatar_url, visible_to_hr, role)')
         .eq('is_active', true);
 
       if (difficultyFilter !== 'all') query = query.eq('difficulty', difficultyFilter);
