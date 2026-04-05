@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Header } from '@/components/Header';
-import { Loader2, Plus, ClipboardList, ArrowLeft, ArrowRight, Search, Sparkles, BookOpen, Send, Info, X, Star } from 'lucide-react';
+import { Loader2, Plus, ClipboardList, ArrowLeft, ArrowRight, Search, Sparkles, BookOpen, Send, Info, X, Bookmark } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
@@ -45,6 +45,10 @@ export default function Assignments() {
   const [favorites, setFavorites] = useState<Set<string>>(() => {
     try { return new Set(JSON.parse(localStorage.getItem('plug_assignment_favorites') || '[]')); } catch { return new Set(); }
   });
+  const [myLikes, setMyLikes] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('plug_assignment_likes') || '[]')); } catch { return new Set(); }
+  });
+  const [likeCounts, setLikeCounts] = useState<Map<string, number>>(new Map());
   const [userSkills, setUserSkills] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -216,6 +220,23 @@ export default function Assignments() {
       const next = new Set(prev);
       if (next.has(templateId)) { next.delete(templateId); } else { next.add(templateId); }
       try { localStorage.setItem('plug_assignment_favorites', JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
+
+  const toggleLike = (templateId: string) => {
+    setMyLikes(prev => {
+      const next = new Set(prev);
+      const wasLiked = next.has(templateId);
+      if (wasLiked) { next.delete(templateId); } else { next.add(templateId); }
+      try { localStorage.setItem('plug_assignment_likes', JSON.stringify([...next])); } catch {}
+      // Update count
+      setLikeCounts(prevCounts => {
+        const map = new Map(prevCounts);
+        const current = map.get(templateId) ?? 0;
+        map.set(templateId, wasLiked ? Math.max(0, current - 1) : current + 1);
+        return map;
+      });
       return next;
     });
   };
@@ -393,6 +414,9 @@ export default function Assignments() {
                   onDelete={setDeleteTarget}
                   isFavorite={favorites.has(template.id)}
                   onToggleFavorite={toggleFavorite}
+                  isLiked={myLikes.has(template.id)}
+                  likesCount={likeCounts.get(template.id) ?? 0}
+                  onToggleLike={toggleLike}
                 />
               ))}
             </div>
@@ -571,7 +595,7 @@ export default function Assignments() {
               </>
             ) : tab === 'favorites' ? (
               <>
-                <Star className="w-14 h-14 opacity-20" />
+                <Bookmark className="w-14 h-14 opacity-20" />
                 <p className="text-lg font-medium">{isHebrew ? 'אין מטלות שמורות' : 'No saved assignments'}</p>
                 <p className="text-sm text-center max-w-xs">
                   {isHebrew

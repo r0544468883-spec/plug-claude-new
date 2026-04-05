@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Clock, Users, Eye, Download, ChevronRight, CheckCircle2, Pencil, Star, AlertCircle, Lock, Trash2, Building2 } from 'lucide-react';
+import { Clock, Users, Eye, Download, ChevronRight, CheckCircle2, Pencil, Star, AlertCircle, Lock, Trash2, Building2, Heart, Inbox, Bookmark } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export interface AssignmentTemplate {
@@ -59,6 +59,9 @@ interface AssignmentCardProps {
   onDelete?: (template: AssignmentTemplate) => void;
   isFavorite?: boolean;
   onToggleFavorite?: (templateId: string) => void;
+  isLiked?: boolean;
+  likesCount?: number;
+  onToggleLike?: (templateId: string) => void;
 }
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -123,6 +126,9 @@ export function AssignmentCard({
   onDelete,
   isFavorite,
   onToggleFavorite,
+  isLiked,
+  likesCount = 0,
+  onToggleLike,
 }: AssignmentCardProps) {
   const { language } = useLanguage();
   const isHebrew = language === 'he';
@@ -299,15 +305,28 @@ export function AssignmentCard({
 
         {/* Actions */}
         <div className="flex items-center gap-2 mt-auto">
-          {onToggleFavorite && (
-            <button
-              onClick={() => onToggleFavorite(template.id)}
-              className={`transition-colors ${isFavorite ? 'text-yellow-500' : 'text-muted-foreground hover:text-yellow-500'}`}
-              title={isFavorite ? 'Remove from favorites' : 'Save for later'}
-            >
-              <Star className={`w-4 h-4 ${isFavorite ? 'fill-yellow-500' : ''}`} />
-            </button>
-          )}
+          {/* Like + Save buttons */}
+          <div className="flex items-center gap-1">
+            {onToggleLike && (
+              <button
+                onClick={() => onToggleLike(template.id)}
+                className={`flex items-center gap-0.5 text-xs transition-colors ${isLiked ? 'text-red-500' : 'text-muted-foreground hover:text-red-500'}`}
+              >
+                <Heart className={`w-4 h-4 ${isLiked ? 'fill-red-500' : ''}`} />
+                {likesCount > 0 && <span>{likesCount}</span>}
+              </button>
+            )}
+            {onToggleFavorite && (
+              <button
+                onClick={() => onToggleFavorite(template.id)}
+                className={`transition-colors ${isFavorite ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                title={isFavorite ? (isHebrew ? 'הסר משמורים' : 'Remove from saved') : (isHebrew ? 'שמור לאחר כך' : 'Save for later')}
+              >
+                <Bookmark className={`w-4 h-4 ${isFavorite ? 'fill-primary' : ''}`} />
+              </button>
+            )}
+          </div>
+
           {template.file_url && (
             <a
               href={template.file_url}
@@ -335,7 +354,7 @@ export function AssignmentCard({
                   </Button>
                 )}
                 <Button size="sm" variant="outline" onClick={() => onViewSubmissions(template)} className="h-8 gap-1">
-                  <Star className="w-3.5 h-3.5" />
+                  <Inbox className="w-3.5 h-3.5" />
                   {submissionsCount} {isHebrew ? 'פתרונות' : 'Solutions'}
                 </Button>
               </>
