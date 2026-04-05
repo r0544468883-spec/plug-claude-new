@@ -137,9 +137,10 @@ export function CreateAssignmentDialog({ open, onOpenChange, onSuccess, editTemp
         estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
         deadline: deadline || null,
         access_mode: accessMode,
-        company_name: companyName.trim() || null,
-        domain: domain.trim() || null,
       };
+
+      if (companyName.trim()) payload.company_name = companyName.trim();
+      if (domain.trim()) payload.domain = domain.trim();
 
       if (isEdit && editTemplate) {
         // Update existing
