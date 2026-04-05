@@ -34,6 +34,7 @@ export default function Assignments() {
   const [tagFilter, setTagFilter] = useState<string>('all');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
   const [posterFilter, setPosterFilter] = useState<string>('all');
+  const [domainFilter, setDomainFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'match' | 'deadline'>('newest');
   const [search, setSearch] = useState('');
 
@@ -240,6 +241,8 @@ export default function Assignments() {
       return true;
     }).filter(t =>
       posterFilter === 'all' || (t.profiles as any)?.full_name === posterFilter
+    ).filter(t =>
+      domainFilter === 'all' || (t as any).domain === domainFilter
     ).filter(t => {
       if (!search) return true;
       const q = search.toLowerCase();
@@ -436,6 +439,34 @@ export default function Assignments() {
                   </SelectContent>
                 </Select>
               )}
+
+              <Select value={domainFilter} onValueChange={setDomainFilter}>
+                <SelectTrigger className="w-36 h-8 text-sm">
+                  <SelectValue placeholder={isHebrew ? 'תחום' : 'Domain'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{isHebrew ? 'כל התחומים' : 'All Domains'}</SelectItem>
+                  <SelectItem value="frontend">{isHebrew ? 'פרונטאנד' : 'Frontend'}</SelectItem>
+                  <SelectItem value="backend">{isHebrew ? 'בקאנד' : 'Backend'}</SelectItem>
+                  <SelectItem value="fullstack">{isHebrew ? 'פולסטאק' : 'Full Stack'}</SelectItem>
+                  <SelectItem value="data">{isHebrew ? 'דאטה' : 'Data'}</SelectItem>
+                  <SelectItem value="devops">{isHebrew ? 'דבאופס' : 'DevOps'}</SelectItem>
+                  <SelectItem value="design">{isHebrew ? 'עיצוב' : 'Design'}</SelectItem>
+                  <SelectItem value="product">{isHebrew ? 'מוצר' : 'Product'}</SelectItem>
+                  <SelectItem value="mobile">{isHebrew ? 'מובייל' : 'Mobile'}</SelectItem>
+                  <SelectItem value="qa">{isHebrew ? 'בדיקות' : 'QA'}</SelectItem>
+                  <SelectItem value="security">{isHebrew ? 'אבטחה' : 'Security'}</SelectItem>
+                  <SelectItem value="ai_ml">{isHebrew ? 'AI / למידת מכונה' : 'AI / ML'}</SelectItem>
+                  <SelectItem value="blockchain">{isHebrew ? 'בלוקצ׳יין' : 'Blockchain'}</SelectItem>
+                  <SelectItem value="embedded">{isHebrew ? 'מערכות משובצות' : 'Embedded'}</SelectItem>
+                  <SelectItem value="gaming">{isHebrew ? 'גיימינג' : 'Gaming'}</SelectItem>
+                  <SelectItem value="cloud">{isHebrew ? 'ענן' : 'Cloud'}</SelectItem>
+                  <SelectItem value="marketing">{isHebrew ? 'שיווק' : 'Marketing'}</SelectItem>
+                  <SelectItem value="hr">{isHebrew ? 'משאבי אנוש' : 'HR'}</SelectItem>
+                  <SelectItem value="finance">{isHebrew ? 'פיננסים' : 'Finance'}</SelectItem>
+                  <SelectItem value="other">{isHebrew ? 'אחר' : 'Other'}</SelectItem>
+                </SelectContent>
+              </Select>
 
               <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
                 <SelectTrigger className="w-32 h-8 text-sm">

@@ -132,13 +132,13 @@ export function CreateAssignmentDialog({ open, onOpenChange, onSuccess, editTemp
       const payload: Record<string, any> = {
         title: title.trim(),
         description: description.trim(),
-        tags: tags.length > 0 ? tags : [],
         difficulty: difficulty || null,
         estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
-        deadline: deadline || null,
-        access_mode: accessMode,
       };
 
+      if (tags.length > 0) payload.tags = tags;
+      if (deadline) payload.deadline = deadline;
+      if (accessMode !== 'public') payload.access_mode = accessMode;
       if (companyName.trim()) payload.company_name = companyName.trim();
       if (domain.trim()) payload.domain = domain.trim();
 
