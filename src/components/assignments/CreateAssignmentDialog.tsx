@@ -11,12 +11,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Upload, X, Tag, Lock } from 'lucide-react';
+import { Loader2, Plus, Upload, X, Tag, Lock, Pencil } from 'lucide-react';
 
 interface CreateAssignmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  editTemplate?: { id: string; title: string; description: string; tags?: string[]; difficulty: string | null; estimated_hours: number | null; deadline?: string | null; access_mode?: 'public' | 'request_only'; };
 }
 
 const SUGGESTED_SKILLS = [
@@ -24,7 +25,7 @@ const SUGGESTED_SKILLS = [
   'Product', 'Data Analysis', 'UX Design', 'Vue', 'Next.js', 'Docker', 'AWS',
 ];
 
-export function CreateAssignmentDialog({ open, onOpenChange, onSuccess }: CreateAssignmentDialogProps) {
+export function CreateAssignmentDialog({ open, onOpenChange, onSuccess, editTemplate }: CreateAssignmentDialogProps) {
   const { user } = useAuth();
   const { language } = useLanguage();
   const isHebrew = language === 'he';
@@ -42,6 +43,20 @@ export function CreateAssignmentDialog({ open, onOpenChange, onSuccess }: Create
   const [suggestedTags, setSuggestedTags] = useState<string[]>(SUGGESTED_SKILLS);
   const [userIsVisible, setUserIsVisible] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isEdit = !!editTemplate;
+
+  // Populate form when editing
+  useEffect(() => {
+    if (!open || !editTemplate) return;
+    setTitle(editTemplate.title);
+    setDescription(editTemplate.description);
+    setTags(editTemplate.tags ?? []);
+    setDifficulty(editTemplate.difficulty ?? '');
+    setEstimatedHours(editTemplate.estimated_hours?.toString() ?? '');
+    setDeadline(editTemplate.deadline ?? '');
+    setAccessMode(editTemplate.access_mode ?? 'public');
+  }, [open, editTemplate?.id]);
 
   // Fetch user profile skills + visibility
   useEffect(() => {
@@ -109,45 +124,57 @@ export function CreateAssignmentDialog({ open, onOpenChange, onSuccess }: Create
         fileUrl = urlData?.signedUrl ?? null;
       }
 
-      const { data: newAssignment, error } = await supabase
-        .from('assignment_templates' as any)
-        .insert({
-          created_by: user.id,
-          title: title.trim(),
-          description: description.trim(),
-          tags: tags.length > 0 ? tags : [],
-          difficulty: difficulty || null,
-          estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
-          deadline: deadline || null,
-          access_mode: accessMode,
-          file_url: fileUrl,
-        })
-        .select('id')
-        .single();
+      const payload: Record<string, any> = {
+        title: title.trim(),
+        description: description.trim(),
+        tags: tags.length > 0 ? tags : [],
+        difficulty: difficulty || null,
+        estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
+        deadline: deadline || null,
+        access_mode: accessMode,
+      };
 
-      if (error) throw error;
+      if (isEdit && editTemplate) {
+        // Update existing
+        if (fileUrl) payload.file_url = fileUrl;
+        const { error } = await supabase
+          .from('assignment_templates' as any)
+          .update(payload)
+          .eq('id', editTemplate.id);
+        if (error) throw error;
+        toast.success(isHebrew ? 'המטלה עודכנה!' : 'Assignment updated!');
+      } else {
+        // Create new
+        payload.created_by = user.id;
+        payload.file_url = fileUrl;
+        const { data: newAssignment, error } = await supabase
+          .from('assignment_templates' as any)
+          .insert(payload)
+          .select('id')
+          .single();
+        if (error) throw error;
 
-      // Notify followers
-      const { data: followers } = await supabase
-        .from('follows' as any)
-        .select('follower_id')
-        .eq('followed_user_id', user.id);
+        // Notify followers
+        const { data: followers } = await supabase
+          .from('follows' as any)
+          .select('follower_id')
+          .eq('followed_user_id', user.id);
 
-      if (followers && (followers as any[]).length > 0) {
-        await supabase.from('notifications' as any).insert(
-          (followers as any[]).map(f => ({
-            user_id: f.follower_id,
-            type: 'new_assignment',
-            title: isHebrew ? 'מטלה חדשה מאדם שאתה עוקב' : 'New assignment posted',
-            message: isHebrew
-              ? `פרסם/ה מטלה: "${title.trim()}"`
-              : `Posted a new assignment: "${title.trim()}"`,
-            metadata: { assignment_id: (newAssignment as any)?.id, path: '/assignments' },
-          }))
-        ).catch(() => {});
+        if (followers && (followers as any[]).length > 0) {
+          await supabase.from('notifications' as any).insert(
+            (followers as any[]).map(f => ({
+              user_id: f.follower_id,
+              type: 'new_assignment',
+              title: isHebrew ? 'מטלה חדשה מאדם שאתה עוקב' : 'New assignment posted',
+              message: isHebrew
+                ? `פרסם/ה מטלה: "${title.trim()}"`
+                : `Posted a new assignment: "${title.trim()}"`,
+              metadata: { assignment_id: (newAssignment as any)?.id, path: '/assignments' },
+            }))
+          ).catch(() => {});
+        }
+        toast.success(isHebrew ? 'המטלה פורסמה בהצלחה!' : 'Assignment published!');
       }
-
-      toast.success(isHebrew ? 'המטלה פורסמה בהצלחה!' : 'Assignment published!');
       reset();
       onSuccess();
       onOpenChange(false);
@@ -164,8 +191,10 @@ export function CreateAssignmentDialog({ open, onOpenChange, onSuccess }: Create
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto" dir={isHebrew ? 'rtl' : 'ltr'}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Plus className="w-5 h-5 text-primary" />
-            {isHebrew ? 'פרסם מטלה' : 'Publish Assignment'}
+            {isEdit ? <Pencil className="w-5 h-5 text-primary" /> : <Plus className="w-5 h-5 text-primary" />}
+            {isEdit
+              ? (isHebrew ? 'עריכת מטלה' : 'Edit Assignment')
+              : (isHebrew ? 'פרסם מטלה' : 'Publish Assignment')}
           </DialogTitle>
         </DialogHeader>
 
@@ -333,8 +362,10 @@ export function CreateAssignmentDialog({ open, onOpenChange, onSuccess }: Create
             disabled={isSubmitting || !title.trim() || !description.trim()}
             className="w-full gap-2"
           >
-            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-            {isHebrew ? 'פרסם מטלה' : 'Publish Assignment'}
+            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : isEdit ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+            {isEdit
+              ? (isHebrew ? 'שמור שינויים' : 'Save Changes')
+              : (isHebrew ? 'פרסם מטלה' : 'Publish Assignment')}
           </Button>
         </div>
       </DialogContent>

@@ -9,8 +9,27 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Send, Download, Upload, X, Eye } from 'lucide-react';
+import { Loader2, Send, Download, Upload, X, Eye, AlertTriangle, FileText } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import type { AssignmentTemplate } from './AssignmentCard';
+
+const MAX_FILE_MB = 10;
+const ALLOWED_EXTENSIONS = ['.pdf', '.zip', '.doc', '.docx', '.txt', '.md', '.fig', '.pptx', '.xlsx', '.png', '.jpg', '.jpeg'];
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 interface SubmitSolutionDialogProps {
   template: AssignmentTemplate | null;
@@ -29,7 +48,34 @@ export function SubmitSolutionDialog({ template, open, onOpenChange, onSuccess }
   const [isPublic, setIsPublic] = useState(true);
   const [solutionFile, setSolutionFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [fileError, setFileError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const validateFile = (file: File): boolean => {
+    setFileError('');
+    if (file.size > MAX_FILE_MB * 1024 * 1024) {
+      setFileError(isHebrew ? `הקובץ גדול מ-${MAX_FILE_MB}MB` : `File exceeds ${MAX_FILE_MB}MB`);
+      return false;
+    }
+    const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      setFileError(isHebrew
+        ? `סוג קובץ לא נתמך. סוגים מותרים: ${ALLOWED_EXTENSIONS.join(', ')}`
+        : `Unsupported file type. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`);
+      return false;
+    }
+    return true;
+  };
+
+  const handleFileSelect = (file: File | null) => {
+    if (!file) { setSolutionFile(null); setFileError(''); return; }
+    if (validateFile(file)) {
+      setSolutionFile(file);
+    } else {
+      setSolutionFile(null);
+    }
+  };
 
   const reset = () => {
     setStep(1); setNotes(''); setIsPublic(true); setSolutionFile(null);
@@ -145,8 +191,12 @@ export function SubmitSolutionDialog({ template, open, onOpenChange, onSuccess }
               <Label>{isHebrew ? 'קובץ פתרון *' : 'Solution File *'}</Label>
               {solutionFile ? (
                 <div className="flex items-center gap-2 p-2.5 border rounded-lg bg-muted/50">
-                  <span className="text-sm flex-1 truncate">{solutionFile.name}</span>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSolutionFile(null)}>
+                  <FileText className="w-4 h-4 text-primary flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm truncate">{solutionFile.name}</p>
+                    <p className="text-xs text-muted-foreground">{formatFileSize(solutionFile.size)}</p>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleFileSelect(null)}>
                     <X className="w-3.5 h-3.5" />
                   </Button>
                 </div>
@@ -160,11 +210,21 @@ export function SubmitSolutionDialog({ template, open, onOpenChange, onSuccess }
                   {isHebrew ? 'העלה את הפתרון' : 'Upload Solution'}
                 </Button>
               )}
+              {fileError && (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  {fileError}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                {isHebrew ? `עד ${MAX_FILE_MB}MB • ${ALLOWED_EXTENSIONS.join(', ')}` : `Max ${MAX_FILE_MB}MB • ${ALLOWED_EXTENSIONS.join(', ')}`}
+              </p>
               <input
                 ref={fileInputRef}
                 type="file"
                 className="hidden"
-                onChange={(e) => setSolutionFile(e.target.files?.[0] ?? null)}
+                accept={ALLOWED_EXTENSIONS.join(',')}
+                onChange={(e) => handleFileSelect(e.target.files?.[0] ?? null)}
               />
             </div>
 
@@ -193,7 +253,7 @@ export function SubmitSolutionDialog({ template, open, onOpenChange, onSuccess }
                 {isHebrew ? '← חזור' : '← Back'}
               </Button>
               <Button
-                onClick={handleSubmit}
+                onClick={() => setShowConfirm(true)}
                 disabled={isSubmitting || !solutionFile}
                 className="flex-1 gap-2"
               >
@@ -204,6 +264,27 @@ export function SubmitSolutionDialog({ template, open, onOpenChange, onSuccess }
           </div>
         )}
       </DialogContent>
+
+      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <AlertDialogContent dir={isHebrew ? 'rtl' : 'ltr'}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {isHebrew ? 'הגשת פתרון' : 'Submit Solution'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {isHebrew
+                ? `אתה עומד להגיש את הפתרון שלך עבור "${template?.title}". לא ניתן לבטל הגשה לאחר שליחתה. להמשיך?`
+                : `You are about to submit your solution for "${template?.title}". This action cannot be undone. Continue?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{isHebrew ? 'ביטול' : 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setShowConfirm(false); handleSubmit(); }}>
+              {isHebrew ? 'הגש פתרון' : 'Submit Solution'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

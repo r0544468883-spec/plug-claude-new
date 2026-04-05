@@ -189,9 +189,9 @@ export function SubmissionsViewDialog({ template, open, onOpenChange }: Submissi
                   <p>{isHebrew ? 'אין הגשות עדיין' : 'No submissions yet'}</p>
                 </div>
               ) : (
-                <div className="flex gap-4 overflow-hidden flex-1 min-h-0 h-[500px]">
+                <div className="flex flex-col sm:flex-row gap-4 overflow-hidden flex-1 min-h-0 max-h-[60vh] sm:max-h-[500px]">
                   {/* Left: list */}
-                  <div className="w-56 flex-shrink-0 overflow-y-auto space-y-1 border-e pe-3">
+                  <div className="w-full sm:w-56 flex-shrink-0 overflow-y-auto space-y-1 sm:border-e sm:pe-3 max-h-[30vh] sm:max-h-none border-b sm:border-b-0 pb-3 sm:pb-0">
                     {submissions.map(sub => {
                       const statusCfg = STATUS_CONFIG[sub.status] ?? STATUS_CONFIG.pending;
                       const name = (sub.profiles as any)?.full_name || (isHebrew ? 'משתמש' : 'User');

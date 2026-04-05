@@ -6,8 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Header } from '@/components/Header';
-import { Loader2, Plus, ClipboardList, ArrowLeft, ArrowRight, Search, Sparkles } from 'lucide-react';
+import { Loader2, Plus, ClipboardList, ArrowLeft, ArrowRight, Search, Sparkles, BookOpen, Send } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { AssignmentCard } from '@/components/assignments/AssignmentCard';
 import { CreateAssignmentDialog } from '@/components/assignments/CreateAssignmentDialog';
 import { SubmitSolutionDialog } from '@/components/assignments/SubmitSolutionDialog';
@@ -28,7 +34,7 @@ export default function Assignments() {
   const [tagFilter, setTagFilter] = useState<string>('all');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
   const [posterFilter, setPosterFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'newest' | 'popular'>('newest');
+  const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'match' | 'deadline'>('newest');
   const [search, setSearch] = useState('');
 
   const [templates, setTemplates] = useState<AssignmentTemplate[]>([]);
@@ -39,6 +45,9 @@ export default function Assignments() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [showCreate, setShowCreate] = useState(false);
+  const [editTarget, setEditTarget] = useState<AssignmentTemplate | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AssignmentTemplate | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [submitTarget, setSubmitTarget] = useState<AssignmentTemplate | null>(null);
   const [viewTarget, setViewTarget] = useState<AssignmentTemplate | null>(null);
   const [requestTarget, setRequestTarget] = useState<AssignmentTemplate | null>(null);
@@ -159,6 +168,25 @@ export default function Assignments() {
     setRequestTarget(template);
   };
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('assignment_templates' as any)
+        .update({ is_active: false })
+        .eq('id', deleteTarget.id);
+      if (error) throw error;
+      toast.success(isHebrew ? 'המטלה נמחקה' : 'Assignment deleted');
+      setTemplates(prev => prev.filter(t => t.id !== deleteTarget.id));
+    } catch {
+      toast.error(isHebrew ? 'שגיאה במחיקת המטלה' : 'Failed to delete assignment');
+    } finally {
+      setIsDeleting(false);
+      setDeleteTarget(null);
+    }
+  };
+
   const handleAccessRequested = (templateId: string) => {
     setMyAccessRequests(prev => new Map(prev).set(templateId, 'pending'));
   };
@@ -203,7 +231,7 @@ export default function Assignments() {
 
   // Filtered & searched templates
   const displayedTemplates = useMemo(() => {
-    return templates.filter(t => {
+    const filtered = templates.filter(t => {
       if (tab === 'my-submissions') return mySubmissions.has(t.id);
       if (tab === 'my-posts') return t.created_by === user?.id;
       return true;
@@ -218,7 +246,20 @@ export default function Assignments() {
         ((t as any).tags ?? []).some((tag: string) => tag.toLowerCase().includes(q))
       );
     });
-  }, [templates, tab, mySubmissions, user, posterFilter, search]);
+
+    // Client-side sorting for match/deadline
+    if (sortBy === 'match') {
+      return [...filtered].sort((a, b) => calcMatchScore(b) - calcMatchScore(a));
+    }
+    if (sortBy === 'deadline') {
+      return [...filtered].sort((a, b) => {
+        const da = a.deadline ? new Date(a.deadline).getTime() : Infinity;
+        const db = b.deadline ? new Date(b.deadline).getTime() : Infinity;
+        return da - db;
+      });
+    }
+    return filtered;
+  }, [templates, tab, mySubmissions, user, posterFilter, search, sortBy, calcMatchScore]);
 
   const myPostsCount = templates.filter(t => t.created_by === user?.id).length;
   const mySubsCount = user ? templates.filter(t => mySubmissions.has(t.id)).length : 0;
@@ -276,6 +317,8 @@ export default function Assignments() {
                   onSubmit={handleSubmit}
                   onViewSubmissions={handleViewSubmissions}
                   onRequestAccess={handleRequestAccess}
+                  onEdit={setEditTarget}
+                  onDelete={setDeleteTarget}
                 />
               ))}
             </div>
@@ -375,6 +418,10 @@ export default function Assignments() {
                 <SelectContent>
                   <SelectItem value="newest">{isHebrew ? 'חדש ביותר' : 'Newest'}</SelectItem>
                   <SelectItem value="popular">{isHebrew ? 'פופולרי' : 'Popular'}</SelectItem>
+                  {userSkills.length > 0 && (
+                    <SelectItem value="match">{isHebrew ? 'התאמה' : 'Best Match'}</SelectItem>
+                  )}
+                  <SelectItem value="deadline">{isHebrew ? 'דדליין קרוב' : 'Deadline'}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -383,18 +430,83 @@ export default function Assignments() {
 
         {/* Grid */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="rounded-xl border p-5 space-y-3">
+                <div className="flex gap-2">
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                  <Skeleton className="h-5 w-12 rounded-full" />
+                </div>
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-5 w-5 rounded-full" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                  <Skeleton className="h-8 w-24 rounded-md" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : displayedTemplates.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-            <ClipboardList className="w-14 h-14 opacity-20" />
-            <p className="text-lg">{isHebrew ? 'אין מטלות עדיין' : 'No assignments yet'}</p>
-            {user && tab === 'all' && !search && (
-              <Button onClick={() => setShowCreate(true)} className="gap-2 mt-2">
-                <Plus className="w-4 h-4" />
-                {isHebrew ? 'היה הראשון לפרסם!' : 'Be the first to post!'}
-              </Button>
+            {tab === 'my-submissions' ? (
+              <>
+                <Send className="w-14 h-14 opacity-20" />
+                <p className="text-lg font-medium">{isHebrew ? 'עדיין לא הגשת פתרונות' : 'No submissions yet'}</p>
+                <p className="text-sm text-center max-w-xs">
+                  {isHebrew
+                    ? 'חפש מטלות שמתאימות לכישורים שלך והגש פתרונות כדי להוכיח את היכולות שלך'
+                    : 'Find assignments that match your skills and submit solutions to showcase your abilities'}
+                </p>
+                <Button onClick={() => setTab('all')} variant="outline" className="gap-2 mt-2">
+                  <Search className="w-4 h-4" />
+                  {isHebrew ? 'חפש מטלות' : 'Browse Assignments'}
+                </Button>
+              </>
+            ) : tab === 'my-posts' ? (
+              <>
+                <BookOpen className="w-14 h-14 opacity-20" />
+                <p className="text-lg font-medium">{isHebrew ? 'לא פרסמת מטלות' : 'No posted assignments'}</p>
+                <p className="text-sm text-center max-w-xs">
+                  {isHebrew
+                    ? 'פרסם מטלות טכניות כדי למצוא מועמדים מוכשרים'
+                    : 'Post technical challenges to find talented candidates'}
+                </p>
+                <Button onClick={() => setShowCreate(true)} className="gap-2 mt-2">
+                  <Plus className="w-4 h-4" />
+                  {isHebrew ? 'פרסם מטלה' : 'Post Assignment'}
+                </Button>
+              </>
+            ) : search ? (
+              <>
+                <Search className="w-14 h-14 opacity-20" />
+                <p className="text-lg font-medium">{isHebrew ? 'לא נמצאו תוצאות' : 'No results found'}</p>
+                <p className="text-sm">
+                  {isHebrew ? `לא נמצאו מטלות עבור "${search}"` : `No assignments match "${search}"`}
+                </p>
+                <Button onClick={() => setSearch('')} variant="outline" className="gap-2 mt-2">
+                  {isHebrew ? 'נקה חיפוש' : 'Clear Search'}
+                </Button>
+              </>
+            ) : (
+              <>
+                <ClipboardList className="w-14 h-14 opacity-20" />
+                <p className="text-lg font-medium">{isHebrew ? 'אין מטלות עדיין' : 'No assignments yet'}</p>
+                <p className="text-sm text-center max-w-xs">
+                  {isHebrew
+                    ? 'היה הראשון לפרסם מטלה טכנית ולמצוא מועמדים מוכשרים'
+                    : 'Be the first to post a technical challenge and find talented candidates'}
+                </p>
+                {user && (
+                  <Button onClick={() => setShowCreate(true)} className="gap-2 mt-2">
+                    <Plus className="w-4 h-4" />
+                    {isHebrew ? 'פרסם מטלה' : 'Post Assignment'}
+                  </Button>
+                )}
+              </>
             )}
           </div>
         ) : (
@@ -411,6 +523,8 @@ export default function Assignments() {
                 onSubmit={handleSubmit}
                 onViewSubmissions={handleViewSubmissions}
                 onRequestAccess={handleRequestAccess}
+                onEdit={setEditTarget}
+                onDelete={setDeleteTarget}
               />
             ))}
           </div>
@@ -439,6 +553,43 @@ export default function Assignments() {
         onOpenChange={(o) => { if (!o) setRequestTarget(null); }}
         onSuccess={handleAccessRequested}
       />
+
+      {/* Edit dialog — reuse CreateAssignmentDialog with initial data */}
+      <CreateAssignmentDialog
+        open={!!editTarget}
+        onOpenChange={(o) => { if (!o) setEditTarget(null); }}
+        onSuccess={fetchData}
+        editTemplate={editTarget ?? undefined}
+      />
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}>
+        <AlertDialogContent dir={isHebrew ? 'rtl' : 'ltr'}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {isHebrew ? 'מחיקת מטלה' : 'Delete Assignment'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {isHebrew
+                ? `האם אתה בטוח שברצונך למחוק את "${deleteTarget?.title}"? פעולה זו לא ניתנת לביטול.`
+                : `Are you sure you want to delete "${deleteTarget?.title}"? This action cannot be undone.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>
+              {isHebrew ? 'ביטול' : 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? <Loader2 className="w-4 h-4 animate-spin me-2" /> : null}
+              {isHebrew ? 'מחק' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

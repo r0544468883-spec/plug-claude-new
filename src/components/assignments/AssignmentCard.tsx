@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Clock, Users, Eye, Download, ChevronRight, CheckCircle2, Pencil, Star, AlertCircle, Lock } from 'lucide-react';
+import { Clock, Users, Eye, Download, ChevronRight, CheckCircle2, Pencil, Star, AlertCircle, Lock, Trash2 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export interface AssignmentTemplate {
   id: string;
@@ -53,6 +54,7 @@ interface AssignmentCardProps {
   onViewSubmissions: (template: AssignmentTemplate) => void;
   onRequestAccess: (template: AssignmentTemplate) => void;
   onEdit?: (template: AssignmentTemplate) => void;
+  onDelete?: (template: AssignmentTemplate) => void;
 }
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -92,6 +94,7 @@ export function AssignmentCard({
   onViewSubmissions,
   onRequestAccess,
   onEdit,
+  onDelete,
 }: AssignmentCardProps) {
   const { language } = useLanguage();
   const isHebrew = language === 'he';
@@ -191,33 +194,50 @@ export function AssignmentCard({
         </div>
 
         {/* Creator + stats */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <div className="flex items-center gap-1.5">
-            <Avatar className="w-5 h-5">
-              <AvatarImage src={creatorAvatar || undefined} />
-              <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-                {creatorName.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <span className="truncate max-w-[100px]">{creatorName}</span>
+        <TooltipProvider delayDuration={300}>
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Avatar className="w-5 h-5">
+                <AvatarImage src={creatorAvatar || undefined} />
+                <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                  {creatorName.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="truncate max-w-[100px]">{creatorName}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              {template.estimated_hours != null && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="flex items-center gap-0.5 cursor-default">
+                      <Clock className="w-3 h-3" />
+                      ~{template.estimated_hours}h
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>{isHebrew ? 'זמן משוער' : 'Estimated time'}</TooltipContent>
+                </Tooltip>
+              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="flex items-center gap-0.5 cursor-default">
+                    <Users className="w-3 h-3" />
+                    {submissionsCount}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{isHebrew ? 'הגשות' : 'Submissions'}</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="flex items-center gap-0.5 cursor-default">
+                    <Eye className="w-3 h-3" />
+                    {template.view_count}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{isHebrew ? 'צפיות' : 'Views'}</TooltipContent>
+              </Tooltip>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            {template.estimated_hours != null && (
-              <span className="flex items-center gap-0.5">
-                <Clock className="w-3 h-3" />
-                ~{template.estimated_hours}h
-              </span>
-            )}
-            <span className="flex items-center gap-0.5">
-              <Users className="w-3 h-3" />
-              {submissionsCount}
-            </span>
-            <span className="flex items-center gap-0.5">
-              <Eye className="w-3 h-3" />
-              {template.view_count}
-            </span>
-          </div>
-        </div>
+        </TooltipProvider>
 
         {/* Submission status */}
         {mySubmission && !isOwner && (
@@ -249,6 +269,11 @@ export function AssignmentCard({
           <div className="flex items-center gap-2 ms-auto">
             {isOwner ? (
               <>
+                {onDelete && (
+                  <Button variant="ghost" size="sm" onClick={() => onDelete(template)} className="h-8 gap-1 text-destructive hover:text-destructive">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                )}
                 {onEdit && (
                   <Button variant="ghost" size="sm" onClick={() => onEdit(template)} className="h-8 gap-1">
                     <Pencil className="w-3.5 h-3.5" />
