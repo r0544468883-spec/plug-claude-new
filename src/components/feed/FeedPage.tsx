@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -10,8 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { FeedCard } from './FeedCard';
 import { WebinarFeedCard, WebinarData } from './WebinarFeedCard';
 import { generateFeedPosts, FeedPost } from './feedMockData';
-import { Flame, Newspaper, Lightbulb, Building2, BarChart3, Video, PenLine, Sparkles, Sun, Moon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Flame, Newspaper, Lightbulb, Building2, BarChart3, Video, PenLine } from 'lucide-react';
 
 interface FeedPageProps {
   onCreatePost?: () => void;
@@ -234,50 +233,12 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
     return allPosts.filter(p => p.postType === type);
   };
 
-  const [isLightMode, setIsLightMode] = useState(() => {
-    try { return localStorage.getItem('plug_feed_light_mode') === 'true'; } catch { return false; }
-  });
-
-  const toggleTheme = () => {
-    const next = !isLightMode;
-    setIsLightMode(next);
-    document.documentElement.classList.toggle('light', next);
-    try { localStorage.setItem('plug_feed_light_mode', String(next)); } catch {}
-  };
-
-  // Apply saved theme on mount, remove on unmount (restore dark)
-  useEffect(() => {
-    if (isLightMode) document.documentElement.classList.add('light');
-    return () => { document.documentElement.classList.remove('light'); };
-  }, []);
-
   const userName = (profile as any)?.full_name?.split(' ')[0] || '';
   const userInitial = userName.charAt(0).toUpperCase() || 'U';
 
   return (
     <div data-tour="feed-content">
       <div className="space-y-5" dir={isRTL ? 'rtl' : 'ltr'}>
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <Sparkles className="w-7 h-7 text-primary" />
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold">PLUG Feed</h1>
-            <p className="text-sm text-muted-foreground">
-              {isRTL
-                ? 'תוכן מקצועי, טיפים ומטלות ממגייסים וחברות'
-                : 'Professional content, tips & assignments from recruiters'}
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={toggleTheme}
-            className="h-9 w-9 rounded-full"
-            title={isLightMode ? (isRTL ? 'מצב כהה' : 'Dark mode') : (isRTL ? 'מצב בהיר' : 'Light mode')}
-          >
-            {isLightMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-          </Button>
-        </div>
 
         {/* Create post prompt (LinkedIn style) */}
         {onCreatePost && (

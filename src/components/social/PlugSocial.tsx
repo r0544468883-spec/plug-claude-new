@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 // import { useStickySidebar } from '@/hooks/useStickySidebar';
@@ -10,7 +10,7 @@ import { FeedPeopleYouKnow } from '@/components/feed/FeedPeopleYouKnow';
 import { FeedJobSearchInsights } from '@/components/feed/FeedJobSearchInsights';
 import { CommunityHubsList } from '@/components/communities/CommunityHubsList';
 import { Button } from '@/components/ui/button';
-import { Newspaper, Globe, Plus } from 'lucide-react';
+import { Newspaper, Globe, Plus, Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PlugSocialProps {
@@ -25,6 +25,23 @@ export function PlugSocial({ onCreatePost, onViewHub, onCreateHub, initialTab = 
   const { language } = useLanguage();
   const { profile } = useAuth();
   const isRTL = language === 'he';
+
+  const [isLightMode, setIsLightMode] = useState(() => {
+    try { return localStorage.getItem('plug_feed_light_mode') === 'true'; } catch { return false; }
+  });
+
+  const toggleTheme = () => {
+    const next = !isLightMode;
+    setIsLightMode(next);
+    document.documentElement.classList.toggle('light', next);
+    try { localStorage.setItem('plug_feed_light_mode', String(next)); } catch {}
+  };
+
+  useEffect(() => {
+    if (isLightMode) document.documentElement.classList.add('light');
+    return () => { document.documentElement.classList.remove('light'); };
+  }, []);
+
   return (
     <div className="min-h-full bg-[#f4f2ee]" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Social Header Bar — sticky below the main header */}
@@ -36,18 +53,30 @@ export function PlugSocial({ onCreatePost, onViewHub, onCreateHub, initialTab = 
               <Newspaper className="w-5 h-5 text-primary" />
               PLUG Social
             </h1>
-            {activeTab === 'feed' && onCreatePost && (
-              <Button size="sm" className="gap-1.5" onClick={onCreatePost}>
-                <Plus className="w-4 h-4" />
-                {isRTL ? 'צור פוסט' : 'Create Post'}
+            <div className="flex items-center gap-2">
+              {/* Dark/Light toggle */}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={toggleTheme}
+                className="h-9 w-9 rounded-full border-gray-300 text-gray-700 hover:bg-gray-100"
+                title={isLightMode ? (isRTL ? 'מצב כהה' : 'Dark mode') : (isRTL ? 'מצב בהיר' : 'Light mode')}
+              >
+                {isLightMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
               </Button>
-            )}
-            {activeTab === 'communities' && (
-              <Button size="sm" className="gap-1.5" onClick={onCreateHub}>
-                <Plus className="w-4 h-4" />
-                {isRTL ? 'צור קהילה' : 'Create Community'}
-              </Button>
-            )}
+              {activeTab === 'feed' && onCreatePost && (
+                <Button size="sm" className="gap-1.5" onClick={onCreatePost}>
+                  <Plus className="w-4 h-4" />
+                  {isRTL ? 'צור פוסט' : 'Create Post'}
+                </Button>
+              )}
+              {activeTab === 'communities' && (
+                <Button size="sm" className="gap-1.5" onClick={onCreateHub}>
+                  <Plus className="w-4 h-4" />
+                  {isRTL ? 'צור קהילה' : 'Create Community'}
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Tab bar */}
