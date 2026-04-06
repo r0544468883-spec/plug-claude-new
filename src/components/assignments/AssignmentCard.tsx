@@ -345,6 +345,15 @@ export function AssignmentCard({
                 {commentsCount > 0 && <span>{commentsCount}</span>}
               </button>
             )}
+            {onPreview && (
+              <button
+                onClick={() => onPreview(template)}
+                className="text-muted-foreground hover:text-primary transition-colors"
+                title={isHebrew ? 'תצוגה מקדימה' : 'Preview'}
+              >
+                <Eye className="w-4 h-4" />
+              </button>
+            )}
             {onToggleFavorite && (
               <button
                 onClick={() => onToggleFavorite(template.id)}

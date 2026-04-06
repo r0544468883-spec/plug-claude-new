@@ -115,11 +115,23 @@ export default function Assignments() {
         (profilesData ?? []).forEach((p: any) => profilesMap.set(p.id, p));
       }
 
-      // Attach profiles to templates
-      const withProfiles = allFetched.map(t => ({
-        ...t,
-        profiles: profilesMap.get(t.created_by) ?? null,
-      }));
+      // Attach profiles to templates, with auth user metadata fallback for current user
+      const withProfiles = allFetched.map(t => {
+        const profile = profilesMap.get(t.created_by) ?? null;
+        // Fallback: if current user's own post and profile name is missing, use auth metadata
+        if (t.created_by === user?.id && (!profile?.full_name)) {
+          const metaName = (user as any)?.user_metadata?.full_name || null;
+          return {
+            ...t,
+            profiles: {
+              ...(profile || {}),
+              full_name: metaName || profile?.full_name,
+              avatar_url: profile?.avatar_url ?? (user as any)?.user_metadata?.avatar_url ?? null,
+            },
+          };
+        }
+        return { ...t, profiles: profile };
+      });
 
       // Client-side visibility filter: hide assignments from non-visible job seekers
       const tmpl = withProfiles.filter(t => {

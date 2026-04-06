@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Clock, Download, ChevronRight, Building2, Calendar, Eye, FileText, Maximize2, Minimize2 } from 'lucide-react';
+import { Clock, Download, ChevronRight, Building2, Calendar, Eye, FileText, FileWarning } from 'lucide-react';
 import type { AssignmentTemplate } from './AssignmentCard';
 
 const DIFFICULTY_LABELS: Record<string, { he: string; en: string; color: string }> = {
@@ -46,19 +46,19 @@ export function AssignmentPreviewDialog({ template, open, onOpenChange, onSubmit
   const { language } = useLanguage();
   const isHebrew = language === 'he';
 
-  const [showFilePreview, setShowFilePreview] = useState(false);
+  const [iframeError, setIframeError] = useState(false);
+
+  // Reset error state when template changes
+  useEffect(() => {
+    setIframeError(false);
+  }, [template?.id]);
 
   if (!template) return null;
 
   const fileUrl = template.file_url;
   const fileExt = fileUrl ? fileUrl.split('?')[0].split('.').pop()?.toLowerCase() : null;
   const isPdf = fileExt === 'pdf';
-  // For non-PDF files, use Google Docs Viewer
-  const previewUrl = fileUrl
-    ? isPdf
-      ? fileUrl
-      : `https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`
-    : null;
+  const isPreviewable = isPdf; // Only PDFs can be previewed in iframe with signed URLs
 
   const isAnonymous = !!(template as any).is_anonymous;
   const creatorName = isAnonymous
@@ -72,7 +72,7 @@ export function AssignmentPreviewDialog({ template, open, onOpenChange, onSubmit
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`max-h-[90vh] overflow-y-auto ${showFilePreview ? 'sm:max-w-4xl' : 'sm:max-w-lg'} transition-all`} dir={isHebrew ? 'rtl' : 'ltr'}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl" dir={isHebrew ? 'rtl' : 'ltr'}>
         <DialogHeader>
           <DialogTitle className="text-xl leading-tight">{template.title}</DialogTitle>
         </DialogHeader>
@@ -138,27 +138,37 @@ export function AssignmentPreviewDialog({ template, open, onOpenChange, onSubmit
           </div>
 
           {/* File Preview */}
-          {previewUrl && (
+          {fileUrl && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={() => setShowFilePreview(!showFilePreview)}
-                  className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-                >
-                  <FileText className="w-4 h-4" />
-                  {showFilePreview
-                    ? (isHebrew ? 'הסתר תצוגה מקדימה' : 'Hide Preview')
-                    : (isHebrew ? 'הצג תצוגה מקדימה של הקובץ' : 'Preview File')}
-                  {showFilePreview ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-                </button>
+              <div className="flex items-center gap-1.5 text-sm font-medium text-primary">
+                <FileText className="w-4 h-4" />
+                {isHebrew ? 'קובץ מצורף' : 'Attached File'}
+                {fileExt && <span className="text-xs text-muted-foreground uppercase">(.{fileExt})</span>}
               </div>
-              {showFilePreview && (
+
+              {isPreviewable && !iframeError ? (
                 <div className="rounded-lg border overflow-hidden bg-white">
                   <iframe
-                    src={previewUrl}
+                    src={fileUrl}
                     className="w-full h-[60vh] border-0"
                     title="File preview"
+                    onError={() => setIframeError(true)}
                   />
+                </div>
+              ) : (
+                <div className="rounded-lg border bg-muted/30 p-8 flex flex-col items-center gap-3 text-center">
+                  <FileWarning className="w-10 h-10 text-muted-foreground/50" />
+                  <p className="text-sm text-muted-foreground">
+                    {isHebrew
+                      ? 'לא ניתן להציג תצוגה מקדימה לקובץ מסוג זה. הורד את הקובץ כדי לצפות בו.'
+                      : 'Preview is not available for this file type. Download the file to view it.'}
+                  </p>
+                  <a href={fileUrl} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" className="gap-2">
+                      <Download className="w-4 h-4" />
+                      {isHebrew ? 'הורד קובץ' : 'Download File'}
+                    </Button>
+                  </a>
                 </div>
               )}
             </div>
