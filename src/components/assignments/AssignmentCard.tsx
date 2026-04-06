@@ -391,7 +391,7 @@ export function AssignmentCard({
                     {isHebrew ? 'ערוך' : 'Edit'}
                   </Button>
                 )}
-                <Button size="sm" variant="outline" onClick={() => onViewSubmissions(template)} className="h-8 gap-1">
+                <Button size="sm" variant="ghost" onClick={() => onViewSubmissions(template)} className="h-8 gap-1 text-muted-foreground">
                   <Inbox className="w-3.5 h-3.5" />
                   {submissionsCount} {isHebrew ? 'פתרונות' : 'Solutions'}
                 </Button>
