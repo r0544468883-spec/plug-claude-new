@@ -60,8 +60,11 @@ export function AssignmentPreviewDialog({ template, open, onOpenChange, onSubmit
       : `https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`
     : null;
 
-  const creatorName = template.profiles?.full_name || (isHebrew ? 'משתמש' : 'User');
-  const creatorAvatar = template.profiles?.avatar_url;
+  const isAnonymous = !!(template as any).is_anonymous;
+  const creatorName = isAnonymous
+    ? (isHebrew ? 'אנונימי' : 'Anonymous')
+    : (template.profiles?.full_name || (isHebrew ? 'משתמש' : 'User'));
+  const creatorAvatar = isAnonymous ? null : template.profiles?.avatar_url;
   const diff = template.difficulty ? DIFFICULTY_LABELS[template.difficulty] : null;
   const domainLabel = (template as any).domain ? DOMAIN_LABELS[(template as any).domain]?.[isHebrew ? 'he' : 'en'] ?? (template as any).domain : null;
   const deadlineDate = template.deadline ? new Date(template.deadline) : null;

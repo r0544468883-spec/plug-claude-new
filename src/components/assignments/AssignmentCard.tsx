@@ -23,6 +23,7 @@ export interface AssignmentTemplate {
   access_mode?: 'public' | 'request_only';
   company_name?: string | null;
   domain?: string | null;
+  is_anonymous?: boolean;
   profiles?: {
     full_name: string | null;
     avatar_url: string | null;
@@ -144,8 +145,11 @@ export function AssignmentCard({
     ? (DIFFICULTY_LABELS[template.difficulty]?.[isHebrew ? 'he' : 'en'] ?? template.difficulty)
     : null;
 
-  const creatorName = template.profiles?.full_name || (isHebrew ? 'משתמש' : 'User');
-  const creatorAvatar = template.profiles?.avatar_url;
+  const isAnonymous = !!(template as any).is_anonymous;
+  const creatorName = isAnonymous
+    ? (isHebrew ? 'אנונימי' : 'Anonymous')
+    : (template.profiles?.full_name || (isHebrew ? 'משתמש' : 'User'));
+  const creatorAvatar = isAnonymous ? null : template.profiles?.avatar_url;
 
   const deadlineDays = template.deadline ? daysUntil(template.deadline) : null;
   const showDeadlineWarning = deadlineDays !== null && deadlineDays <= 7;

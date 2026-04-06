@@ -694,6 +694,7 @@ export default function Assignments() {
                 onToggleLike={toggleLike}
                 commentsCount={commentCounts.get(template.id) ?? 0}
                 onOpenComments={setCommentsTargetId}
+                onPreview={setPreviewTarget}
               />
             ))}
           </div>

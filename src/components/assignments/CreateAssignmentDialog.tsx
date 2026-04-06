@@ -11,13 +11,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Upload, X, Tag, Lock, Pencil, Building2, Briefcase } from 'lucide-react';
+import { Loader2, Plus, Upload, X, Tag, Lock, Pencil, Building2, Briefcase, EyeOff } from 'lucide-react';
 
 interface CreateAssignmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
-  editTemplate?: { id: string; title: string; description: string; tags?: string[]; difficulty: string | null; estimated_hours: number | null; deadline?: string | null; access_mode?: 'public' | 'request_only'; company_name?: string | null; domain?: string | null; };
+  editTemplate?: { id: string; title: string; description: string; tags?: string[]; difficulty: string | null; estimated_hours: number | null; deadline?: string | null; access_mode?: 'public' | 'request_only'; company_name?: string | null; domain?: string | null; is_anonymous?: boolean; };
 }
 
 const SUGGESTED_SKILLS = [
@@ -40,6 +40,7 @@ export function CreateAssignmentDialog({ open, onOpenChange, onSuccess, editTemp
   const [accessMode, setAccessMode] = useState<'public' | 'request_only'>('public');
   const [companyName, setCompanyName] = useState('');
   const [domain, setDomain] = useState('');
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [briefFile, setBriefFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [suggestedTags, setSuggestedTags] = useState<string[]>(SUGGESTED_SKILLS);
@@ -60,6 +61,7 @@ export function CreateAssignmentDialog({ open, onOpenChange, onSuccess, editTemp
     setAccessMode(editTemplate.access_mode ?? 'public');
     setCompanyName(editTemplate.company_name ?? '');
     setDomain(editTemplate.domain ?? '');
+    setIsAnonymous(editTemplate.is_anonymous ?? false);
   }, [open, editTemplate?.id]);
 
   // Fetch user profile skills + visibility
@@ -91,7 +93,7 @@ export function CreateAssignmentDialog({ open, onOpenChange, onSuccess, editTemp
     setTitle(''); setDescription(''); setTags([]); setTagInput('');
     setDifficulty(''); setEstimatedHours(''); setDeadline('');
     setAccessMode('public'); setBriefFile(null);
-    setCompanyName(''); setDomain('');
+    setCompanyName(''); setDomain(''); setIsAnonymous(false);
   };
 
   const addTag = (tag: string) => {
@@ -144,6 +146,7 @@ export function CreateAssignmentDialog({ open, onOpenChange, onSuccess, editTemp
       if (accessMode !== 'public') extraFields.access_mode = accessMode;
       if (companyName.trim()) extraFields.company_name = companyName.trim();
       if (domain.trim()) extraFields.domain = domain.trim();
+      if (isAnonymous) extraFields.is_anonymous = true;
 
       // Try with all fields first, fall back to core-only if columns don't exist
       const tryInsertOrUpdate = async (payload: Record<string, any>) => {
@@ -393,6 +396,25 @@ export function CreateAssignmentDialog({ open, onOpenChange, onSuccess, editTemp
             <Switch
               checked={accessMode === 'request_only'}
               onCheckedChange={v => setAccessMode(v ? 'request_only' : 'public')}
+            />
+          </div>
+
+          {/* Anonymous toggle */}
+          <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+            <div className="flex items-center gap-2 text-sm">
+              <EyeOff className="w-4 h-4 text-muted-foreground" />
+              <div>
+                <p>{isHebrew ? 'פרסום אנונימי' : 'Post anonymously'}</p>
+                <p className="text-xs text-muted-foreground">
+                  {isHebrew
+                    ? 'השם שלך לא יופיע — רק התוכן'
+                    : 'Your name won\'t be shown — only the content'}
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={isAnonymous}
+              onCheckedChange={setIsAnonymous}
             />
           </div>
 

@@ -7,7 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, MessageCircle, Send, Trash2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Loader2, MessageCircle, Send, Trash2, EyeOff } from 'lucide-react';
 
 interface Comment {
   id: string;
@@ -15,6 +16,7 @@ interface Comment {
   template_id: string;
   user_id: string;
   content: string;
+  is_anonymous?: boolean;
   profiles?: { full_name: string | null; avatar_url: string | null } | null;
 }
 
@@ -33,6 +35,7 @@ export function AssignmentCommentsDialog({ templateId, open, onOpenChange }: Ass
   const [isLoading, setIsLoading] = useState(false);
   const [text, setText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -64,20 +67,26 @@ export function AssignmentCommentsDialog({ templateId, open, onOpenChange }: Ass
     if (!user || !templateId || !text.trim()) return;
     setIsSending(true);
     try {
+      const insertPayload: Record<string, any> = { template_id: templateId, user_id: user.id, content: text.trim() };
+      if (isAnonymous) insertPayload.is_anonymous = true;
+
       const { data, error } = await supabase
         .from('assignment_comments' as any)
-        .insert({ template_id: templateId, user_id: user.id, content: text.trim() })
+        .insert(insertPayload)
         .select('*')
         .single();
       if (error) throw error;
 
       const newComment: Comment = {
         ...(data as Comment),
-        profiles: { full_name: (user as any)?.user_metadata?.full_name || null, avatar_url: null },
+        is_anonymous: isAnonymous,
+        profiles: isAnonymous ? null : { full_name: (user as any)?.user_metadata?.full_name || null, avatar_url: null },
       };
       // Fetch current user profile for avatar
-      const { data: myProfile } = await supabase.from('profiles').select('full_name, avatar_url').eq('id', user.id).single();
-      if (myProfile) newComment.profiles = myProfile as any;
+      if (!isAnonymous) {
+        const { data: myProfile } = await supabase.from('profiles').select('full_name, avatar_url').eq('id', user.id).single();
+        if (myProfile) newComment.profiles = myProfile as any;
+      }
 
       setComments(prev => [...prev, newComment]);
       setText('');
@@ -130,17 +139,23 @@ export function AssignmentCommentsDialog({ templateId, open, onOpenChange }: Ass
               {isHebrew ? 'אין תגובות עדיין. היה הראשון!' : 'No comments yet. Be the first!'}
             </p>
           ) : (
-            comments.map(c => (
+            comments.map(c => {
+              const commentAnon = !!(c as any).is_anonymous;
+              const commentName = commentAnon
+                ? (isHebrew ? 'אנונימי' : 'Anonymous')
+                : (c.profiles?.full_name || (isHebrew ? 'משתמש' : 'User'));
+              const commentAvatar = commentAnon ? null : c.profiles?.avatar_url;
+              return (
               <div key={c.id} className="flex gap-2 group">
                 <Avatar className="w-7 h-7 flex-shrink-0 mt-0.5">
-                  <AvatarImage src={c.profiles?.avatar_url || undefined} />
+                  <AvatarImage src={commentAvatar || undefined} />
                   <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-                    {(c.profiles?.full_name || '?').charAt(0).toUpperCase()}
+                    {commentAnon ? '?' : (c.profiles?.full_name || '?').charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium truncate">{c.profiles?.full_name || (isHebrew ? 'משתמש' : 'User')}</span>
+                    <span className="text-sm font-medium truncate">{commentName}</span>
                     <span className="text-[10px] text-muted-foreground">{formatTime(c.created_at)}</span>
                     {c.user_id === user?.id && (
                       <button
@@ -154,22 +169,32 @@ export function AssignmentCommentsDialog({ templateId, open, onOpenChange }: Ass
                   <p className="text-sm text-foreground/90 whitespace-pre-wrap break-words">{c.content}</p>
                 </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
 
         {user && (
-          <div className="flex gap-2 pt-2 border-t">
-            <Input
-              value={text}
-              onChange={e => setText(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-              placeholder={isHebrew ? 'כתוב תגובה...' : 'Write a comment...'}
-              disabled={isSending}
-            />
-            <Button size="icon" onClick={handleSend} disabled={isSending || !text.trim()} className="flex-shrink-0">
-              {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            </Button>
+          <div className="space-y-2 pt-2 border-t">
+            <div className="flex gap-2">
+              <Input
+                value={text}
+                onChange={e => setText(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                placeholder={isHebrew ? 'כתוב תגובה...' : 'Write a comment...'}
+                disabled={isSending}
+              />
+              <Button size="icon" onClick={handleSend} disabled={isSending || !text.trim()} className="flex-shrink-0">
+                {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={isAnonymous} onCheckedChange={setIsAnonymous} className="scale-75" />
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <EyeOff className="w-3 h-3" />
+                {isHebrew ? 'תגובה אנונימית' : 'Comment anonymously'}
+              </span>
+            </div>
           </div>
         )}
       </DialogContent>
