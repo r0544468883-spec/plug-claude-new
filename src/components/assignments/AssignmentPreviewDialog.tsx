@@ -1,9 +1,10 @@
+import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Clock, Download, ChevronRight, Building2, Calendar, Eye, Users, AlertCircle } from 'lucide-react';
+import { Clock, Download, ChevronRight, Building2, Calendar, Eye, FileText, Maximize2, Minimize2 } from 'lucide-react';
 import type { AssignmentTemplate } from './AssignmentCard';
 
 const DIFFICULTY_LABELS: Record<string, { he: string; en: string; color: string }> = {
@@ -45,7 +46,19 @@ export function AssignmentPreviewDialog({ template, open, onOpenChange, onSubmit
   const { language } = useLanguage();
   const isHebrew = language === 'he';
 
+  const [showFilePreview, setShowFilePreview] = useState(false);
+
   if (!template) return null;
+
+  const fileUrl = template.file_url;
+  const fileExt = fileUrl ? fileUrl.split('?')[0].split('.').pop()?.toLowerCase() : null;
+  const isPdf = fileExt === 'pdf';
+  // For non-PDF files, use Google Docs Viewer
+  const previewUrl = fileUrl
+    ? isPdf
+      ? fileUrl
+      : `https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`
+    : null;
 
   const creatorName = template.profiles?.full_name || (isHebrew ? 'משתמש' : 'User');
   const creatorAvatar = template.profiles?.avatar_url;
@@ -56,7 +69,7 @@ export function AssignmentPreviewDialog({ template, open, onOpenChange, onSubmit
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto" dir={isHebrew ? 'rtl' : 'ltr'}>
+      <DialogContent className={`max-h-[90vh] overflow-y-auto ${showFilePreview ? 'sm:max-w-4xl' : 'sm:max-w-lg'} transition-all`} dir={isHebrew ? 'rtl' : 'ltr'}>
         <DialogHeader>
           <DialogTitle className="text-xl leading-tight">{template.title}</DialogTitle>
         </DialogHeader>
@@ -120,6 +133,33 @@ export function AssignmentPreviewDialog({ template, open, onOpenChange, onSubmit
           <div className="rounded-lg border bg-muted/30 p-4">
             <p className="text-sm whitespace-pre-wrap leading-relaxed">{template.description}</p>
           </div>
+
+          {/* File Preview */}
+          {previewUrl && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setShowFilePreview(!showFilePreview)}
+                  className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                >
+                  <FileText className="w-4 h-4" />
+                  {showFilePreview
+                    ? (isHebrew ? 'הסתר תצוגה מקדימה' : 'Hide Preview')
+                    : (isHebrew ? 'הצג תצוגה מקדימה של הקובץ' : 'Preview File')}
+                  {showFilePreview ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+              {showFilePreview && (
+                <div className="rounded-lg border overflow-hidden bg-white">
+                  <iframe
+                    src={previewUrl}
+                    className="w-full h-[60vh] border-0"
+                    title="File preview"
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Stats */}
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
