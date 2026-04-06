@@ -391,10 +391,13 @@ export function AssignmentCard({
                     {isHebrew ? 'ערוך' : 'Edit'}
                   </Button>
                 )}
-                <Button size="sm" variant="ghost" onClick={() => onViewSubmissions(template)} className="h-8 gap-1 text-muted-foreground">
+                <button
+                  onClick={() => onViewSubmissions(template)}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors h-8 px-2"
+                >
                   <Inbox className="w-3.5 h-3.5" />
                   {submissionsCount} {isHebrew ? 'פתרונות' : 'Solutions'}
-                </Button>
+                </button>
               </>
             ) : needsRequest ? (
               renderRequestOnlyCTA()

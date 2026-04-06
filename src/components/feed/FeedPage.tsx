@@ -203,26 +203,27 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
 
   const mockPosts = useMemo(() => generateFeedPosts(companyNames || []), [companyNames]);
 
-  // Combine & prioritize followed content
+  // Combine & sort by date (newest first, like a real social feed)
   const allPosts = useMemo(() => {
     const real = [...(dbPosts || []), ...(assignmentPosts || [])];
     const combined = real.length >= 5 ? real : [...real, ...mockPosts];
-    // Sort ALL posts by date so newest always appear first
-    combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-    if (!followedIds?.userIds.length && !followedIds?.companyIds.length) return combined;
+    // Sort by date — followed content gets a small boost (2 hours) but stays chronological
+    const followedUserIds = followedIds?.userIds || [];
+    const followedCompanyIds = followedIds?.companyIds || [];
+    const BOOST_MS = 2 * 60 * 60 * 1000; // 2 hours
 
-    const followed: FeedPost[] = [];
-    const rest: FeedPost[] = [];
-    for (const p of combined) {
-      if ((p.authorId && followedIds.userIds.includes(p.authorId)) ||
-          (p.companyId && followedIds.companyIds.includes(p.companyId))) {
-        followed.push(p);
-      } else {
-        rest.push(p);
-      }
-    }
-    return [...followed, ...rest];
+    combined.sort((a, b) => {
+      let timeA = new Date(a.createdAt).getTime();
+      let timeB = new Date(b.createdAt).getTime();
+      if (a.authorId && followedUserIds.includes(a.authorId)) timeA += BOOST_MS;
+      if (a.companyId && followedCompanyIds.includes(a.companyId)) timeA += BOOST_MS;
+      if (b.authorId && followedUserIds.includes(b.authorId)) timeB += BOOST_MS;
+      if (b.companyId && followedCompanyIds.includes(b.companyId)) timeB += BOOST_MS;
+      return timeB - timeA;
+    });
+
+    return combined;
   }, [dbPosts, assignmentPosts, mockPosts, followedIds]);
 
   // Trending = sorted by engagement
