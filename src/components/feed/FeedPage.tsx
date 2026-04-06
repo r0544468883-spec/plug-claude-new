@@ -1,25 +1,39 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FeedCard } from './FeedCard';
 import { WebinarFeedCard, WebinarData } from './WebinarFeedCard';
 import { generateFeedPosts, FeedPost } from './feedMockData';
-import { Flame, Newspaper, Lightbulb, Building2, BarChart3, Video, PenLine } from 'lucide-react';
+import { Flame, Newspaper, Lightbulb, Building2, BarChart3, Video, PenLine, ArrowUp, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface FeedPageProps {
   onCreatePost?: () => void;
 }
 
+const POSTS_PER_PAGE = 10;
+
 export function FeedPage({ onCreatePost }: FeedPageProps) {
   const { language } = useLanguage();
   const { user, profile } = useAuth();
+  const queryClient = useQueryClient();
   const isRTL = language === 'he';
+
+  // Pagination state
+  const [visibleCount, setVisibleCount] = useState(POSTS_PER_PAGE);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // New posts banner
+  const [newPostsCount, setNewPostsCount] = useState(0);
+  const latestPostTimeRef = useRef<string | null>(null);
 
   // Fetch user's followed IDs for prioritization
   const { data: followedIds } = useQuery({
@@ -72,6 +86,11 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
         companies?.forEach((c: any) => { companyMap[c.id] = c.name; });
       }
 
+      // Track latest post time for realtime
+      if (posts.length > 0) {
+        latestPostTimeRef.current = posts[0].created_at;
+      }
+
       return posts.map((p: any): FeedPost => ({
         id: p.id,
         recruiterName: profileMap[p.author_id] || 'Recruiter',
@@ -80,6 +99,7 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
         postType: p.post_type,
         content: p.content_en || p.content_he || '',
         contentHe: p.content_he || p.content_en || '',
+        imageUrl: p.image_url || undefined,
         videoUrl: p.video_url || undefined,
         likes: p.likes_count || 0,
         comments: p.comments_count || 0,
@@ -92,6 +112,28 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
       }));
     },
   });
+
+  // Realtime subscription for new posts
+  useEffect(() => {
+    const channel = supabase
+      .channel('feed-new-posts')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'feed_posts', filter: 'is_published=eq.true' },
+        () => {
+          setNewPostsCount(prev => prev + 1);
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  const handleShowNewPosts = useCallback(() => {
+    setNewPostsCount(0);
+    queryClient.invalidateQueries({ queryKey: ['feed-posts-real'] });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [queryClient]);
 
   // Fetch webinars
   const { data: webinars } = useQuery({
@@ -185,25 +227,24 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
       const nameMap: Record<string, string> = {};
       profiles?.forEach((p: any) => { nameMap[p.id] = p.full_name; });
 
-      // Fallback: use auth user metadata for current user's assignments
       const currentUserName = (user as any)?.user_metadata?.full_name || null;
 
       return (assignments as any[]).map((a): FeedPost => {
         const name = nameMap[a.created_by] || (a.created_by === user?.id ? currentUserName : null) || 'User';
         const isAnon = !!a.is_anonymous;
         return {
-        id: `assignment-${a.id}`,
-        recruiterName: isAnon ? 'Anonymous' : name,
-        recruiterAvatar: isAnon ? '?' : name.charAt(0).toUpperCase(),
-        companyName: a.company_name || '',
-        postType: 'assignment',
-        content: `📋 New assignment: "${a.title}"\n${a.description?.slice(0, 200) || ''}${a.description?.length > 200 ? '...' : ''}`,
-        contentHe: `📋 מטלה חדשה: "${a.title}"\n${a.description?.slice(0, 200) || ''}${a.description?.length > 200 ? '...' : ''}`,
-        likes: 0,
-        comments: 0,
-        createdAt: a.created_at,
-        authorId: a.created_by,
-      };
+          id: `assignment-${a.id}`,
+          recruiterName: isAnon ? 'Anonymous' : name,
+          recruiterAvatar: isAnon ? '?' : name.charAt(0).toUpperCase(),
+          companyName: a.company_name || '',
+          postType: 'assignment',
+          content: `📋 New assignment: "${a.title}"\n${a.description?.slice(0, 200) || ''}${a.description?.length > 200 ? '...' : ''}`,
+          contentHe: `📋 מטלה חדשה: "${a.title}"\n${a.description?.slice(0, 200) || ''}${a.description?.length > 200 ? '...' : ''}`,
+          likes: 0,
+          comments: 0,
+          createdAt: a.created_at,
+          authorId: a.created_by,
+        };
       });
     },
   });
@@ -213,12 +254,10 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
   // Combine & sort: real posts first, then mock to fill, all by date
   const allPosts = useMemo(() => {
     const real = [...(dbPosts || []), ...(assignmentPosts || [])];
-    // Sort real posts by date (newest first)
     real.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     if (real.length >= 5) return real;
 
-    // Fill with mock posts, but put them AFTER all real posts
     const mockSorted = [...mockPosts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return [...real, ...mockSorted];
   }, [dbPosts, assignmentPosts, mockPosts]);
@@ -233,14 +272,82 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
     return allPosts.filter(p => p.postType === type);
   };
 
+  // Infinite scroll — IntersectionObserver
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loadingMore) {
+          setLoadingMore(true);
+          setTimeout(() => {
+            setVisibleCount(prev => prev + POSTS_PER_PAGE);
+            setLoadingMore(false);
+          }, 300);
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadingMore]);
+
   const userName = (profile as any)?.full_name?.split(' ')[0] || '';
   const userInitial = userName.charAt(0).toUpperCase() || 'U';
+
+  // Render a paginated list of posts
+  const renderPosts = (posts: FeedPost[]) => {
+    const visible = posts.slice(0, visibleCount);
+    const hasMore = posts.length > visibleCount;
+
+    return (
+      <>
+        {visible.length === 0 ? (
+          <EmptyFeed isRTL={isRTL} onCreatePost={onCreatePost} />
+        ) : (
+          <>
+            {visible.map(post => <FeedCard key={post.id} post={post} />)}
+            {hasMore && (
+              <div ref={loadMoreRef} className="flex justify-center py-4">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              </div>
+            )}
+          </>
+        )}
+      </>
+    );
+  };
 
   return (
     <div data-tour="feed-content">
       <div className="space-y-5" dir={isRTL ? 'rtl' : 'ltr'}>
 
-        {/* Create post prompt (LinkedIn style) */}
+        {/* ─── New Posts Banner ──────────────────────────── */}
+        <AnimatePresence>
+          {newPostsCount > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="sticky top-0 z-10"
+            >
+              <Button
+                onClick={handleShowNewPosts}
+                className="w-full rounded-full shadow-lg gap-2"
+                size="sm"
+              >
+                <ArrowUp className="w-4 h-4" />
+                {isRTL
+                  ? `${newPostsCount} פוסטים חדשים`
+                  : `${newPostsCount} new post${newPostsCount > 1 ? 's' : ''}`}
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ─── Create Post Prompt (LinkedIn style) ───────── */}
         {onCreatePost && (
           <Card
             className="shadow-sm hover:shadow-md transition-shadow cursor-pointer"
@@ -260,16 +367,16 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
           </Card>
         )}
 
-        {/* Tabs */}
-        <Tabs defaultValue="trending" className="space-y-4">
+        {/* ─── Tabs ──────────────────────────────────────── */}
+        <Tabs defaultValue="all" className="space-y-4">
           <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 bg-card border border-border">
-            <TabsTrigger value="trending" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              <Flame className="w-3.5 h-3.5" />
-              {isRTL ? 'טרנדינג' : 'Trending'}
-            </TabsTrigger>
             <TabsTrigger value="all" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <Newspaper className="w-3.5 h-3.5" />
               {isRTL ? 'הכל' : 'All'}
+            </TabsTrigger>
+            <TabsTrigger value="trending" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <Flame className="w-3.5 h-3.5" />
+              {isRTL ? 'טרנדינג' : 'Trending'}
             </TabsTrigger>
             <TabsTrigger value="tip" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <Lightbulb className="w-3.5 h-3.5" />
@@ -296,7 +403,7 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
                 <Card key={i} className="bg-card border border-border">
                   <CardContent className="p-5 space-y-3">
                     <div className="flex items-center gap-3">
-                      <Skeleton className="h-11 w-11 rounded-full" />
+                      <Skeleton className="h-12 w-12 rounded-full" />
                       <div className="space-y-1.5 flex-1">
                         <Skeleton className="h-4 w-32" />
                         <Skeleton className="h-3 w-24" />
@@ -304,31 +411,29 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
                     </div>
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-48 w-full rounded-lg" />
+                    <div className="flex gap-4 pt-2">
+                      <Skeleton className="h-8 w-16" />
+                      <Skeleton className="h-8 w-20" />
+                      <Skeleton className="h-8 w-16" />
+                    </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
           ) : (
             <>
-              {/* Trending tab */}
-              <TabsContent value="trending" className="space-y-4">
-                {trendingPosts.length === 0 ? (
-                  <EmptyFeed isRTL={isRTL} />
-                ) : (
-                  trendingPosts.map(post => <FeedCard key={post.id} post={post} />)
-                )}
+              <TabsContent value="all" className="space-y-4">
+                {renderPosts(allPosts)}
               </TabsContent>
 
-              {/* Other tabs */}
-              {['all', 'tip', 'culture', 'poll'].map(tab => (
+              <TabsContent value="trending" className="space-y-4">
+                {renderPosts(trendingPosts)}
+              </TabsContent>
+
+              {['tip', 'culture', 'poll'].map(tab => (
                 <TabsContent key={tab} value={tab} className="space-y-4">
-                  {filterPosts(tab).length === 0 ? (
-                    <EmptyFeed isRTL={isRTL} />
-                  ) : (
-                    filterPosts(tab).map(post => (
-                      <FeedCard key={post.id} post={post} />
-                    ))
-                  )}
+                  {renderPosts(filterPosts(tab))}
                 </TabsContent>
               ))}
 
@@ -347,14 +452,23 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
   );
 }
 
-function EmptyFeed({ isRTL, message }: { isRTL: boolean; message?: string }) {
+function EmptyFeed({ isRTL, message, onCreatePost }: { isRTL: boolean; message?: string; onCreatePost?: () => void }) {
   return (
     <Card className="bg-card border border-border">
       <CardContent className="py-12 text-center">
-        <Newspaper className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
-        <p className="text-muted-foreground text-sm">
+        <Newspaper className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+        <p className="text-muted-foreground text-sm mb-1">
           {message || (isRTL ? 'אין פוסטים בקטגוריה זו' : 'No posts in this category')}
         </p>
+        <p className="text-xs text-muted-foreground/70 mb-4">
+          {isRTL ? 'היה הראשון לפרסם תוכן!' : 'Be the first to share something!'}
+        </p>
+        {onCreatePost && (
+          <Button size="sm" onClick={onCreatePost} className="gap-1.5">
+            <PenLine className="w-4 h-4" />
+            {isRTL ? 'צור פוסט' : 'Create Post'}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );
