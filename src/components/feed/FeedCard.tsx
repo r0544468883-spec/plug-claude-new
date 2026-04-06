@@ -49,18 +49,20 @@ export function FeedCard({ post }: FeedCardProps) {
   const [localComments, setLocalComments] = useState(post.comments);
 
   const handleLike = useCallback(async () => {
-    if (liked) return;
-    setLiked(true);
-    setLocalLikes(prev => prev + 1);
+    const wasLiked = liked;
+    setLiked(!wasLiked);
+    setLocalLikes(prev => wasLiked ? Math.max(0, prev - 1) : prev + 1);
 
-    const result = await awardCredits('feed_like');
-    if (result.success) {
-      setLikeSparkle(true);
-      toast.success(isRTL ? '⚡ +1 דלק יומי!' : '⚡ +1 Daily Fuel earned!', {
-        duration: 2000,
-        style: { background: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' },
-      });
-      setTimeout(() => setLikeSparkle(false), 600);
+    if (!wasLiked) {
+      const result = await awardCredits('feed_like');
+      if (result.success) {
+        setLikeSparkle(true);
+        toast.success(isRTL ? '⚡ +1 דלק יומי!' : '⚡ +1 Daily Fuel earned!', {
+          duration: 2000,
+          style: { background: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' },
+        });
+        setTimeout(() => setLikeSparkle(false), 600);
+      }
     }
   }, [liked, awardCredits, isRTL]);
 
@@ -69,6 +71,8 @@ export function FeedCard({ post }: FeedCardProps) {
     setLocalComments(prev => prev + 1);
     setCommentText('');
     setShowCommentInput(false);
+
+    toast.success(isRTL ? 'התגובה נשלחה!' : 'Comment posted!', { duration: 1500 });
 
     const result = await awardCredits('feed_comment');
     if (result.success) {
@@ -101,8 +105,18 @@ export function FeedCard({ post }: FeedCardProps) {
     }
   }, [post.id, post.content, post.contentHe, isRTL]);
 
-  const daysAgo = Math.max(1, Math.floor((Date.now() - new Date(post.createdAt).getTime()) / (1000 * 60 * 60 * 24)));
-  const timeLabel = isRTL ? `לפני ${daysAgo} ימים` : `${daysAgo}d ago`;
+  const msAgo = Date.now() - new Date(post.createdAt).getTime();
+  const minsAgo = Math.floor(msAgo / 60000);
+  const hoursAgo = Math.floor(minsAgo / 60);
+  const daysAgo = Math.floor(hoursAgo / 24);
+
+  const timeLabel = (() => {
+    if (minsAgo < 1) return isRTL ? 'עכשיו' : 'now';
+    if (minsAgo < 60) return isRTL ? `לפני ${minsAgo} דק׳` : `${minsAgo}m ago`;
+    if (hoursAgo < 24) return isRTL ? `לפני ${hoursAgo === 1 ? 'שעה' : `${hoursAgo} שעות`}` : `${hoursAgo}h ago`;
+    if (daysAgo === 1) return isRTL ? 'אתמול' : '1d ago';
+    return isRTL ? `לפני ${daysAgo} ימים` : `${daysAgo}d ago`;
+  })();
   const accentClass = POST_TYPE_ACCENT[post.postType] || '';
 
   return (
@@ -112,7 +126,7 @@ export function FeedCard({ post }: FeedCardProps) {
       transition={{ duration: 0.3 }}
     >
       <Card className={cn(
-        'bg-white shadow-sm border border-gray-100 hover:shadow-md transition-shadow',
+        'bg-card shadow-sm border border-border hover:shadow-md transition-shadow',
         accentClass && `border-s-4 ${accentClass}`
       )}>
         <CardContent className="p-5">
@@ -128,12 +142,12 @@ export function FeedCard({ post }: FeedCardProps) {
             </Avatar>
             <div className="flex-1 min-w-0">
               <p
-                className="font-semibold text-base text-gray-900 truncate cursor-pointer hover:underline"
+                className="font-semibold text-base text-foreground truncate cursor-pointer hover:underline"
                 onClick={() => (post as any).authorId && navigate(`/p/${(post as any).authorId}`)}
               >
                 {post.recruiterName}
               </p>
-              <p className="text-xs text-gray-500 truncate">
+              <p className="text-xs text-muted-foreground truncate">
                 {post.companyName} · {timeLabel}
               </p>
             </div>
@@ -150,7 +164,7 @@ export function FeedCard({ post }: FeedCardProps) {
           </div>
 
           {/* Content */}
-          <p className="text-base text-gray-800 leading-relaxed mb-3">
+          <p className="text-base text-foreground/90 leading-relaxed mb-3">
             {isRTL ? post.contentHe : post.content}
           </p>
 
@@ -165,11 +179,11 @@ export function FeedCard({ post }: FeedCardProps) {
           )}
 
           {/* Actions */}
-          <div className="flex items-center gap-1 mt-3 pt-3 border-t border-gray-100">
+          <div className="flex items-center gap-1 mt-3 pt-3 border-t border-border">
             <Button
               variant="ghost"
               size="sm"
-              className={cn('gap-1.5 relative text-gray-600 hover:text-primary hover:bg-primary/5', liked && 'text-primary')}
+              className={cn('gap-1.5 relative text-muted-foreground hover:text-primary hover:bg-primary/5', liked && 'text-primary')}
               onClick={handleLike}
             >
               <Heart className={cn('w-4 h-4', liked && 'fill-primary')} />
@@ -180,7 +194,7 @@ export function FeedCard({ post }: FeedCardProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="gap-1.5 relative text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+              className="gap-1.5 relative text-muted-foreground hover:text-blue-600 hover:bg-blue-50"
               onClick={() => setShowCommentInput(!showCommentInput)}
             >
               <MessageCircle className="w-4 h-4" />
@@ -190,7 +204,7 @@ export function FeedCard({ post }: FeedCardProps) {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-1.5 text-gray-600 hover:text-green-600 hover:bg-green-50 ms-auto">
+                <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-green-600 hover:bg-green-50 ms-auto">
                   <Share2 className="w-4 h-4" />
                   <span className="text-xs font-medium">{isRTL ? 'שתף' : 'Share'}</span>
                 </Button>
@@ -223,7 +237,7 @@ export function FeedCard({ post }: FeedCardProps) {
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder={isRTL ? 'כתוב תגובה...' : 'Write a comment...'}
-                className="text-sm bg-gray-50 border-gray-200"
+                className="text-sm bg-muted border-border"
                 onKeyDown={(e) => e.key === 'Enter' && handleComment()}
               />
               <Button size="icon" variant="ghost" onClick={handleComment} disabled={!commentText.trim()}>

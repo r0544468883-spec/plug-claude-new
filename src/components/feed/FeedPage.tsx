@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { FeedCard } from './FeedCard';
 import { WebinarFeedCard, WebinarData } from './WebinarFeedCard';
 import { generateFeedPosts, FeedPost } from './feedMockData';
-import { Flame, Newspaper, Lightbulb, Building2, BarChart3, Video, PenLine } from 'lucide-react';
+import { Flame, Newspaper, Lightbulb, Building2, BarChart3, Video, PenLine, Sparkles } from 'lucide-react';
 
 interface FeedPageProps {
   onCreatePost?: () => void;
@@ -208,7 +208,7 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
     },
   });
 
-  const mockPosts = useMemo(() => generateFeedPosts(companyNames || []), [companyNames]);
+  const mockPosts = useMemo(() => generateFeedPosts(companyNames || [], language), [companyNames, language]);
 
   // Combine & sort: real posts first, then mock to fill, all by date
   const allPosts = useMemo(() => {
@@ -239,17 +239,23 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
   return (
     <div data-tour="feed-content">
       <div className="space-y-5" dir={isRTL ? 'rtl' : 'ltr'}>
-        {/* Subtitle */}
-        <p className="text-gray-500 text-sm">
-          {isRTL
-            ? 'תוכן מותאם אישית ממגייסים וחברות – כל אינטראקציה מרוויחה +1 דלק!'
-            : 'Personalized content from recruiters & companies – every interaction earns +1 Fuel!'}
-        </p>
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <Sparkles className="w-7 h-7 text-primary" />
+          <div>
+            <h1 className="text-2xl font-bold">PLUG Feed</h1>
+            <p className="text-sm text-muted-foreground">
+              {isRTL
+                ? 'תוכן מקצועי, טיפים ומטלות ממגייסים וחברות'
+                : 'Professional content, tips & assignments from recruiters'}
+            </p>
+          </div>
+        </div>
 
         {/* Create post prompt (LinkedIn style) */}
         {onCreatePost && (
           <Card
-            className="bg-white shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
+            className="shadow-sm hover:shadow-md transition-shadow cursor-pointer"
             onClick={onCreatePost}
           >
             <CardContent className="p-4 flex items-center gap-3">
@@ -258,38 +264,38 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
                   {userInitial}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1 bg-gray-50 rounded-full px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-100 transition-colors border border-gray-200">
+              <div className="flex-1 bg-muted rounded-full px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted/80 transition-colors border border-border">
                 {isRTL ? 'מה עובר עליך?' : "What's on your mind?"}
               </div>
-              <PenLine className="w-5 h-5 text-gray-400" />
+              <PenLine className="w-5 h-5 text-muted-foreground" />
             </CardContent>
           </Card>
         )}
 
         {/* Tabs */}
         <Tabs defaultValue="trending" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6 bg-white border border-gray-200">
-            <TabsTrigger value="trending" className="gap-1 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 bg-card border border-border">
+            <TabsTrigger value="trending" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <Flame className="w-3.5 h-3.5" />
               {isRTL ? 'טרנדינג' : 'Trending'}
             </TabsTrigger>
-            <TabsTrigger value="all" className="gap-1 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            <TabsTrigger value="all" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <Newspaper className="w-3.5 h-3.5" />
               {isRTL ? 'הכל' : 'All'}
             </TabsTrigger>
-            <TabsTrigger value="tip" className="gap-1 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            <TabsTrigger value="tip" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <Lightbulb className="w-3.5 h-3.5" />
               {isRTL ? 'טיפים' : 'Tips'}
             </TabsTrigger>
-            <TabsTrigger value="culture" className="gap-1 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            <TabsTrigger value="culture" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <Building2 className="w-3.5 h-3.5" />
               {isRTL ? 'תרבות' : 'Culture'}
             </TabsTrigger>
-            <TabsTrigger value="poll" className="gap-1 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            <TabsTrigger value="poll" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <BarChart3 className="w-3.5 h-3.5" />
               {isRTL ? 'סקרים' : 'Polls'}
             </TabsTrigger>
-            <TabsTrigger value="webinars" className="gap-1 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            <TabsTrigger value="webinars" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <Video className="w-3.5 h-3.5" />
               {isRTL ? 'וובינרים' : 'Webinars'}
             </TabsTrigger>
@@ -299,7 +305,7 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
           {postsLoading ? (
             <div className="space-y-4">
               {[1, 2, 3].map(i => (
-                <Card key={i} className="bg-white border border-gray-100">
+                <Card key={i} className="bg-card border border-border">
                   <CardContent className="p-5 space-y-3">
                     <div className="flex items-center gap-3">
                       <Skeleton className="h-11 w-11 rounded-full" />
@@ -355,10 +361,10 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
 
 function EmptyFeed({ isRTL, message }: { isRTL: boolean; message?: string }) {
   return (
-    <Card className="bg-white border border-gray-100">
+    <Card className="bg-card border border-border">
       <CardContent className="py-12 text-center">
-        <Newspaper className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-400 text-sm">
+        <Newspaper className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
+        <p className="text-muted-foreground text-sm">
           {message || (isRTL ? 'אין פוסטים בקטגוריה זו' : 'No posts in this category')}
         </p>
       </CardContent>

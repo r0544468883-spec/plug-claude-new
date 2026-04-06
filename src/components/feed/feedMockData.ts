@@ -116,7 +116,8 @@ const POLL_POSTS: Omit<FeedPost, 'id' | 'companyName' | 'recruiterName' | 'recru
 /**
  * Generate personalized feed posts. Companies from the user's applications are prioritized.
  */
-export function generateFeedPosts(userCompanyNames: string[] = []): FeedPost[] {
+export function generateFeedPosts(userCompanyNames: string[] = [], language: string = 'en'): FeedPost[] {
+  const isHebrew = language === 'he';
   const companies = [...userCompanyNames];
   // Fill remaining with generic companies
   for (const c of GENERIC_COMPANIES) {
@@ -137,8 +138,8 @@ export function generateFeedPosts(userCompanyNames: string[] = []): FeedPost[] {
     posts.push({
       ...template,
       id: `feed-${i}`,
-      recruiterName: recruiter.en,
-      recruiterAvatar: recruiter.en.charAt(0),
+      recruiterName: isHebrew ? recruiter.he : recruiter.en,
+      recruiterAvatar: (isHebrew ? recruiter.he : recruiter.en).charAt(0),
       companyName: company,
       createdAt: date.toISOString(),
       content: template.content.replace('[Company Name]', company),
