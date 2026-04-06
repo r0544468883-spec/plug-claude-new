@@ -61,9 +61,9 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
       }
 
       const authorIds = [...new Set(posts.map((p: any) => p.author_id))];
-      const { data: profiles } = await supabase.from('profiles').select('user_id, full_name').in('user_id', authorIds);
+      const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', authorIds);
       const profileMap: Record<string, string> = {};
-      profiles?.forEach((p: any) => { profileMap[p.user_id] = p.full_name; });
+      profiles?.forEach((p: any) => { profileMap[p.id] = p.full_name; });
 
       const companyIds = [...new Set(posts.filter((p: any) => p.company_id).map((p: any) => p.company_id))];
       let companyMap: Record<string, string> = {};
@@ -107,9 +107,9 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
       if (error || !data?.length) return [];
 
       const creatorIds = [...new Set(data.map((w: any) => w.creator_id))];
-      const { data: profiles } = await supabase.from('profiles').select('user_id, full_name').in('user_id', creatorIds);
+      const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', creatorIds);
       const profileMap: Record<string, string> = {};
-      profiles?.forEach((p: any) => { profileMap[p.user_id] = p.full_name; });
+      profiles?.forEach((p: any) => { profileMap[p.id] = p.full_name; });
 
       const companyIds = [...new Set(data.filter((w: any) => w.company_id).map((w: any) => w.company_id))];
       let companyMap: Record<string, string> = {};
@@ -185,10 +185,16 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
       const nameMap: Record<string, string> = {};
       profiles?.forEach((p: any) => { nameMap[p.id] = p.full_name; });
 
-      return (assignments as any[]).map((a): FeedPost => ({
+      // Fallback: use auth user metadata for current user's assignments
+      const currentUserName = (user as any)?.user_metadata?.full_name || null;
+
+      return (assignments as any[]).map((a): FeedPost => {
+        const name = nameMap[a.created_by] || (a.created_by === user?.id ? currentUserName : null) || 'User';
+        const isAnon = !!a.is_anonymous;
+        return {
         id: `assignment-${a.id}`,
-        recruiterName: nameMap[a.created_by] || 'User',
-        recruiterAvatar: (nameMap[a.created_by] || 'U').charAt(0).toUpperCase(),
+        recruiterName: isAnon ? 'Anonymous' : name,
+        recruiterAvatar: isAnon ? '?' : name.charAt(0).toUpperCase(),
         companyName: a.company_name || '',
         postType: 'assignment',
         content: `📋 New assignment: "${a.title}"\n${a.description?.slice(0, 200) || ''}${a.description?.length > 200 ? '...' : ''}`,
@@ -197,34 +203,25 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
         comments: 0,
         createdAt: a.created_at,
         authorId: a.created_by,
-      }));
+      };
+      });
     },
   });
 
   const mockPosts = useMemo(() => generateFeedPosts(companyNames || []), [companyNames]);
 
-  // Combine & sort by date (newest first, like a real social feed)
+  // Combine & sort: real posts first, then mock to fill, all by date
   const allPosts = useMemo(() => {
     const real = [...(dbPosts || []), ...(assignmentPosts || [])];
-    const combined = real.length >= 5 ? real : [...real, ...mockPosts];
+    // Sort real posts by date (newest first)
+    real.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-    // Sort by date — followed content gets a small boost (2 hours) but stays chronological
-    const followedUserIds = followedIds?.userIds || [];
-    const followedCompanyIds = followedIds?.companyIds || [];
-    const BOOST_MS = 2 * 60 * 60 * 1000; // 2 hours
+    if (real.length >= 5) return real;
 
-    combined.sort((a, b) => {
-      let timeA = new Date(a.createdAt).getTime();
-      let timeB = new Date(b.createdAt).getTime();
-      if (a.authorId && followedUserIds.includes(a.authorId)) timeA += BOOST_MS;
-      if (a.companyId && followedCompanyIds.includes(a.companyId)) timeA += BOOST_MS;
-      if (b.authorId && followedUserIds.includes(b.authorId)) timeB += BOOST_MS;
-      if (b.companyId && followedCompanyIds.includes(b.companyId)) timeB += BOOST_MS;
-      return timeB - timeA;
-    });
-
-    return combined;
-  }, [dbPosts, assignmentPosts, mockPosts, followedIds]);
+    // Fill with mock posts, but put them AFTER all real posts
+    const mockSorted = [...mockPosts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return [...real, ...mockSorted];
+  }, [dbPosts, assignmentPosts, mockPosts]);
 
   // Trending = sorted by engagement
   const trendingPosts = useMemo(() => {
