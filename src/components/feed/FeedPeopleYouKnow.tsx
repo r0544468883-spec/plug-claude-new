@@ -149,11 +149,11 @@ export function FeedPeopleYouKnow() {
   if (!people?.length) return null;
 
   return (
-    <Card className="bg-white shadow-sm border border-gray-200">
+    <Card className="bg-card shadow-sm border border-border">
       <CardContent className="p-4">
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="w-4 h-4 text-primary" />
-          <h3 className="text-sm font-semibold text-gray-900">
+          <h3 className="text-sm font-semibold text-foreground">
             {isRTL ? 'אנשים שאולי את/ה מכיר/ה' : 'People you may know'}
           </h3>
         </div>
@@ -175,19 +175,19 @@ export function FeedPeopleYouKnow() {
                   onClick={() => navigate(`/p/${person.user_id}`)}
                 >
                   {person.avatar_url && <AvatarImage src={person.avatar_url} alt={person.full_name} />}
-                  <AvatarFallback className="bg-blue-50 text-blue-600 text-sm font-semibold">
+                  <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
 
                 <div className="flex-1 min-w-0">
                   <p
-                    className="text-sm font-medium text-gray-900 truncate cursor-pointer hover:underline"
+                    className="text-sm font-medium text-foreground truncate cursor-pointer hover:underline"
                     onClick={() => navigate(`/p/${person.user_id}`)}
                   >
                     {person.full_name}
                   </p>
-                  <p className="text-[11px] text-gray-500 truncate">
+                  <p className="text-[11px] text-muted-foreground truncate">
                     {person.title || (isRTL ? 'מחפש/ת עבודה' : 'Job Seeker')}
                   </p>
                   <p className="text-[10px] text-primary/70 mt-0.5">{person.reason}</p>
@@ -209,7 +209,7 @@ export function FeedPeopleYouKnow() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-6 px-2 text-[11px] rounded-full border-gray-300 gap-1"
+                      className="h-6 px-2 text-[11px] rounded-full border-border gap-1"
                     >
                       <UserPlus className="w-3 h-3" />
                       {isRTL ? 'עקוב' : 'Follow'}
@@ -233,7 +233,7 @@ export function FeedPeopleYouKnow() {
           })}
         </div>
 
-        <p className="text-[10px] text-gray-400 mt-3 text-center">
+        <p className="text-[10px] text-muted-foreground mt-3 text-center">
           {isRTL ? '⚡ בקשת VOUCH עולה 2 קרדיטים' : '⚡ VOUCH request costs 2 credits'}
         </p>
       </CardContent>

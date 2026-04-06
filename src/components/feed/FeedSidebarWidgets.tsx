@@ -32,24 +32,24 @@ function JobMarketPulse() {
   });
 
   return (
-    <Card className="bg-white shadow-sm border border-gray-200">
+    <Card className="bg-card shadow-sm border border-border">
       <CardContent className="p-4">
         <div className="flex items-center gap-2 mb-3">
           <Briefcase className="w-4 h-4 text-primary" />
-          <h3 className="text-sm font-semibold text-gray-900">
+          <h3 className="text-sm font-semibold text-foreground">
             {isRTL ? 'דופק שוק העבודה' : 'Job Market Pulse'}
           </h3>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="text-center p-2.5 bg-primary/5 rounded-lg">
             <p className="text-2xl font-bold text-primary">{stats?.totalJobs || 0}</p>
-            <p className="text-[11px] text-gray-500 mt-0.5">
+            <p className="text-[11px] text-muted-foreground mt-0.5">
               {isRTL ? 'משרות פתוחות' : 'Open jobs'}
             </p>
           </div>
-          <div className="text-center p-2.5 bg-green-50 rounded-lg">
+          <div className="text-center p-2.5 bg-green-500/10 rounded-lg">
             <p className="text-2xl font-bold text-green-600">+{stats?.newThisWeek || 0}</p>
-            <p className="text-[11px] text-gray-500 mt-0.5">
+            <p className="text-[11px] text-muted-foreground mt-0.5">
               {isRTL ? 'חדשות השבוע' : 'New this week'}
             </p>
           </div>
@@ -110,11 +110,11 @@ function TopHiringCompanies() {
   const medals = ['🥇', '🥈', '🥉'];
 
   return (
-    <Card className="bg-white shadow-sm border border-gray-200">
+    <Card className="bg-card shadow-sm border border-border">
       <CardContent className="p-4">
         <div className="flex items-center gap-2 mb-3">
           <Building2 className="w-4 h-4 text-amber-500" />
-          <h3 className="text-sm font-semibold text-gray-900">
+          <h3 className="text-sm font-semibold text-foreground">
             {isRTL ? 'חברות מובילות בגיוס' : 'Top Hiring Companies'}
           </h3>
         </div>
@@ -123,7 +123,7 @@ function TopHiringCompanies() {
             <div key={company.id} className="flex items-center gap-2.5">
               <span className="text-base">{medals[company.rank - 1]}</span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800 truncate">{company.name}</p>
+                <p className="text-sm font-medium text-foreground truncate">{company.name}</p>
               </div>
               <span className="text-xs font-semibold text-primary bg-primary/5 px-2 py-0.5 rounded-full">
                 {company.jobCount} {isRTL ? 'משרות' : 'jobs'}
@@ -185,12 +185,12 @@ function FeaturedHR() {
   });
 
   return (
-    <Card className="bg-white shadow-sm border border-gray-200 relative overflow-hidden">
+    <Card className="bg-card shadow-sm border border-border relative overflow-hidden">
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Award className="w-4 h-4 text-amber-500" />
-            <h3 className="text-sm font-semibold text-gray-900">
+            <h3 className="text-sm font-semibold text-foreground">
               {isRTL ? 'HR מצטיינים' : 'Top Recruiters'}
             </h3>
           </div>
@@ -217,10 +217,10 @@ function FeaturedHR() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">{rec.full_name}</p>
-                    <p className="text-[11px] text-gray-400 truncate">{rec.title || (isRTL ? 'מגייס/ת' : 'Recruiter')}</p>
+                    <p className="text-sm font-medium text-foreground truncate">{rec.full_name}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{rec.title || (isRTL ? 'מגייס/ת' : 'Recruiter')}</p>
                   </div>
-                  <div className="flex items-center gap-1 text-[11px] text-gray-400">
+                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
                     <Users className="w-3 h-3" />
                     {rec.followers}
                   </div>
@@ -232,11 +232,11 @@ function FeaturedHR() {
             [1, 2, 3].map(i => (
               <div key={i} className="flex items-center gap-2.5 blur-[3px] select-none pointer-events-none">
                 <Avatar className="h-9 w-9">
-                  <AvatarFallback className="bg-gray-100 text-gray-400 text-xs">HR</AvatarFallback>
+                  <AvatarFallback className="bg-muted text-muted-foreground text-xs">HR</AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <div className="h-3.5 w-20 bg-gray-200 rounded" />
-                  <div className="h-2.5 w-16 bg-gray-100 rounded mt-1" />
+                  <div className="h-3.5 w-20 bg-muted rounded" />
+                  <div className="h-2.5 w-16 bg-muted/60 rounded mt-1" />
                 </div>
               </div>
             ))
@@ -245,10 +245,10 @@ function FeaturedHR() {
 
         {/* Lock overlay for non-premium */}
         {(!topRecruiters || topRecruiters.length === 0) && (
-          <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center">
+          <div className="absolute inset-0 bg-card/60 backdrop-blur-[1px] flex items-center justify-center">
             <div className="text-center">
-              <Lock className="w-5 h-5 text-gray-400 mx-auto mb-1" />
-              <p className="text-xs text-gray-500 font-medium">
+              <Lock className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
+              <p className="text-xs text-muted-foreground font-medium">
                 {isRTL ? 'זמין למנויי פרימיום' : 'Premium feature'}
               </p>
             </div>
@@ -282,35 +282,35 @@ function CommunityStats() {
   });
 
   return (
-    <Card className="bg-white shadow-sm border border-gray-200">
+    <Card className="bg-card shadow-sm border border-border">
       <CardContent className="p-4">
         <div className="flex items-center gap-2 mb-3">
           <Users className="w-4 h-4 text-blue-500" />
-          <h3 className="text-sm font-semibold text-gray-900">
+          <h3 className="text-sm font-semibold text-foreground">
             {isRTL ? 'הקהילה שלנו' : 'Our Community'}
           </h3>
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Users className="w-3.5 h-3.5 text-gray-400" />
-              <span className="text-xs text-gray-600">{isRTL ? 'חברים' : 'Members'}</span>
+              <Users className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">{isRTL ? 'חברים' : 'Members'}</span>
             </div>
-            <span className="text-xs font-semibold text-gray-800">{stats?.totalMembers?.toLocaleString() || 0}</span>
+            <span className="text-xs font-semibold text-foreground">{stats?.totalMembers?.toLocaleString() || 0}</span>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
-              <span className="text-xs text-gray-600">{isRTL ? 'קהילות פעילות' : 'Active communities'}</span>
+              <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">{isRTL ? 'קהילות פעילות' : 'Active communities'}</span>
             </div>
-            <span className="text-xs font-semibold text-gray-800">{stats?.activeHubs || 0}</span>
+            <span className="text-xs font-semibold text-foreground">{stats?.activeHubs || 0}</span>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <TrendingUp className="w-3.5 h-3.5 text-gray-400" />
-              <span className="text-xs text-gray-600">{isRTL ? 'פוסטים' : 'Posts'}</span>
+              <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">{isRTL ? 'פוסטים' : 'Posts'}</span>
             </div>
-            <span className="text-xs font-semibold text-gray-800">{stats?.totalPosts || 0}</span>
+            <span className="text-xs font-semibold text-foreground">{stats?.totalPosts || 0}</span>
           </div>
         </div>
       </CardContent>
@@ -345,22 +345,22 @@ function TodayOnPlug() {
   });
 
   return (
-    <Card className="bg-gradient-to-br from-primary/5 to-blue-50 shadow-sm border border-primary/15">
+    <Card className="bg-gradient-to-br from-primary/5 to-primary/10 shadow-sm border border-primary/15">
       <CardContent className="p-4">
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="w-4 h-4 text-primary" />
-          <h3 className="text-sm font-semibold text-gray-900">
+          <h3 className="text-sm font-semibold text-foreground">
             {isRTL ? 'היום ב-PLUG' : 'Today on PLUG'}
           </h3>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <div className="text-center p-2 bg-white/80 rounded-lg">
+          <div className="text-center p-2 bg-card/80 rounded-lg">
             <p className="text-xl font-bold text-primary">{todayStats?.appsToday || 0}</p>
-            <p className="text-[10px] text-gray-500">{isRTL ? 'הגשות היום' : 'Apps today'}</p>
+            <p className="text-[10px] text-muted-foreground">{isRTL ? 'הגשות היום' : 'Apps today'}</p>
           </div>
-          <div className="text-center p-2 bg-white/80 rounded-lg">
+          <div className="text-center p-2 bg-card/80 rounded-lg">
             <p className="text-xl font-bold text-blue-600">{todayStats?.newUsersToday || 0}</p>
-            <p className="text-[10px] text-gray-500">{isRTL ? 'חברים חדשים' : 'New members'}</p>
+            <p className="text-[10px] text-muted-foreground">{isRTL ? 'חברים חדשים' : 'New members'}</p>
           </div>
         </div>
       </CardContent>

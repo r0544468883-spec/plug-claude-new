@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-// import { useStickySidebar } from '@/hooks/useStickySidebar';
 import { FeedPage } from '@/components/feed/FeedPage';
 import { FeedProfileSidebar } from '@/components/feed/FeedProfileSidebar';
 import { FeedSuggestedRecruiters } from '@/components/feed/FeedSuggestedRecruiters';
@@ -34,7 +33,7 @@ export function PlugSocial({ onCreatePost, onViewHub, onCreateHub, initialTab = 
     const next = !isLightMode;
     setIsLightMode(next);
     document.documentElement.classList.toggle('light', next);
-    try { localStorage.setItem('plug_feed_light_mode', String(next)); } catch {}
+    try { localStorage.setItem('plug_feed_light_mode', String(next)); } catch {};
   };
 
   useEffect(() => {
@@ -43,13 +42,13 @@ export function PlugSocial({ onCreatePost, onViewHub, onCreateHub, initialTab = 
   }, []);
 
   return (
-    <div className="min-h-full bg-[#f4f2ee]" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="min-h-full bg-muted/50" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Social Header Bar — sticky below the main header */}
-      <div className="sticky top-0 z-20 bg-white border-b border-gray-200">
+      <div className="sticky top-0 z-20 bg-card border-b border-border">
         <div className="max-w-[1128px] mx-auto px-4 md:px-6">
           {/* Title row */}
           <div className="flex items-center justify-between py-3">
-            <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
               <Newspaper className="w-5 h-5 text-primary" />
               PLUG Social
             </h1>
@@ -59,7 +58,7 @@ export function PlugSocial({ onCreatePost, onViewHub, onCreateHub, initialTab = 
                 variant="outline"
                 size="icon"
                 onClick={toggleTheme}
-                className="h-9 w-9 rounded-full border-gray-300 text-gray-700 hover:bg-gray-100"
+                className="h-9 w-9 rounded-full"
                 title={isLightMode ? (isRTL ? 'מצב כהה' : 'Dark mode') : (isRTL ? 'מצב בהיר' : 'Light mode')}
               >
                 {isLightMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
@@ -145,7 +144,7 @@ function TabButton({ active, onClick, icon, label }: {
         'flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors',
         active
           ? 'border-primary text-primary'
-          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
       )}
     >
       {icon}

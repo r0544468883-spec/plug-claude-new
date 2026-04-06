@@ -62,11 +62,11 @@ export function FeedSuggestedRecruiters() {
   if (!recruiters?.length) return null;
 
   return (
-    <Card className="bg-white shadow-sm border border-gray-200">
+    <Card className="bg-card shadow-sm border border-border">
       <CardContent className="p-4">
         <div className="flex items-center gap-2 mb-3">
-          <UserPlus className="w-4 h-4 text-gray-500" />
-          <h3 className="text-sm font-semibold text-gray-900">
+          <UserPlus className="w-4 h-4 text-muted-foreground" />
+          <h3 className="text-sm font-semibold text-foreground">
             {isRTL ? 'הוסיפו לפיד שלכם' : 'Add to your feed'}
           </h3>
         </div>
@@ -96,12 +96,12 @@ export function FeedSuggestedRecruiters() {
 
                 <div className="flex-1 min-w-0">
                   <p
-                    className="text-sm font-medium text-gray-900 truncate cursor-pointer hover:underline"
+                    className="text-sm font-medium text-foreground truncate cursor-pointer hover:underline"
                     onClick={() => navigate(`/p/${recruiter.user_id}`)}
                   >
                     {recruiter.full_name}
                   </p>
-                  <p className="text-xs text-gray-500 truncate">
+                  <p className="text-xs text-muted-foreground truncate">
                     {recruiter.title || (isRTL ? 'מגייס/ת' : 'Recruiter')}
                   </p>
                   <div className="flex gap-1.5 mt-1.5">
@@ -115,7 +115,7 @@ export function FeedSuggestedRecruiters() {
                     <FollowButton
                       targetUserId={recruiter.user_id}
                       size="sm"
-                      className="h-7 rounded-full border-gray-300 text-xs"
+                      className="h-7 rounded-full border-border text-xs"
                     />
                   </div>
                 </div>

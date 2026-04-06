@@ -112,11 +112,11 @@ export function FeedJobSearchInsights() {
   return (
     <div className="space-y-3">
       {/* Profile Strength */}
-      <Card className="bg-white shadow-sm border border-gray-200">
+      <Card className="bg-card shadow-sm border border-border">
         <CardContent className="p-4">
           <div className="flex items-center gap-2 mb-2.5">
             <Shield className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-semibold text-gray-900">
+            <h3 className="text-sm font-semibold text-foreground">
               {isRTL ? 'חוזק הפרופיל' : 'Profile Strength'}
             </h3>
           </div>
@@ -133,11 +133,11 @@ export function FeedJobSearchInsights() {
       </Card>
 
       {/* Job Search Stats */}
-      <Card className="bg-white shadow-sm border border-gray-200">
+      <Card className="bg-card shadow-sm border border-border">
         <CardContent className="p-4">
           <div className="flex items-center gap-2 mb-3">
             <Target className="w-4 h-4 text-blue-500" />
-            <h3 className="text-sm font-semibold text-gray-900">
+            <h3 className="text-sm font-semibold text-foreground">
               {isRTL ? 'תובנות חיפוש' : 'Search Insights'}
             </h3>
           </div>
@@ -166,17 +166,17 @@ export function FeedJobSearchInsights() {
 
             {/* Most competed job */}
             {insights.mostCompetedJob.title && (
-              <div className="bg-orange-50 rounded-lg p-2.5 mt-1">
+              <div className="bg-orange-500/10 rounded-lg p-2.5 mt-1">
                 <div className="flex items-center gap-1.5 mb-1">
                   <Eye className="w-3 h-3 text-orange-500" />
-                  <span className="text-[11px] font-medium text-orange-700">
+                  <span className="text-[11px] font-medium text-orange-700 dark:text-orange-400">
                     {isRTL ? 'המשרה הכי תחרותית' : 'Most competitive job'}
                   </span>
                 </div>
-                <p className="text-xs text-gray-800 font-medium truncate">
+                <p className="text-xs text-foreground font-medium truncate">
                   {insights.mostCompetedJob.title}
                 </p>
-                <p className="text-[10px] text-orange-600 mt-0.5">
+                <p className="text-[10px] text-orange-600 dark:text-orange-400 mt-0.5">
                   {insights.mostCompetedJob.count} {isRTL ? 'מועמדים אחרים' : 'other applicants'}
                 </p>
               </div>
@@ -186,11 +186,11 @@ export function FeedJobSearchInsights() {
       </Card>
 
       {/* Application Status Breakdown */}
-      <Card className="bg-white shadow-sm border border-gray-200">
+      <Card className="bg-card shadow-sm border border-border">
         <CardContent className="p-4">
           <div className="flex items-center gap-2 mb-3">
             <FileSearch className="w-4 h-4 text-purple-500" />
-            <h3 className="text-sm font-semibold text-gray-900">
+            <h3 className="text-sm font-semibold text-foreground">
               {isRTL ? 'סטטוס מועמדויות' : 'Application Status'}
             </h3>
           </div>
@@ -200,7 +200,7 @@ export function FeedJobSearchInsights() {
               label={isRTL ? 'ממתין' : 'Pending'}
               count={insights.statusCounts.pending}
               total={insights.totalApplications}
-              color="bg-gray-400"
+              color="bg-muted-foreground"
             />
             <StatusBar
               label={isRTL ? 'נצפה' : 'Reviewed'}
@@ -228,9 +228,9 @@ export function FeedJobSearchInsights() {
             />
           </div>
 
-          <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
-            <span className="text-xs text-gray-500">{isRTL ? 'סה"כ הגשות' : 'Total applications'}</span>
-            <span className="text-sm font-bold text-gray-800">{insights.totalApplications}</span>
+          <div className="flex items-center justify-between mt-3 pt-2 border-t border-border">
+            <span className="text-xs text-muted-foreground">{isRTL ? 'סה"כ הגשות' : 'Total applications'}</span>
+            <span className="text-sm font-bold text-foreground">{insights.totalApplications}</span>
           </div>
         </CardContent>
       </Card>
@@ -243,9 +243,9 @@ function InsightRow({ icon, label, value }: { icon: React.ReactNode; label: stri
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
         {icon}
-        <span className="text-xs text-gray-600">{label}</span>
+        <span className="text-xs text-muted-foreground">{label}</span>
       </div>
-      <span className="text-sm font-semibold text-gray-800">{value}</span>
+      <span className="text-sm font-semibold text-foreground">{value}</span>
     </div>
   );
 }
@@ -259,11 +259,11 @@ function StatusBar({ label, count, total, color }: {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
   return (
     <div className="flex items-center gap-2">
-      <span className="text-[11px] text-gray-600 w-14 flex-shrink-0">{label}</span>
-      <div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+      <span className="text-[11px] text-muted-foreground w-14 flex-shrink-0">{label}</span>
+      <div className="flex-1 bg-muted rounded-full h-1.5 overflow-hidden">
         <div className={`h-full rounded-full ${color} transition-all`} style={{ width: `${pct}%` }} />
       </div>
-      <span className="text-[11px] font-medium text-gray-700 w-6 text-end">{count}</span>
+      <span className="text-[11px] font-medium text-muted-foreground w-6 text-end">{count}</span>
     </div>
   );
 }

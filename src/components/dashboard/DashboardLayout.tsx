@@ -157,7 +157,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
 
 
   return (
-    <div className={cn("min-h-screen flex", isSocialSection ? "bg-white" : "bg-background")} dir={direction}>
+    <div className={cn("min-h-screen flex", "bg-background")} dir={direction}>
       {/* Mobile menu overlay */}
       {sidebarOpen && (
         <div 
@@ -287,13 +287,11 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
       </aside>
 
       {/* Main content */}
-      <div className={cn("flex-1 flex flex-col min-w-0 h-screen", isSocialSection && "light bg-white")}>
+      <div className="flex-1 flex flex-col min-w-0 h-screen">
         {/* Top bar */}
         <header className={cn(
           "h-16 border-b flex items-center justify-between px-4 sticky top-0 z-30",
-          isSocialSection
-            ? "bg-white border-gray-200 text-gray-900 light"
-            : "bg-card/50 backdrop-blur-sm border-border"
+          "bg-card/50 backdrop-blur-sm border-border"
         )}>
           <div className="flex items-center gap-2">
             {/* Back button */}
@@ -373,7 +371,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
         {/* Page content */}
         <main id="main-content" className={cn(
           "flex-1 overflow-auto pb-20 lg:pb-6",
-          isSocialSection ? "light p-0" : "p-4 md:p-6"
+          isSocialSection ? "p-0" : "p-4 md:p-6"
         )} data-dashboard-scroll>
           {children}
         </main>
