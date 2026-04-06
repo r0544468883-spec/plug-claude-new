@@ -20,6 +20,7 @@ import { SubmitSolutionDialog } from '@/components/assignments/SubmitSolutionDia
 import { SubmissionsViewDialog } from '@/components/assignments/SubmissionsViewDialog';
 import { RequestAccessDialog } from '@/components/assignments/RequestAccessDialog';
 import { AssignmentCommentsDialog } from '@/components/assignments/AssignmentCommentsDialog';
+import { AssignmentPreviewDialog } from '@/components/assignments/AssignmentPreviewDialog';
 import { useNavigate } from 'react-router-dom';
 import type { AssignmentTemplate, AssignmentSubmission } from '@/components/assignments/AssignmentCard';
 
@@ -64,6 +65,7 @@ export default function Assignments() {
   const [viewTarget, setViewTarget] = useState<AssignmentTemplate | null>(null);
   const [requestTarget, setRequestTarget] = useState<AssignmentTemplate | null>(null);
   const [commentsTargetId, setCommentsTargetId] = useState<string | null>(null);
+  const [previewTarget, setPreviewTarget] = useState<AssignmentTemplate | null>(null);
   const [commentCounts, setCommentCounts] = useState<Map<string, number>>(new Map());
 
   // Fetch user skills from profile
@@ -435,6 +437,7 @@ export default function Assignments() {
                   onToggleLike={toggleLike}
                   commentsCount={commentCounts.get(template.id) ?? 0}
                   onOpenComments={setCommentsTargetId}
+                onPreview={setPreviewTarget}
                 />
               ))}
             </div>
@@ -726,6 +729,13 @@ export default function Assignments() {
         onOpenChange={(o) => { if (!o) setEditTarget(null); }}
         onSuccess={fetchData}
         editTemplate={editTarget ?? undefined}
+      />
+
+      <AssignmentPreviewDialog
+        template={previewTarget}
+        open={!!previewTarget}
+        onOpenChange={(o) => { if (!o) setPreviewTarget(null); }}
+        onSubmit={handleSubmit}
       />
 
       <AssignmentCommentsDialog

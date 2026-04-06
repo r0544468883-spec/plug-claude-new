@@ -64,6 +64,7 @@ interface AssignmentCardProps {
   onToggleLike?: (templateId: string) => void;
   commentsCount?: number;
   onOpenComments?: (templateId: string) => void;
+  onPreview?: (template: AssignmentTemplate) => void;
 }
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -133,6 +134,7 @@ export function AssignmentCard({
   onToggleLike,
   commentsCount = 0,
   onOpenComments,
+  onPreview,
 }: AssignmentCardProps) {
   const { language } = useLanguage();
   const isHebrew = language === 'he';
@@ -244,8 +246,18 @@ export function AssignmentCard({
 
         {/* Title & Description */}
         <div className="flex-1">
-          <h3 className="font-semibold text-base leading-tight mb-1">{template.title}</h3>
-          <p className="text-sm text-muted-foreground line-clamp-3">{template.description}</p>
+          <h3
+            className={`font-semibold text-base leading-tight mb-1 ${onPreview ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
+            onClick={() => onPreview?.(template)}
+          >
+            {template.title}
+          </h3>
+          <p
+            className={`text-sm text-muted-foreground line-clamp-3 ${onPreview ? 'cursor-pointer' : ''}`}
+            onClick={() => onPreview?.(template)}
+          >
+            {template.description}
+          </p>
         </div>
 
         {/* Creator + stats */}
