@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -102,11 +102,10 @@ export function EmailConnectionCard() {
     }
   };
 
-  const syncNow = async () => {
-    setSyncing(true);
+  const doSync = useCallback(async (silent = false) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('No session');
+      if (!session) return;
 
       const res = await fetch(
         `${SUPABASE_URL}/functions/v1/sync-emails`,
@@ -122,19 +121,42 @@ export function EmailConnectionCard() {
       );
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      toast.success(
-        isHebrew
-          ? `סונכרנו ${data.synced || 0} מיילים חדשים`
-          : `Synced ${data.synced || 0} new emails`
-      );
+      if (!silent) {
+        toast.success(
+          isHebrew
+            ? `סונכרנו ${data.synced || 0} מיילים חדשים`
+            : `Synced ${data.synced || 0} new emails`
+        );
+      }
       queryClient.invalidateQueries({ queryKey: ['email-oauth-tokens'] });
     } catch (err: any) {
-      toast.error(isHebrew ? 'שגיאה בסנכרון' : 'Sync failed');
+      if (!silent) {
+        toast.error(isHebrew ? 'שגיאה בסנכרון' : 'Sync failed');
+      }
       console.error('Sync error:', err);
-    } finally {
-      setSyncing(false);
     }
+  }, [user?.id, isHebrew, queryClient]);
+
+  const syncNow = async () => {
+    setSyncing(true);
+    await doSync(false);
+    setSyncing(false);
   };
+
+  // Auto-sync every 15 minutes when email is connected
+  const autoSyncRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    const hasConnectedEmail = tokens?.some(t => t.sync_enabled);
+    if (hasConnectedEmail) {
+      // Initial sync on mount (silent)
+      doSync(true);
+      // Then every 15 minutes
+      autoSyncRef.current = setInterval(() => doSync(true), 15 * 60 * 1000);
+    }
+    return () => {
+      if (autoSyncRef.current) clearInterval(autoSyncRef.current);
+    };
+  }, [tokens, doSync]);
 
   const renderProviderCard = (
     provider: 'gmail' | 'outlook',

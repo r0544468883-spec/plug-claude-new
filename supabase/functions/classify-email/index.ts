@@ -161,7 +161,7 @@ serve(async (req) => {
           .from("applications")
           .select("stage")
           .eq("id", application_id)
-          .eq("user_id", user.id)
+          .eq("user_id", userId)
           .single();
 
         if (app && mapping.validFrom.includes(app.stage)) {

@@ -433,12 +433,17 @@ serve(async (req) => {
         console.error(errMsg);
         errors.push(errMsg);
 
-        // Increment error count
+        // Increment error count using RPC-style: fetch then update
+        const { data: syncState } = await supabase
+          .from("email_sync_state")
+          .select("sync_errors")
+          .eq("user_id", token.user_id)
+          .single();
         await supabase
           .from("email_sync_state")
           .upsert({
             user_id: token.user_id,
-            sync_errors: (await supabase.from("email_sync_state").select("sync_errors").eq("user_id", token.user_id).single()).data?.sync_errors + 1 || 1,
+            sync_errors: (syncState?.sync_errors || 0) + 1,
             last_error: userErr.message,
             updated_at: new Date().toISOString(),
           }, { onConflict: "user_id" });
