@@ -348,7 +348,7 @@ export function JobSearchPage() {
           <DialogTrigger asChild>
             <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" data-tour="company-recommendations">
               <Building2 className="w-3.5 h-3.5" />
-              {isHebrew ? 'חברות לעניין אותך' : 'Companies for You'}
+              {isHebrew ? 'חברות המתאימות עבורך' : 'Companies for You'}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
