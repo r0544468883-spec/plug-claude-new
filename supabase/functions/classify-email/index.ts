@@ -47,6 +47,12 @@ async function classifyWithAI(subject: string, body: string): Promise<{
   interview_date: string | null;
   action_required: string | null;
 }> {
+  if (!CLAUDE_API_KEY) {
+    console.error("[classify-email] CLAUDE_API_KEY / ANTHROPIC_API_KEY is NOT SET");
+    return { classification: "general", confidence: 0, company_name: null, job_title: null, interview_date: null, action_required: null };
+  }
+  console.log(`[classify-email] Calling Claude API for subject="${subject.substring(0, 60)}"`);
+
   // Truncate body to 2000 chars
   const truncatedBody = body.length > 2000 ? body.substring(0, 2000) + "..." : body;
 
@@ -153,26 +159,30 @@ serve(async (req) => {
     let previousStage = null;
     let newStage = null;
 
-    if (application_id && auto_update !== false && result.confidence >= 0.60) {
+    console.log(`[classify-email] result: classification=${result.classification}, confidence=${result.confidence}, app=${application_id}`);
+
+    if (application_id && auto_update !== false && result.confidence >= 0.50) {
       const mapping = CLASSIFICATION_TO_STAGE[result.classification];
       if (mapping) {
         // Get current application stage
         const { data: app } = await supabase
           .from("applications")
-          .select("stage")
+          .select("current_stage")
           .eq("id", application_id)
-          .eq("user_id", userId)
+          .eq("candidate_id", userId)
           .single();
 
-        if (app && mapping.validFrom.includes(app.stage)) {
-          if (result.confidence >= 0.85) {
+        console.log(`[classify-email] app current_stage=${app?.current_stage}, validFrom=${JSON.stringify(mapping.validFrom)}, mapping.stage=${mapping.stage}`);
+
+        if (app && mapping.validFrom.includes(app.current_stage)) {
+          if (result.confidence >= 0.70) {
             // Auto-update
-            previousStage = app.stage;
+            previousStage = app.current_stage;
             newStage = mapping.stage;
 
             await supabase
               .from("applications")
-              .update({ stage: newStage, updated_at: new Date().toISOString() })
+              .update({ current_stage: newStage, updated_at: new Date().toISOString() })
               .eq("id", application_id);
 
             // Get email provider info for building web link
@@ -193,11 +203,11 @@ serve(async (req) => {
             // Get application details for notification text
             const { data: appDetails } = await supabase
               .from("applications")
-              .select("company_name")
+              .select("job_company")
               .eq("id", application_id)
               .single();
 
-            const companyName = appDetails?.company_name || result.company_name || "";
+            const companyName = appDetails?.job_company || result.company_name || "";
             const jobTitle = result.job_title || "";
 
             // Timeline event with email reference
@@ -261,7 +271,7 @@ serve(async (req) => {
         stage_updated: stageUpdated,
         previous_stage: previousStage,
         new_stage: newStage,
-        suggestion: result.confidence >= 0.60 && result.confidence < 0.85
+        suggestion: result.confidence >= 0.50 && result.confidence < 0.70
           ? CLASSIFICATION_TO_STAGE[result.classification]?.stage || null
           : null,
       }),

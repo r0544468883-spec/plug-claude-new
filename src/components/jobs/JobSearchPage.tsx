@@ -9,7 +9,7 @@ import { JobCardCompact } from './JobCardCompact';
 import { JobDetailsPanel, JobDetailsPanelEmpty } from './JobDetailsPanel';
 import { JobDetailsSheet } from './JobDetailsSheet';
 import { ShareJobForm } from './ShareJobForm';
-import { CompanyRecommendations } from './CompanyRecommendations';
+import { RecommendedCompaniesPanel } from './RecommendedCompaniesPanel';
 import { JobInsightsStats } from './JobInsightsStats';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -346,16 +346,24 @@ export function JobSearchPage() {
         {/* Companies Dialog */}
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" data-tour="company-recommendations">
+            <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" data-tour="company-recommendations">
               <Building2 className="w-3.5 h-3.5" />
-              {isHebrew ? 'חברות' : 'Companies'}
+              {isHebrew ? 'חברות לעניין אותך' : 'Companies for You'}
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
             <DialogHeader>
-              <DialogTitle>{isHebrew ? 'חברות מומלצות' : 'Recommended Companies'}</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-primary" />
+                {isHebrew ? 'חברות שיכולות לעניין אותך' : 'Companies That May Interest You'}
+              </DialogTitle>
             </DialogHeader>
-            <CompanyRecommendations />
+            <RecommendedCompaniesPanel
+              onOpenJob={(job) => {
+                setSelectedJob(job);
+                setDetailsOpen(true);
+              }}
+            />
           </DialogContent>
         </Dialog>
 

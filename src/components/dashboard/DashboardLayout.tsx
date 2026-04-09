@@ -117,7 +117,6 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
         { icon: Mic, label: isRTL ? 'הכנה לראיון עבודה' : 'Interview Prep', section: 'interview-prep', tooltipHe: 'הכנה לראיון עבודה עם שאלות ותרגול AI', tooltipEn: 'Interview preparation with AI questions and practice' },
         { icon: ClipboardList, label: isRTL ? 'לוח המטלות' : 'Assignments Board', section: 'assignments' as DashboardSection, tooltipHe: 'לוח המטלות – הוכח את הכישורים שלך עם אתגרים אמיתיים', tooltipEn: 'Assignments board – prove your skills with real challenges' },
         // ── Discovery & Opportunities ──
-        { icon: Building2, label: isRTL ? 'חברות שיכולות לעניין אותי' : 'My Companies', section: 'favorite-companies' as DashboardSection, tooltipHe: 'חברות שאתה עוקב אחריהן ומשרות רלוונטיות', tooltipEn: 'Companies you follow and relevant openings' },
         { icon: Users, label: isRTL ? 'קהילות' : 'Communities', section: 'communities' as DashboardSection, tooltipHe: 'קהילות מקצועיות ונטוורקינג', tooltipEn: 'Professional communities & networking' },
         { icon: MessageSquare, label: isRTL ? 'הודעות' : 'Messages', section: 'messages', tooltipHe: 'הודעות פנימיות מקבלים ומגייסים', tooltipEn: 'Internal messages from recruiters and contacts' },
         // ── System ──

@@ -26,7 +26,11 @@ async function refreshToken(provider: string, refreshToken: string) {
         grant_type: "refresh_token",
       }),
     });
-    if (!res.ok) throw new Error(`Gmail refresh failed`);
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error(`[sync-emails] Gmail refresh failed: ${res.status} ${errText}`);
+      throw new Error(`Gmail refresh failed: ${res.status}`);
+    }
     return res.json();
   } else {
     const res = await fetch(
@@ -95,37 +99,9 @@ async function syncGmail(
 ): Promise<{ emails: ParsedEmail[]; newHistoryId: string | null }> {
   const emails: ParsedEmail[] = [];
 
-  if (lastHistoryId) {
-    // Incremental sync via History API
-    const historyRes = await fetch(
-      `https://gmail.googleapis.com/gmail/v1/users/me/history?startHistoryId=${lastHistoryId}&historyTypes=messageAdded`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
-
-    if (!historyRes.ok) {
-      // History ID expired — fall back to full sync
-      return syncGmailFull(accessToken, userId);
-    }
-
-    const historyData = await historyRes.json();
-    const newHistoryId = historyData.historyId || lastHistoryId;
-    const messageIds = new Set<string>();
-
-    for (const record of historyData.history || []) {
-      for (const added of record.messagesAdded || []) {
-        messageIds.add(added.message.id);
-      }
-    }
-
-    for (const msgId of messageIds) {
-      const email = await fetchGmailMessage(accessToken, msgId);
-      if (email) emails.push(email);
-    }
-
-    return { emails, newHistoryId };
-  } else {
-    return syncGmailFull(accessToken, userId);
-  }
+  // Always do full sync to ensure we catch all emails
+  console.log("[sync-emails] Running FULL sync (always)");
+  return syncGmailFull(accessToken, userId);
 }
 
 async function syncGmailFull(accessToken: string, userId: string): Promise<{ emails: ParsedEmail[]; newHistoryId: string | null }> {
@@ -138,17 +114,24 @@ async function syncGmailFull(accessToken: string, userId: string): Promise<{ ema
     { headers: { Authorization: `Bearer ${accessToken}` } }
   );
 
-  if (!listRes.ok) return { emails: [], newHistoryId: null };
+  if (!listRes.ok) {
+    const errBody = await listRes.text();
+    console.error(`[sync-emails] Gmail list failed: ${listRes.status} ${errBody}`);
+    return { emails: [], newHistoryId: null };
+  }
 
   const listData = await listRes.json();
+  console.log(`[sync-emails] Full sync: Gmail returned ${listData.messages?.length || 0} message IDs, resultSizeEstimate=${listData.resultSizeEstimate}`);
   let newHistoryId: string | null = null;
 
-  for (const msg of (listData.messages || []).slice(0, 50)) {
-    const email = await fetchGmailMessage(accessToken, msg.id);
-    if (email) {
-      emails.push(email);
-    }
+  const msgs = (listData.messages || []).slice(0, 20);
+  // Fetch all messages in parallel (much faster than sequential)
+  const fetches = msgs.map(msg => fetchGmailMessage(accessToken, msg.id));
+  const results = await Promise.all(fetches);
+  for (const email of results) {
+    if (email) emails.push(email);
   }
+  console.log(`[sync-emails] Fetched ${emails.length} emails in parallel`);
 
   // Get current historyId for next incremental sync
   const profileRes = await fetch(
@@ -256,26 +239,52 @@ async function matchEmailToApplication(
     if (existing?.application_id) return existing.application_id;
   }
 
-  // 2. Domain match — sender domain vs companies.website
-  const senderDomain = email.from_email.split("@")[1];
-  if (senderDomain) {
-    const { data: apps } = await supabase
-      .from("applications")
-      .select("id, company_name")
-      .eq("user_id", userId)
-      .not("stage", "in", "(rejected,hired,withdrawn)")
-      .order("created_at", { ascending: false })
-      .limit(50);
+  // Get all active applications for matching
+  const { data: apps, error: appsErr } = await supabase
+    .from("applications")
+    .select("id, job_company")
+    .eq("candidate_id", userId)
+    .not("current_stage", "in", "(rejected,hired,withdrawn)")
+    .order("created_at", { ascending: false })
+    .limit(50);
 
-    if (apps) {
-      // Check if any application's company matches the domain
-      for (const app of apps) {
-        if (app.company_name && senderDomain.toLowerCase().includes(
-          app.company_name.toLowerCase().replace(/\s+/g, "").substring(0, 10)
-        )) {
-          return app.id;
-        }
-      }
+  if (appsErr) console.error(`[sync-emails] Failed to fetch apps: ${appsErr.message}`);
+  console.log(`[sync-emails] Active apps for user ${userId}: ${apps?.length || 0}`);
+
+  if (!apps || apps.length === 0) return null;
+
+  const senderDomain = email.from_email.split("@")[1]?.toLowerCase() || "";
+  const subjectLower = (email.subject || "").toLowerCase();
+  const bodySnippet = (email.body_text || "").toLowerCase().substring(0, 500);
+
+  for (const app of apps) {
+    if (!app.job_company) continue;
+    const companyLower = app.job_company.toLowerCase().replace(/\s+/g, "");
+    const companyShort = companyLower.substring(0, 10);
+
+    // 2. Domain match — sender domain contains company name
+    if (senderDomain && companyShort.length >= 4 && senderDomain.includes(companyShort)) {
+      return app.id;
+    }
+
+    // 3. Subject match — subject contains company name
+    if (app.job_company.length >= 4 && subjectLower.includes(app.job_company.toLowerCase())) {
+      return app.id;
+    }
+
+    // 4. Body match — first 500 chars of body contains company name
+    if (app.job_company.length >= 4 && bodySnippet.includes(app.job_company.toLowerCase())) {
+      return app.id;
+    }
+  }
+
+  // 5. Fallback: if user has only ONE active application, attribute job-related emails to it
+  if (apps.length === 1) {
+    const jobKeywords = ["interview", "ראיון", "position", "משרה", "application", "מועמדות", "candidate", "מועמד", "job", "עבודה", "rejection", "דחי", "offer", "הצעה", "thank you for", "תודה על", "regret", "unfortunately", "לצערנו"];
+    const haystack = `${subjectLower} ${bodySnippet}`;
+    if (jobKeywords.some(k => haystack.includes(k))) {
+      console.log(`[sync-emails] Fallback match: only 1 active app, email looks job-related → matching to ${apps[0].id}`);
+      return apps[0].id;
     }
   }
 
@@ -290,9 +299,23 @@ serve(async (req) => {
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-    // Support per-user sync via body.user_id
+    // Support per-user sync via body.user_id, force_full to reset history
     const body = await req.json().catch(() => ({}));
     const targetUserId = body.user_id || null;
+    const forceFull = body.force_full === true;
+
+    // If force_full, reset history + delete old emails so we re-process everything
+    if (forceFull) {
+      console.log(`[sync-emails] Force full sync — resetting all data`);
+      if (targetUserId) {
+        await supabase.from("email_sync_state").update({ last_history_id: null }).eq("user_id", targetUserId);
+        await supabase.from("application_emails").delete().eq("user_id", targetUserId).eq("direction", "received");
+      } else {
+        await supabase.from("email_sync_state").update({ last_history_id: null }).neq("user_id", "");
+        await supabase.from("application_emails").delete().eq("direction", "received");
+      }
+      console.log(`[sync-emails] Reset complete`);
+    }
 
     // Get users with sync_enabled tokens
     let tokenQuery = supabase
@@ -306,19 +329,24 @@ serve(async (req) => {
 
     const { data: tokens, error: tokenErr } = await tokenQuery;
 
+    console.log(`[sync-emails] targetUserId=${targetUserId}, tokenErr=${tokenErr?.message}, tokensFound=${tokens?.length || 0}`);
+
     if (tokenErr || !tokens?.length) {
       return new Response(
-        JSON.stringify({ message: "No accounts to sync", synced: 0 }),
+        JSON.stringify({ message: "No accounts to sync", synced: 0, debug: { targetUserId, tokenErr: tokenErr?.message } }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     let totalSynced = 0;
     const errors: string[] = [];
+    const debugInfo: Record<string, unknown> = {};
 
     for (const token of tokens) {
       try {
+        console.log(`[sync-emails] Processing ${token.provider} for user ${token.user_id}`);
         const accessToken = await getValidAccessToken(supabase, token);
+        debugInfo.tokenOk = true;
 
         // Get sync state
         const { data: syncState } = await supabase
@@ -331,6 +359,7 @@ serve(async (req) => {
         let newHistoryId: string | null = null;
 
         if (token.provider === "gmail") {
+          console.log(`[sync-emails] Gmail sync — lastHistoryId=${syncState?.last_history_id || "null (full sync)"}`);
           const result = await syncGmail(
             accessToken,
             token.user_id,
@@ -339,6 +368,9 @@ serve(async (req) => {
           );
           emails = result.emails;
           newHistoryId = result.newHistoryId;
+          console.log(`[sync-emails] Gmail returned ${emails.length} emails, newHistoryId=${newHistoryId}`);
+          debugInfo.emailsFetched = emails.length;
+          debugInfo.subjects = emails.map(e => e.subject).slice(0, 5);
         } else {
           const result = await syncOutlook(
             accessToken,
@@ -349,6 +381,9 @@ serve(async (req) => {
         }
 
         // Process each email
+        debugInfo.processingStarted = true;
+        debugInfo.emailsToProcess = emails.length;
+        let skipped = 0, saved = 0, failed = 0;
         for (const email of emails) {
           // Check if already synced
           const { data: existing } = await supabase
@@ -358,13 +393,19 @@ serve(async (req) => {
             .eq("user_id", token.user_id)
             .limit(1);
 
-          if (existing && existing.length > 0) continue;
+          if (existing && existing.length > 0) {
+            skipped++;
+            continue;
+          }
 
           // Match to application
           const applicationId = await matchEmailToApplication(supabase, email, token.user_id);
+          console.log(`[sync-emails] Saving email "${email.subject}" — matched app: ${applicationId || "none"}`);
+          if (!debugInfo.matchResults) debugInfo.matchResults = [];
+          (debugInfo.matchResults as unknown[]).push({ subject: email.subject, from: email.from_email, matched: applicationId });
 
           // Save email
-          const { data: savedEmail } = await supabase
+          const { data: savedEmail, error: insertErr } = await supabase
             .from("application_emails")
             .insert({
               application_id: applicationId,
@@ -383,32 +424,41 @@ serve(async (req) => {
             .select("id")
             .single();
 
-          // Classify with AI if linked to an application
+          if (insertErr) {
+            console.error(`[sync-emails] Insert failed: ${insertErr.message}`);
+            failed++;
+            debugInfo.insertError = insertErr.message;
+            continue;
+          }
+          saved++;
+
+          // Classify with AI if linked to an application (fire-and-forget to avoid timeout)
           if (savedEmail && applicationId) {
-            try {
-              await fetch(CLASSIFY_URL, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
-                  "apikey": SUPABASE_SERVICE_KEY,
-                },
-                body: JSON.stringify({
-                  email_id: savedEmail.id,
-                  subject: email.subject,
-                  body_text: email.body_text,
-                  application_id: applicationId,
-                  auto_update: true,
-                  user_id: token.user_id,
-                }),
-              });
-            } catch (classifyErr) {
-              console.error("Classification failed for email:", savedEmail.id, classifyErr);
-            }
+            fetch(CLASSIFY_URL, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
+                "apikey": SUPABASE_SERVICE_KEY,
+              },
+              body: JSON.stringify({
+                email_id: savedEmail.id,
+                subject: email.subject,
+                body_text: email.body_text,
+                application_id: applicationId,
+                auto_update: true,
+                user_id: token.user_id,
+              }),
+            }).catch(err => console.error("Classification failed:", err));
+            console.log(`[sync-emails] Classification triggered for "${email.subject}"`);
           }
 
           totalSynced++;
         }
+        debugInfo.skipped = skipped;
+        debugInfo.saved = saved;
+        debugInfo.failed = failed;
+        console.log(`[sync-emails] Results: saved=${saved}, skipped=${skipped}, failed=${failed}`);
 
         // Update sync state
         await supabase
@@ -450,8 +500,9 @@ serve(async (req) => {
       }
     }
 
+    console.log(`[sync-emails] Done. synced=${totalSynced}, users=${tokens.length}, errors=${errors.length}`);
     return new Response(
-      JSON.stringify({ synced: totalSynced, users: tokens.length, errors }),
+      JSON.stringify({ synced: totalSynced, users: tokens.length, errors, debug: debugInfo }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {

@@ -102,7 +102,7 @@ export function EmailConnectionCard() {
     }
   };
 
-  const doSync = useCallback(async (silent = false) => {
+  const doSync = useCallback(async (silent = false, forceFull = false) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -116,7 +116,7 @@ export function EmailConnectionCard() {
             'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ user_id: user?.id }),
+          body: JSON.stringify({ user_id: user?.id, force_full: forceFull }),
         }
       );
       const data = await res.json();
@@ -139,7 +139,8 @@ export function EmailConnectionCard() {
 
   const syncNow = async () => {
     setSyncing(true);
-    await doSync(false);
+    // First sync is always force_full to catch all recent emails
+    await doSync(false, true);
     setSyncing(false);
   };
 

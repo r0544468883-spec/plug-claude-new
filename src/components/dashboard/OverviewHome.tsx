@@ -462,7 +462,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog, onOpenChat }: Ove
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-card border-border cursor-pointer hover:border-primary/30 transition-colors" onClick={() => onNavigate('favorite-companies' as DashboardSection)}>
+          <Card className="bg-card border-border cursor-pointer hover:border-primary/30 transition-colors" onClick={() => onNavigate('job-search' as DashboardSection)}>
             <CardContent className="p-3 flex items-center gap-3">
               <div className="p-2 rounded-lg bg-amber-500/10"><Briefcase className="w-4 h-4 text-amber-400" /></div>
               <div>
