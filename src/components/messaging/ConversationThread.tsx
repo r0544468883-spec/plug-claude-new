@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OnlineIndicator, getTimeSinceActive } from './OnlineIndicator';
 import { toast } from 'sonner';
-import { ArrowLeft, ArrowRight, Send, Loader2, Paperclip, FileText, X, Download, Briefcase, Info, Check, CheckCheck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Send, Loader2, Paperclip, FileText, X, Download, Briefcase, Info, Check, CheckCheck, AlertCircle, Clock } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { he as heLocale } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -24,11 +24,16 @@ interface Message {
   content: string;
   is_read: boolean;
   created_at: string;
+  delivered_at?: string | null;
+  read_at?: string | null;
   attachment_url?: string | null;
   attachment_name?: string | null;
   attachment_type?: string | null;
   attachment_size?: number | null;
   related_job_id?: string | null;
+  // Optimistic-only client fields (not in DB):
+  _pending?: boolean;
+  _failed?: boolean;
 }
 
 interface Conversation {
@@ -71,13 +76,15 @@ export function ConversationThread({ conversation, onBack, onToggleChatInfo, sho
 
   const BackIcon = isHebrew ? ArrowRight : ArrowLeft;
 
+  const messagesQueryKey = ['messages', conversation.id];
+
   // Fetch messages
   const { data: messages = [], isLoading } = useQuery({
-    queryKey: ['messages', conversation.id],
+    queryKey: messagesQueryKey,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('messages')
-        .select('id, conversation_id, from_user_id, to_user_id, content, is_read, created_at, attachment_url, attachment_name, attachment_type, attachment_size, related_job_id')
+        .select('id, conversation_id, from_user_id, to_user_id, content, is_read, created_at, delivered_at, read_at, attachment_url, attachment_name, attachment_type, attachment_size, related_job_id')
         .eq('conversation_id', conversation.id)
         .order('created_at', { ascending: true });
       if (error) throw error;
@@ -97,28 +104,55 @@ export function ConversationThread({ conversation, onBack, onToggleChatInfo, sho
     enabled: jobIds.length > 0,
   });
 
-  // Mark messages as read
+  // Mark incoming messages as delivered (arrived at my client) + read (I opened the conversation)
   useEffect(() => {
     if (!user?.id || messages.length === 0) return;
-    const unreadMessages = messages.filter(m => m.to_user_id === user.id && !m.is_read);
-    if (unreadMessages.length > 0) {
+    const nowIso = new Date().toISOString();
+
+    const undelivered = messages.filter(m => m.to_user_id === user.id && !m.delivered_at && !m._pending);
+    if (undelivered.length > 0) {
       supabase
         .from('messages')
-        .update({ is_read: true })
-        .in('id', unreadMessages.map(m => m.id))
-        .then(() => {
-          queryClient.invalidateQueries({ queryKey: ['messages', conversation.id] });
-        });
+        .update({ delivered_at: nowIso })
+        .in('id', undelivered.map(m => m.id))
+        .then(() => {});
     }
-  }, [messages, user?.id, conversation.id, queryClient]);
 
-  // Subscribe to ALL message events (INSERT + UPDATE for read receipts)
+    const unread = messages.filter(m => m.to_user_id === user.id && !m.is_read && !m._pending);
+    if (unread.length > 0) {
+      supabase
+        .from('messages')
+        .update({ is_read: true, read_at: nowIso })
+        .in('id', unread.map(m => m.id))
+        .then(() => {});
+    }
+  }, [messages, user?.id]);
+
+  // Realtime: merge changes directly into cache (avoids refetch + preserves optimistic state)
   useEffect(() => {
     const channel = supabase
       .channel(`conversation-${conversation.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversation.id}` },
-        () => { queryClient.invalidateQueries({ queryKey: ['messages', conversation.id] }); }
-      ).subscribe();
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversation.id}` },
+        (payload) => {
+          const incoming = payload.new as Message;
+          queryClient.setQueryData<Message[]>(messagesQueryKey, (prev = []) => {
+            // Already in cache (our own optimistic or prior INSERT)? skip
+            if (prev.some(m => m.id === incoming.id)) return prev;
+            // Remove any pending temp that matches (same sender + content) — it's now real
+            const deduped = prev.filter(m => !(m._pending && m.from_user_id === incoming.from_user_id && m.content === incoming.content));
+            return [...deduped, incoming].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          });
+        }
+      )
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversation.id}` },
+        (payload) => {
+          const updated = payload.new as Message;
+          queryClient.setQueryData<Message[]>(messagesQueryKey, (prev = []) =>
+            prev.map(m => m.id === updated.id ? { ...m, ...updated } : m)
+          );
+        }
+      )
+      .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [conversation.id, queryClient]);
 
@@ -127,34 +161,108 @@ export function ConversationThread({ conversation, onBack, onToggleChatInfo, sho
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
+  type SendVars = {
+    content: string;
+    attachmentData?: { url: string; name: string; type: string; size: number };
+    tempId?: string; // when retrying, reuse the failed temp message id
+  };
+
   const sendMutation = useMutation({
-    mutationFn: async ({ content, attachmentData }: { content: string; attachmentData?: { url: string; name: string; type: string; size: number } }) => {
+    mutationFn: async ({ content, attachmentData, tempId }: SendVars) => {
       if (!user?.id) throw new Error('Not authenticated');
       const toUserId = conversation.participant_1 === user.id ? conversation.participant_2 : conversation.participant_1;
-      const { error: msgError } = await supabase.from('messages').insert({
+      const { data, error: msgError } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: conversation.id,
+          from_user_id: user.id,
+          to_user_id: toUserId,
+          content,
+          attachment_url: attachmentData?.url || null,
+          attachment_name: attachmentData?.name || null,
+          attachment_type: attachmentData?.type || null,
+          attachment_size: attachmentData?.size || null,
+        })
+        .select('id, conversation_id, from_user_id, to_user_id, content, is_read, created_at, delivered_at, read_at, attachment_url, attachment_name, attachment_type, attachment_size, related_job_id')
+        .single();
+      if (msgError) throw msgError;
+      await supabase.from('conversations').update({ last_message_at: new Date().toISOString() }).eq('id', conversation.id);
+      return { real: data as Message, tempId };
+    },
+    onMutate: async ({ content, attachmentData, tempId }) => {
+      if (!user?.id) return;
+      const toUserId = conversation.participant_1 === user.id ? conversation.participant_2 : conversation.participant_1;
+      const id = tempId || `temp-${crypto.randomUUID()}`;
+      const tempMessage: Message = {
+        id,
         conversation_id: conversation.id,
         from_user_id: user.id,
         to_user_id: toUserId,
         content,
+        is_read: false,
+        created_at: new Date().toISOString(),
+        delivered_at: null,
+        read_at: null,
         attachment_url: attachmentData?.url || null,
         attachment_name: attachmentData?.name || null,
         attachment_type: attachmentData?.type || null,
         attachment_size: attachmentData?.size || null,
+        related_job_id: null,
+        _pending: true,
+        _failed: false,
+      };
+      queryClient.setQueryData<Message[]>(messagesQueryKey, (prev = []) => {
+        // If retrying, replace the failed temp in place
+        if (tempId && prev.some(m => m.id === tempId)) {
+          return prev.map(m => m.id === tempId ? tempMessage : m);
+        }
+        return [...prev, tempMessage];
       });
-      if (msgError) throw msgError;
-      await supabase.from('conversations').update({ last_message_at: new Date().toISOString() }).eq('id', conversation.id);
+      // Clear input immediately (optimistic)
+      setNewMessage('');
+      setSelectedFile(null);
+      return { tempId: id };
     },
-    onSuccess: () => { setNewMessage(''); setSelectedFile(null); queryClient.invalidateQueries({ queryKey: ['messages', conversation.id] }); },
-    onError: (_err, vars) => {
-      // Keep text in input so user can retry; offer retry via toast action
+    onSuccess: ({ real, tempId: sentTempId }, _vars, ctx) => {
+      const tempId = sentTempId || ctx?.tempId;
+      queryClient.setQueryData<Message[]>(messagesQueryKey, (prev = []) => {
+        // Replace temp with real; if real already arrived via realtime, drop the temp only
+        const withoutTemp = prev.filter(m => m.id !== tempId);
+        if (withoutTemp.some(m => m.id === real.id)) return withoutTemp;
+        return [...withoutTemp, real].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      });
+    },
+    onError: (_err, vars, ctx) => {
+      const tempId = ctx?.tempId;
+      // Mark the temp as failed so UI can show retry
+      queryClient.setQueryData<Message[]>(messagesQueryKey, (prev = []) =>
+        prev.map(m => m.id === tempId ? { ...m, _pending: false, _failed: true } : m)
+      );
       toast.error(isHebrew ? 'שגיאה בשליחת ההודעה' : 'Failed to send message', {
         action: {
           label: isHebrew ? 'נסה שוב' : 'Retry',
-          onClick: () => sendMutation.mutate(vars),
+          onClick: () => sendMutation.mutate({ ...vars, tempId }),
         },
       });
     },
   });
+
+  const retryFailedMessage = (msg: Message) => {
+    sendMutation.mutate({
+      content: msg.content,
+      attachmentData: msg.attachment_url ? {
+        url: msg.attachment_url,
+        name: msg.attachment_name || 'file',
+        type: msg.attachment_type || '',
+        size: msg.attachment_size || 0,
+      } : undefined,
+      tempId: msg.id,
+    });
+  };
+
+  const deleteFailedMessage = (msgId: string) => {
+    queryClient.setQueryData<Message[]>(messagesQueryKey, (prev = []) => prev.filter(m => m.id !== msgId));
+  };
 
   const acceptFile = (file: File) => {
     if (file.size > 10 * 1024 * 1024) {
@@ -242,8 +350,10 @@ export function ConversationThread({ conversation, onBack, onToggleChatInfo, sho
     return new Date(next.created_at).getTime() - new Date(current.created_at).getTime() >= 2 * 60 * 1000;
   };
 
-  // Find last own message for read receipt display
-  const lastOwnMessageId = [...messages].reverse().find(m => m.from_user_id === user?.id)?.id;
+  // Find last own message (excluding pending/failed) to anchor the "Read at HH:MM" label
+  const lastReadOwnMessage = [...messages].reverse().find(
+    m => m.from_user_id === user?.id && !m._pending && !m._failed && m.is_read
+  );
 
   const Wrapper = messengerMode ? 'div' : Card;
   const wrapperClass = messengerMode
@@ -341,7 +451,12 @@ export function ConversationThread({ conversation, onBack, onToggleChatInfo, sho
                 const showDate = shouldShowDateSeparator(message, prev);
                 const grouped = isGroupedWithPrevious(message, prev);
                 const lastInGroup = isLastInGroup(message, next);
-                const showReadReceipt = isOwn && message.id === lastOwnMessageId;
+                const showStateIcon = isOwn && lastInGroup;
+                const isPending = !!message._pending;
+                const isFailed = !!message._failed;
+                const isDelivered = !!message.delivered_at;
+                const isRead = message.is_read;
+                const showReadAtLabel = isOwn && message.id === lastReadOwnMessage?.id && !!lastReadOwnMessage.read_at;
 
                 return (
                   <div key={message.id}>
@@ -365,10 +480,12 @@ export function ConversationThread({ conversation, onBack, onToggleChatInfo, sho
                     )}>
                       <div className="max-w-[70%]">
                         <div className={cn(
-                          'rounded-2xl px-3.5 py-2 space-y-1.5',
+                          'rounded-2xl px-3.5 py-2 space-y-1.5 transition-opacity',
                           isOwn
                             ? 'bg-primary text-primary-foreground rounded-ee-md'
-                            : 'bg-muted rounded-es-md'
+                            : 'bg-muted rounded-es-md',
+                          isPending && 'opacity-60',
+                          isFailed && 'bg-destructive/20 text-foreground'
                         )}>
                           <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
 
@@ -405,7 +522,7 @@ export function ConversationThread({ conversation, onBack, onToggleChatInfo, sho
                           )}
                         </div>
 
-                        {/* Timestamp + Read receipt (only on last in group) */}
+                        {/* Timestamp + State icon (only on last in group) */}
                         {lastInGroup && (
                           <div className={cn(
                             'flex items-center gap-1 mt-0.5 px-1',
@@ -414,21 +531,57 @@ export function ConversationThread({ conversation, onBack, onToggleChatInfo, sho
                             <span className="text-[10px] text-muted-foreground">
                               {format(new Date(message.created_at), 'HH:mm')}
                             </span>
-                            {showReadReceipt && (
-                              <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                                {message.is_read ? (
-                                  <>
-                                    <CheckCheck className="w-3 h-3 text-primary" />
-                                    <span>{isHebrew ? 'נקרא' : 'Read'}</span>
-                                  </>
+                            {showStateIcon && (
+                              <span
+                                className="flex items-center gap-0.5 text-[10px] text-muted-foreground"
+                                title={
+                                  isFailed ? (isHebrew ? 'השליחה נכשלה' : 'Failed to send')
+                                  : isPending ? (isHebrew ? 'שולח…' : 'Sending…')
+                                  : isRead ? (isHebrew ? 'נקרא' : 'Read')
+                                  : isDelivered ? (isHebrew ? 'נמסר' : 'Delivered')
+                                  : (isHebrew ? 'נשלח' : 'Sent')
+                                }
+                              >
+                                {isFailed ? (
+                                  <AlertCircle className="w-3 h-3 text-destructive" />
+                                ) : isPending ? (
+                                  <Clock className="w-3 h-3" />
+                                ) : isRead ? (
+                                  <CheckCheck className="w-3 h-3 text-primary" />
+                                ) : isDelivered ? (
+                                  <CheckCheck className="w-3 h-3" />
                                 ) : (
-                                  <>
-                                    <Check className="w-3 h-3" />
-                                    <span>{isHebrew ? 'נשלח' : 'Sent'}</span>
-                                  </>
+                                  <Check className="w-3 h-3" />
                                 )}
                               </span>
                             )}
+                            {isFailed && (
+                              <span className="flex items-center gap-2 ms-1">
+                                <button
+                                  type="button"
+                                  onClick={() => retryFailedMessage(message)}
+                                  className="text-[10px] text-primary hover:underline"
+                                >
+                                  {isHebrew ? 'נסה שוב' : 'Retry'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => deleteFailedMessage(message.id)}
+                                  className="text-[10px] text-muted-foreground hover:text-destructive"
+                                >
+                                  {isHebrew ? 'מחק' : 'Delete'}
+                                </button>
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {showReadAtLabel && lastReadOwnMessage?.read_at && (
+                          <div className={cn('flex items-center gap-1 mt-0.5 px-1 text-[10px] text-muted-foreground', isOwn ? 'justify-end' : 'justify-start')}>
+                            <CheckCheck className="w-3 h-3 text-primary" />
+                            <span>
+                              {isHebrew ? 'נקרא ב-' : 'Read at '}
+                              {format(new Date(lastReadOwnMessage.read_at), 'HH:mm')}
+                            </span>
                           </div>
                         )}
                       </div>
