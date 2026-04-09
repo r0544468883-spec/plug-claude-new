@@ -28,7 +28,11 @@ interface Profile {
   personal_tagline?: string | null;
 }
 
-export function NewMessageDialog() {
+interface NewMessageDialogProps {
+  trigger?: React.ReactNode;
+}
+
+export function NewMessageDialog({ trigger }: NewMessageDialogProps = {}) {
   const { user } = useAuth();
   const { language } = useLanguage();
   const isHebrew = language === 'he';
@@ -137,10 +141,12 @@ export function NewMessageDialog() {
       if (!isOpen) handleReset();
     }}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus className="w-4 h-4" />
-          {isHebrew ? 'הודעה חדשה' : 'New Message'}
-        </Button>
+        {trigger ?? (
+          <Button className="gap-2">
+            <Plus className="w-4 h-4" />
+            {isHebrew ? 'הודעה חדשה' : 'New Message'}
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md" dir={isHebrew ? 'rtl' : 'ltr'}>
         <DialogHeader>

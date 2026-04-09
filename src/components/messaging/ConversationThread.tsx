@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,7 +7,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OnlineIndicator, getTimeSinceActive } from './OnlineIndicator';
 import { toast } from 'sonner';
@@ -54,12 +55,19 @@ export function ConversationThread({ conversation, onBack, onToggleChatInfo, sho
   const { user } = useAuth();
   const { language } = useLanguage();
   const isHebrew = language === 'he';
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [newMessage, setNewMessage] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const openOtherUserProfile = () => {
+    const otherId = conversation.other_user?.user_id;
+    if (otherId) navigate(`/p/${otherId}`);
+  };
 
   const BackIcon = isHebrew ? ArrowRight : ArrowLeft;
 
@@ -137,14 +145,51 @@ export function ConversationThread({ conversation, onBack, onToggleChatInfo, sho
       await supabase.from('conversations').update({ last_message_at: new Date().toISOString() }).eq('id', conversation.id);
     },
     onSuccess: () => { setNewMessage(''); setSelectedFile(null); queryClient.invalidateQueries({ queryKey: ['messages', conversation.id] }); },
-    onError: () => { toast.error(isHebrew ? 'שגיאה בשליחת ההודעה' : 'Failed to send message'); },
+    onError: (_err, vars) => {
+      // Keep text in input so user can retry; offer retry via toast action
+      toast.error(isHebrew ? 'שגיאה בשליחת ההודעה' : 'Failed to send message', {
+        action: {
+          label: isHebrew ? 'נסה שוב' : 'Retry',
+          onClick: () => sendMutation.mutate(vars),
+        },
+      });
+    },
   });
+
+  const acceptFile = (file: File) => {
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(isHebrew ? 'הקובץ גדול מדי (מקסימום 10MB)' : 'File too large (max 10MB)');
+      return;
+    }
+    setSelectedFile(file);
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) { toast.error(isHebrew ? 'הקובץ גדול מדי (מקסימום 10MB)' : 'File too large (max 10MB)'); return; }
-      setSelectedFile(file);
+    if (file) acceptFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!isDragging) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) acceptFile(file);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
   };
 
@@ -206,34 +251,65 @@ export function ConversationThread({ conversation, onBack, onToggleChatInfo, sho
     : 'bg-card border-border h-full flex flex-col';
 
   return (
-    <Wrapper className={wrapperClass}>
+    <Wrapper
+      className={cn(wrapperClass, 'relative')}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {isDragging && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-primary/10 border-2 border-dashed border-primary rounded-xl pointer-events-none">
+          <div className="text-center">
+            <Paperclip className="w-10 h-10 text-primary mx-auto mb-2" />
+            <p className="text-sm font-medium text-primary">
+              {isHebrew ? 'שחרר כדי לצרף קובץ' : 'Drop to attach file'}
+            </p>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card">
-        <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden shrink-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onBack}
+          className="md:hidden shrink-0"
+          aria-label={isHebrew ? 'חזור לרשימת שיחות' : 'Back to conversation list'}
+        >
           <BackIcon className="w-5 h-5" />
         </Button>
-        <Avatar className="w-9 h-9 shrink-0">
-          <AvatarImage src={conversation.other_user?.avatar_url || undefined} />
-          <AvatarFallback className="bg-primary/10 text-primary text-sm">
-            {conversation.other_user?.full_name?.charAt(0)?.toUpperCase() || '?'}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <p className="font-medium text-foreground text-sm truncate">
-            {conversation.other_user?.full_name || (isHebrew ? 'משתמש לא ידוע' : 'Unknown User')}
-          </p>
-          <OnlineIndicator
-            lastSeenAt={(conversation.other_user as any)?.last_seen_at}
-            showText
-            size="sm"
-          />
-        </div>
+        <button
+          type="button"
+          onClick={openOtherUserProfile}
+          className="flex items-center gap-3 flex-1 min-w-0 text-start rounded-lg -mx-1 px-1 py-1 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
+          aria-label={isHebrew ? `פתח את הפרופיל של ${conversation.other_user?.full_name || 'משתמש'}` : `Open ${conversation.other_user?.full_name || 'user'}'s profile`}
+          title={isHebrew ? 'צפה בפרופיל' : 'View profile'}
+        >
+          <Avatar className="w-9 h-9 shrink-0">
+            <AvatarImage src={conversation.other_user?.avatar_url || undefined} />
+            <AvatarFallback className="bg-primary/10 text-primary text-sm">
+              {conversation.other_user?.full_name?.charAt(0)?.toUpperCase() || '?'}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-foreground text-sm truncate hover:underline">
+              {conversation.other_user?.full_name || (isHebrew ? 'משתמש לא ידוע' : 'Unknown User')}
+            </p>
+            <OnlineIndicator
+              lastSeenAt={(conversation.other_user as any)?.last_seen_at}
+              showText
+              size="sm"
+            />
+          </div>
+        </button>
         {onToggleChatInfo && (
           <Button
             variant="ghost"
             size="icon"
             onClick={onToggleChatInfo}
             className={cn('shrink-0', showChatInfo && 'bg-primary/10 text-primary')}
+            aria-label={isHebrew ? 'פרטי שיחה' : 'Conversation info'}
+            aria-pressed={showChatInfo}
           >
             <Info className="w-5 h-5" />
           </Button>
@@ -371,23 +447,56 @@ export function ConversationThread({ conversation, onBack, onToggleChatInfo, sho
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted text-sm">
             <FileText className="w-4 h-4 text-primary" />
             <span className="truncate flex-1">{selectedFile.name}</span>
-            <button onClick={() => setSelectedFile(null)} className="text-muted-foreground hover:text-destructive"><X className="w-3 h-3" /></button>
+            <button
+              type="button"
+              onClick={() => setSelectedFile(null)}
+              className="text-muted-foreground hover:text-destructive"
+              aria-label={isHebrew ? 'הסר קובץ' : 'Remove file'}
+              title={isHebrew ? 'הסר קובץ' : 'Remove file'}
+            >
+              <X className="w-3 h-3" />
+            </button>
           </div>
         )}
-        <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex gap-2">
-          <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" onChange={handleFileSelect} />
-          <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} className="shrink-0">
+        <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex items-end gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+            onChange={handleFileSelect}
+            aria-label={isHebrew ? 'בחר קובץ לצירוף' : 'Choose file to attach'}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => fileInputRef.current?.click()}
+            className="shrink-0"
+            aria-label={isHebrew ? 'צרף קובץ' : 'Attach file'}
+            title={isHebrew ? 'צרף קובץ' : 'Attach file'}
+          >
             <Paperclip className="w-4 h-4" />
           </Button>
-          <Input
+          <Textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder={isHebrew ? 'הקלד הודעה...' : 'Type a message...'}
+            onKeyDown={handleKeyDown}
+            placeholder={isHebrew ? 'הקלד הודעה... (Enter לשליחה, Shift+Enter לשורה חדשה)' : 'Type a message... (Enter to send, Shift+Enter for new line)'}
             disabled={sendMutation.isPending || uploading}
-            className="rounded-full"
+            rows={1}
+            className="rounded-2xl resize-none min-h-[40px] max-h-[120px] py-2"
             dir={isHebrew ? 'rtl' : 'ltr'}
+            aria-label={isHebrew ? 'תוכן הודעה' : 'Message content'}
           />
-          <Button type="submit" size="icon" className="rounded-full shrink-0" disabled={(!newMessage.trim() && !selectedFile) || sendMutation.isPending || uploading}>
+          <Button
+            type="submit"
+            size="icon"
+            className="rounded-full shrink-0"
+            disabled={(!newMessage.trim() && !selectedFile) || sendMutation.isPending || uploading}
+            aria-label={isHebrew ? 'שלח הודעה' : 'Send message'}
+            title={isHebrew ? 'שלח' : 'Send'}
+          >
             {(sendMutation.isPending || uploading) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </Button>
         </form>

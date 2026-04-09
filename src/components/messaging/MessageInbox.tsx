@@ -6,9 +6,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
-import { MessageSquare, Inbox, Search, Circle } from 'lucide-react';
+import { MessageSquare, Inbox, Search, Circle, Plus } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { he, enUS } from 'date-fns/locale';
 import { ConversationThread } from './ConversationThread';
@@ -191,9 +192,19 @@ export function MessageInbox({ initialConversationUserId }: MessageInboxProps) {
                   ? (isHebrew ? 'לא נמצאו תוצאות' : 'No results')
                   : (isHebrew ? 'אין שיחות עדיין' : 'No conversations yet')}
               </p>
-              <p className="text-xs text-muted-foreground/60 mt-1">
-                {isHebrew ? 'שלח הודעה ראשונה מהפיד או מפרופיל' : 'Send your first message from the feed or a profile'}
+              <p className="text-xs text-muted-foreground/60 mt-1 mb-4">
+                {isHebrew ? 'התחל שיחה חדשה או גש לפרופיל כדי לשלוח הודעה' : 'Start a new conversation or visit a profile to send a message'}
               </p>
+              {!searchQuery && (
+                <NewMessageDialog
+                  trigger={
+                    <Button size="sm" className="gap-2">
+                      <Plus className="w-4 h-4" />
+                      {isHebrew ? 'הודעה חדשה' : 'New message'}
+                    </Button>
+                  }
+                />
+              )}
             </div>
           ) : (
             <div className="p-1.5">
@@ -278,7 +289,7 @@ export function MessageInbox({ initialConversationUserId }: MessageInboxProps) {
             messengerMode
           />
         ) : (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center p-6">
             <div className="text-center">
               <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <MessageSquare className="w-10 h-10 text-primary/60" />
@@ -286,9 +297,17 @@ export function MessageInbox({ initialConversationUserId }: MessageInboxProps) {
               <h3 className="text-lg font-semibold text-foreground/70 mb-1">
                 {isHebrew ? 'בחר שיחה' : 'Select a conversation'}
               </h3>
-              <p className="text-sm text-muted-foreground max-w-[240px] mx-auto">
-                {isHebrew ? 'בחר שיחה מהרשימה כדי לצפות בהודעות' : 'Choose a conversation from the list to view messages'}
+              <p className="text-sm text-muted-foreground max-w-[280px] mx-auto mb-4">
+                {isHebrew ? 'בחר שיחה מהרשימה כדי לצפות בהודעות, או התחל שיחה חדשה' : 'Choose a conversation from the list, or start a new one'}
               </p>
+              <NewMessageDialog
+                trigger={
+                  <Button size="sm" className="gap-2">
+                    <Plus className="w-4 h-4" />
+                    {isHebrew ? 'הודעה חדשה' : 'New message'}
+                  </Button>
+                }
+              />
             </div>
           </div>
         )}
