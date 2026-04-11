@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ interface VouchWidgetProps {
 export function VouchWidget({ onNavigate }: VouchWidgetProps) {
   const { user } = useAuth();
   const { language } = useLanguage();
+  const navigate = useNavigate();
   const isRTL = language === 'he';
 
   const { data: vouchStats } = useQuery({
@@ -62,7 +64,12 @@ export function VouchWidget({ onNavigate }: VouchWidgetProps) {
             {isRTL ? 'המלצות' : 'Vouches'}
           </span>
           </div>
-          <span className="text-2xl font-bold text-foreground">{total}</span>
+          <button
+            onClick={() => navigate('/vouches')}
+            className="text-2xl font-bold text-foreground hover:text-primary transition-colors cursor-pointer"
+          >
+            {total}
+          </button>
         </div>
 
         {total > 0 && (
