@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { GiveVouchDialog } from '@/components/vouch/GiveVouchDialog';
+import { VouchNotifications } from '@/components/vouch/VouchNotifications';
 import { MessageBadge } from '@/components/messaging/MessageBadge';
 import { CreditHUD } from '@/components/credits/CreditHUD';
 import { NavTooltip } from '@/components/ui/nav-tooltip';
@@ -117,7 +118,6 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
         { icon: Mic, label: isRTL ? 'הכנה לראיון עבודה' : 'Interview Prep', section: 'interview-prep', tooltipHe: 'הכנה לראיון עבודה עם שאלות ותרגול AI', tooltipEn: 'Interview preparation with AI questions and practice' },
         { icon: ClipboardList, label: isRTL ? 'לוח המטלות' : 'Assignments Board', section: 'assignments' as DashboardSection, tooltipHe: 'לוח המטלות – הוכח את הכישורים שלך עם אתגרים אמיתיים', tooltipEn: 'Assignments board – prove your skills with real challenges' },
         // ── Discovery & Opportunities ──
-        { icon: Users, label: isRTL ? 'קהילות' : 'Communities', section: 'communities' as DashboardSection, tooltipHe: 'קהילות מקצועיות ונטוורקינג', tooltipEn: 'Professional communities & networking' },
         { icon: MessageSquare, label: isRTL ? 'הודעות' : 'Messages', section: 'messages', tooltipHe: 'הודעות פנימיות מקבלים ומגייסים', tooltipEn: 'Internal messages from recruiters and contacts' },
         // ── System ──
         { icon: Gem, label: isRTL ? 'הקרדיטים שלי' : 'Credits', section: 'credits' as DashboardSection, tooltipHe: 'יתרת דלק, היסטוריה ורכישה', tooltipEn: 'Fuel balance, history & purchase' },
@@ -380,6 +380,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
       {/* Global Plug FAB - accessible from every screen */}
       <PlugFAB contextPage="dashboard" />
       <PlugNudgePopup />
+      <VouchNotifications />
 
       {/* Mobile CV Builder Warning */}
       <Dialog open={showMobileCVWarning} onOpenChange={setShowMobileCVWarning}>

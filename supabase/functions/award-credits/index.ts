@@ -26,26 +26,54 @@ const SOCIAL_TASK_REWARDS: Record<string, number> = {
 const RECURRING_REWARDS: Record<string, { amount: number; dailyCap?: number; monthlyCap?: number; fuelType?: 'daily' | 'permanent' }> = {
   'community_share': { amount: 5, dailyCap: 3 },
   'job_share': { amount: 5, dailyCap: 5 },
-  'referral_bonus': { amount: 10 },
   'vouch_received': { amount: 25, monthlyCap: 5 },
   'vouch_given': { amount: 5, monthlyCap: 5 },
+  'vouch_reciprocal': { amount: 5 },
+  'vouch_via_external_link': { amount: 15 },
+  'vouch_from_recruiter': { amount: 50 },
   'skill_added': { amount: 10 },
-  'feed_like': { amount: 1, fuelType: 'daily' },
-  'feed_comment': { amount: 1, fuelType: 'daily' },
-  'feed_poll_vote': { amount: 1, fuelType: 'daily' },
-  'community_like': { amount: 1, fuelType: 'daily' },
-  'community_comment': { amount: 1, fuelType: 'daily' },
-  'community_poll_vote': { amount: 1, fuelType: 'daily' },
+  'login_streak': { amount: 2, dailyCap: 1 },
+  // Feed interactions are now FREE (0 credits awarded, engagement should never cost)
+  'feed_like': { amount: 0, fuelType: 'daily' },
+  'feed_comment': { amount: 0, fuelType: 'daily' },
+  'feed_poll_vote': { amount: 0, fuelType: 'daily' },
+  'community_like': { amount: 0, fuelType: 'daily' },
+  'community_comment': { amount: 0, fuelType: 'daily' },
+  'community_poll_vote': { amount: 0, fuelType: 'daily' },
 };
 
-// Direct credit award (from client with explicit amount)
-interface DirectAwardRequest {
-  userId: string;
-  amount: number;
-  creditType: 'daily' | 'permanent';
-  actionType: string;
-  description?: string;
-}
+// XP rewards per action
+const XP_REWARDS: Record<string, number> = {
+  'social_task': 5,
+  'community_share': 2,
+  'job_share': 2,
+  'vouch_given': 5,
+  'vouch_received': 10,
+  'vouch_reciprocal': 10,
+  'vouch_via_external_link': 15,
+  'skill_added': 3,
+  'referral_signup': 10,
+  'referral_profile_complete': 5,
+  'referral_applied': 25,
+  'referral_active_7d': 15,
+  'referral_hired': 100,
+};
+
+// Progressive referral rewards
+const REFERRAL_STAGES: Record<string, { fuel: number; xp: number; stage: string }> = {
+  'referral_signup': { fuel: 15, xp: 10, stage: 'signed_up' },
+  'referral_profile_complete': { fuel: 10, xp: 5, stage: 'profile_complete' },
+  'referral_applied': { fuel: 25, xp: 25, stage: 'applied' },
+  'referral_active_7d': { fuel: 15, xp: 15, stage: 'active_7d' },
+  'referral_hired': { fuel: 100, xp: 100, stage: 'hired' },
+};
+
+// Counter field mapping for totals tracking
+const TOTAL_COUNTER_FIELDS: Record<string, string> = {
+  'job_share': 'total_job_shares',
+  'vouch_given': 'total_vouches_given',
+  'vouch_received': 'total_vouches_received',
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -55,7 +83,7 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
+
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -67,7 +95,7 @@ serve(async (req) => {
     const supabaseUser = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
       global: { headers: { Authorization: authHeader } }
     });
-    
+
     const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
     if (userError || !user) {
       return new Response(
@@ -79,10 +107,9 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const requestBody = await req.json();
     const { action, taskId, referralCode, userId, amount, creditType, actionType: reqActionType, description: customDescription } = requestBody;
-    
+
     // Handle direct credit award (from client with explicit amount)
     if (userId && amount && reqActionType) {
-      // Verify the caller is the user or has admin rights
       if (userId !== user.id) {
         return new Response(
           JSON.stringify({ error: 'Unauthorized: can only award credits to yourself' }),
@@ -106,17 +133,11 @@ serve(async (req) => {
       const fieldToUpdate = creditType === 'daily' ? 'daily_fuel' : 'permanent_fuel';
       const newValue = credits[fieldToUpdate] + amount;
 
-      const { error: updateError } = await supabase
+      await supabase
         .from('user_credits')
-        .update({ 
-          [fieldToUpdate]: newValue,
-          updated_at: new Date().toISOString()
-        })
+        .update({ [fieldToUpdate]: newValue })
         .eq('user_id', userId);
 
-      if (updateError) throw updateError;
-
-      // Log transaction
       await supabase.from('credit_transactions').insert({
         user_id: userId,
         amount,
@@ -125,20 +146,17 @@ serve(async (req) => {
         description: customDescription || `Awarded ${amount} ${creditType} credits for ${reqActionType}`
       });
 
-      console.log(`[award-credits] Direct award: ${amount} ${creditType} fuel to ${userId} for ${reqActionType}`);
-
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           success: true,
           awarded: amount,
           daily_fuel: creditType === 'daily' ? newValue : credits.daily_fuel,
           permanent_fuel: creditType === 'permanent' ? newValue : credits.permanent_fuel,
-          total_credits: (creditType === 'daily' ? newValue : credits.daily_fuel) + (creditType === 'permanent' ? newValue : credits.permanent_fuel)
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    
+
     if (!action) {
       return new Response(
         JSON.stringify({ error: 'Missing action parameter' }),
@@ -163,10 +181,37 @@ serve(async (req) => {
     }
 
     let amountToAward = 0;
+    let xpToAward = 0;
     let actionType = action;
     let description = '';
 
-    // Handle one-time social tasks
+    // ── Handle login streak ──
+    if (action === 'login_streak') {
+      const { data: streakResult } = await supabase.rpc('update_login_streak', { p_user_id: user.id });
+      const row = streakResult?.[0];
+      if (row) {
+        // Check achievements after streak update
+        await supabase.rpc('check_achievements', { p_user_id: user.id });
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            awarded: row.streak_fuel,
+            xp_awarded: row.streak_xp,
+            streak: row.new_streak,
+            daily_fuel: credits.daily_fuel,
+            permanent_fuel: credits.permanent_fuel + row.streak_fuel,
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      return new Response(
+        JSON.stringify({ success: true, awarded: 0 }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ── Handle one-time social tasks ──
     if (action === 'social_task' && taskId) {
       const reward = SOCIAL_TASK_REWARDS[taskId];
       if (!reward) {
@@ -176,7 +221,6 @@ serve(async (req) => {
         );
       }
 
-      // Check if already completed
       const { data: existing } = await supabase
         .from('social_task_completions')
         .select('id')
@@ -191,7 +235,6 @@ serve(async (req) => {
         );
       }
 
-      // Record completion
       await supabase.from('social_task_completions').insert({
         user_id: user.id,
         task_id: taskId,
@@ -199,15 +242,193 @@ serve(async (req) => {
       });
 
       amountToAward = reward;
+      xpToAward = XP_REWARDS['social_task'] || 5;
       actionType = `social_${taskId}`;
       description = `Completed social task: ${taskId}`;
+
+      // Check if all social tasks are complete → social_butterfly achievement
+      const { count: socialCount } = await supabase
+        .from('social_task_completions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      if ((socialCount || 0) >= 12) {
+        xpToAward += 50; // bonus for completing all
+      }
     }
 
-    // Handle recurring actions
+    // ── Handle progressive referral stages ──
+    else if (REFERRAL_STAGES[action]) {
+      const stageConfig = REFERRAL_STAGES[action];
+
+      if (action === 'referral_signup' && referralCode) {
+        // New user signing up with referral code
+        const { data: referrer } = await supabase
+          .from('user_credits')
+          .select('user_id')
+          .eq('referral_code', referralCode)
+          .maybeSingle();
+
+        if (!referrer) {
+          return new Response(
+            JSON.stringify({ error: 'Invalid referral code' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const { data: existingReferral } = await supabase
+          .from('referrals')
+          .select('id')
+          .eq('referred_id', user.id)
+          .maybeSingle();
+
+        if (existingReferral) {
+          return new Response(
+            JSON.stringify({ error: 'Already referred', already_referred: true }),
+            { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Record referral with stage tracking
+        await supabase.from('referrals').insert({
+          referrer_id: referrer.user_id,
+          referred_id: user.id,
+          referrer_credits_awarded: true,
+          referred_credits_awarded: true,
+          stage: 'signed_up',
+        });
+
+        // Award referrer: fuel + XP + increment total_referrals
+        await supabase.rpc('award_xp', { p_user_id: referrer.user_id, p_amount: stageConfig.xp, p_reason: 'Referral signed up' });
+        const { data: referrerCredits } = await supabase
+          .from('user_credits')
+          .select('permanent_fuel, total_referrals')
+          .eq('user_id', referrer.user_id)
+          .single();
+
+        await supabase
+          .from('user_credits')
+          .update({
+            permanent_fuel: (referrerCredits?.permanent_fuel || 0) + stageConfig.fuel,
+            total_referrals: (referrerCredits?.total_referrals || 0) + 1,
+          })
+          .eq('user_id', referrer.user_id);
+
+        await supabase.from('credit_transactions').insert({
+          user_id: referrer.user_id,
+          amount: stageConfig.fuel,
+          credit_type: 'permanent',
+          action_type: 'referral_signup',
+          description: 'Referral bonus: new user signed up with your code'
+        });
+
+        // Check referrer achievements
+        await supabase.rpc('check_achievements', { p_user_id: referrer.user_id });
+
+        // Award referred user welcome bonus
+        amountToAward = 20; // welcome bonus for new user
+        xpToAward = 0;
+        actionType = 'referral_welcome';
+        description = 'Welcome bonus for joining via referral';
+
+      } else {
+        // Other referral stages (profile_complete, applied, active_7d, hired)
+        // Find the referral record where this user is the referred
+        const { data: referralRecord } = await supabase
+          .from('referrals')
+          .select('*')
+          .eq('referred_id', user.id)
+          .maybeSingle();
+
+        if (!referralRecord) {
+          return new Response(
+            JSON.stringify({ error: 'No referral found for this user' }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Check if stage already rewarded
+        const stageField = action === 'referral_profile_complete' ? 'profile_completed_at' :
+                          action === 'referral_applied' ? 'first_application_at' :
+                          action === 'referral_active_7d' ? 'active_7d_at' :
+                          action === 'referral_hired' ? 'hired_at' : null;
+
+        if (stageField && referralRecord[stageField]) {
+          return new Response(
+            JSON.stringify({ error: 'Stage already completed', already_completed: true }),
+            { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Update referral stage
+        const updateData: Record<string, any> = {
+          stage: stageConfig.stage,
+          referrer_xp_awarded: (referralRecord.referrer_xp_awarded || 0) + stageConfig.xp,
+          referrer_fuel_awarded: (referralRecord.referrer_fuel_awarded || 0) + stageConfig.fuel,
+        };
+        if (stageField) updateData[stageField] = new Date().toISOString();
+
+        await supabase
+          .from('referrals')
+          .update(updateData)
+          .eq('id', referralRecord.id);
+
+        // Award referrer
+        const referrerId = referralRecord.referrer_id;
+        await supabase.rpc('award_xp', { p_user_id: referrerId, p_amount: stageConfig.xp, p_reason: `Referral ${stageConfig.stage}` });
+
+        const { data: refCredits } = await supabase
+          .from('user_credits')
+          .select('permanent_fuel')
+          .eq('user_id', referrerId)
+          .single();
+
+        await supabase
+          .from('user_credits')
+          .update({ permanent_fuel: (refCredits?.permanent_fuel || 0) + stageConfig.fuel })
+          .eq('user_id', referrerId);
+
+        await supabase.from('credit_transactions').insert({
+          user_id: referrerId,
+          amount: stageConfig.fuel,
+          credit_type: 'permanent',
+          action_type: action,
+          description: `Referral milestone: ${stageConfig.stage}`
+        });
+
+        await supabase.rpc('check_achievements', { p_user_id: referrerId });
+
+        // Also reward the referred user for milestones
+        const referredBonus = action === 'referral_profile_complete' ? 10 :
+                             action === 'referral_applied' ? 15 :
+                             action === 'referral_hired' ? 50 : 0;
+
+        if (referredBonus > 0) {
+          amountToAward = referredBonus;
+          actionType = action;
+          description = `Milestone bonus: ${stageConfig.stage}`;
+        } else {
+          return new Response(
+            JSON.stringify({ success: true, awarded: 0, referrer_awarded: stageConfig.fuel }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+    }
+
+    // ── Handle recurring actions ──
     else if (RECURRING_REWARDS[action]) {
       const rewardConfig = RECURRING_REWARDS[action];
       const today = new Date().toISOString().split('T')[0];
       const currentMonth = new Date().toISOString().slice(0, 7);
+
+      // Feed interactions are free now — no credits awarded, just allow the action
+      if (rewardConfig.amount === 0) {
+        return new Response(
+          JSON.stringify({ success: true, awarded: 0, daily_fuel: credits.daily_fuel, permanent_fuel: credits.permanent_fuel }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
       // Check daily cap
       if (rewardConfig.dailyCap) {
@@ -223,17 +444,11 @@ serve(async (req) => {
 
         if (currentCount >= rewardConfig.dailyCap) {
           return new Response(
-            JSON.stringify({ 
-              error: 'Daily cap reached', 
-              cap_reached: true,
-              current: currentCount,
-              max: rewardConfig.dailyCap
-            }),
+            JSON.stringify({ error: 'Daily cap reached', cap_reached: true, current: currentCount, max: rewardConfig.dailyCap }),
             { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
 
-        // Update or insert daily count
         if (dailyCounts) {
           await supabase
             .from('daily_action_counts')
@@ -251,7 +466,6 @@ serve(async (req) => {
 
       // Check monthly cap for vouches
       if (rewardConfig.monthlyCap && (action === 'vouch_received' || action === 'vouch_given')) {
-        // Reset monthly counts if needed
         const creditMonth = credits.last_vouch_reset_month?.slice(0, 7);
         if (creditMonth !== currentMonth) {
           await supabase
@@ -271,17 +485,11 @@ serve(async (req) => {
 
         if (currentCount >= rewardConfig.monthlyCap) {
           return new Response(
-            JSON.stringify({ 
-              error: 'Monthly vouch cap reached',
-              cap_reached: true,
-              current: currentCount,
-              max: rewardConfig.monthlyCap
-            }),
+            JSON.stringify({ error: 'Monthly vouch cap reached', cap_reached: true, current: currentCount, max: rewardConfig.monthlyCap }),
             { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
 
-        // Increment vouch count
         await supabase
           .from('user_credits')
           .update({ [countField]: currentCount + 1 })
@@ -289,12 +497,22 @@ serve(async (req) => {
       }
 
       amountToAward = rewardConfig.amount;
-      description = `Earned ${amountToAward} credits for ${action.replace('_', ' ')}`;
+      xpToAward = XP_REWARDS[action] || 0;
+      description = `Earned ${amountToAward} credits for ${action.replace(/_/g, ' ')}`;
+
+      // Update total counters
+      const counterField = TOTAL_COUNTER_FIELDS[action];
+      if (counterField) {
+        await supabase
+          .from('user_credits')
+          .update({ [counterField]: (credits[counterField] || 0) + 1 })
+          .eq('user_id', user.id);
+      }
     }
 
-    // Handle referral
+    // ── Handle legacy referral format ──
     else if (action === 'referral' && referralCode) {
-      // Find the referrer by code
+      // Redirect to new referral_signup action
       const { data: referrer } = await supabase
         .from('user_credits')
         .select('user_id')
@@ -308,7 +526,6 @@ serve(async (req) => {
         );
       }
 
-      // Check if already referred
       const { data: existingReferral } = await supabase
         .from('referrals')
         .select('id')
@@ -322,117 +539,99 @@ serve(async (req) => {
         );
       }
 
-      // Record referral
       await supabase.from('referrals').insert({
         referrer_id: referrer.user_id,
         referred_id: user.id,
         referrer_credits_awarded: true,
-        referred_credits_awarded: true
+        referred_credits_awarded: true,
+        stage: 'signed_up',
       });
 
-      // Award credits to referrer
+      // Award referrer
+      await supabase.rpc('award_xp', { p_user_id: referrer.user_id, p_amount: 10, p_reason: 'Referral signed up' });
       const { data: referrerCredits } = await supabase
         .from('user_credits')
-        .select('permanent_fuel')
+        .select('permanent_fuel, total_referrals')
         .eq('user_id', referrer.user_id)
         .single();
-      
+
       await supabase
         .from('user_credits')
-        .update({ permanent_fuel: (referrerCredits?.permanent_fuel || 0) + 10 })
+        .update({
+          permanent_fuel: (referrerCredits?.permanent_fuel || 0) + 15,
+          total_referrals: (referrerCredits?.total_referrals || 0) + 1,
+        })
         .eq('user_id', referrer.user_id);
 
       await supabase.from('credit_transactions').insert({
         user_id: referrer.user_id,
-        amount: 10,
+        amount: 15,
         credit_type: 'permanent',
-        action_type: 'referral_bonus',
+        action_type: 'referral_signup',
         description: 'Referral bonus: new user signed up with your code'
       });
 
-      amountToAward = 10;
-      actionType = 'referral_bonus';
-      description = 'Welcome bonus for using a referral code';
+      await supabase.rpc('check_achievements', { p_user_id: referrer.user_id });
+
+      amountToAward = 20;
+      actionType = 'referral_welcome';
+      description = 'Welcome bonus for joining via referral';
     }
 
-    if (amountToAward <= 0) {
+    if (amountToAward <= 0 && xpToAward <= 0) {
       return new Response(
         JSON.stringify({ error: 'Invalid action or no credits to award' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Determine fuel type - feed actions go to daily, everything else to permanent
-    const rewardConfig = RECURRING_REWARDS[action];
-    const fuelType = rewardConfig?.fuelType || 'permanent';
+    // Award XP if applicable
+    if (xpToAward > 0) {
+      await supabase.rpc('award_xp', { p_user_id: user.id, p_amount: xpToAward, p_reason: actionType });
+      // Check achievements after XP change
+      await supabase.rpc('check_achievements', { p_user_id: user.id });
+    }
 
-    if (fuelType === 'daily') {
-      // Award daily fuel (can exceed 20 via feed interactions)
-      const newDailyFuel = credits.daily_fuel + amountToAward;
-      
-      const { error: updateError } = await supabase
+    // Award fuel
+    if (amountToAward > 0) {
+      const newPermanentFuel = credits.permanent_fuel + amountToAward;
+
+      await supabase
         .from('user_credits')
-        .update({ 
-          daily_fuel: newDailyFuel,
-          updated_at: new Date().toISOString()
-        })
+        .update({ permanent_fuel: newPermanentFuel })
         .eq('user_id', user.id);
-
-      if (updateError) throw updateError;
 
       await supabase.from('credit_transactions').insert({
         user_id: user.id,
         amount: amountToAward,
-        credit_type: 'daily',
+        credit_type: 'permanent',
         action_type: actionType,
         description
       });
 
-      console.log(`[award-credits] Awarded ${amountToAward} daily fuel to ${user.id}`);
+      console.log(`[award-credits] Awarded ${amountToAward} fuel + ${xpToAward} XP to ${user.id} for ${actionType}`);
 
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           success: true,
           awarded: amountToAward,
-          daily_fuel: newDailyFuel,
-          permanent_fuel: credits.permanent_fuel,
-          total_credits: newDailyFuel + credits.permanent_fuel
+          xp_awarded: xpToAward,
+          daily_fuel: credits.daily_fuel,
+          permanent_fuel: newPermanentFuel,
+          total_credits: credits.daily_fuel + newPermanentFuel
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Award permanent fuel (default)
-    const newPermanentFuel = credits.permanent_fuel + amountToAward;
-    
-    const { error: updateError } = await supabase
-      .from('user_credits')
-      .update({ 
-        permanent_fuel: newPermanentFuel,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', user.id);
-
-    if (updateError) throw updateError;
-
-    // Log transaction
-    await supabase.from('credit_transactions').insert({
-      user_id: user.id,
-      amount: amountToAward,
-      credit_type: 'permanent',
-      action_type: actionType,
-      description
-    });
-
-    console.log(`[award-credits] Awarded ${amountToAward} permanent fuel to ${user.id}`);
-
+    // XP only (no fuel)
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
-        awarded: amountToAward,
+        awarded: 0,
+        xp_awarded: xpToAward,
         daily_fuel: credits.daily_fuel,
-        permanent_fuel: newPermanentFuel,
-        total_credits: credits.daily_fuel + newPermanentFuel
+        permanent_fuel: credits.permanent_fuel,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

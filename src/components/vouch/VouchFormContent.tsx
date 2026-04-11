@@ -42,7 +42,7 @@ interface MasterSkill {
 const vouchSchema = z.object({
   vouch_type: z.enum(['colleague', 'manager', 'recruiter', 'friend', 'mentor']),
   relationship: z.string().optional(),
-  message: z.string().min(10, 'Message must be at least 10 characters'),
+  message: z.string().min(30, 'Message must be at least 30 characters'),
 });
 
 type VouchFormData = z.infer<typeof vouchSchema>;
@@ -106,13 +106,29 @@ export function VouchFormContent({ toUserId, toUserName, onSuccess }: VouchFormC
       });
 
       if (error) throw error;
+
+      // Check if this is a reciprocal vouch (they vouched for us first)
+      const { data: existingVouch } = await supabase
+        .from('vouches')
+        .select('id')
+        .eq('from_user_id', toUserId)
+        .eq('to_user_id', user.id)
+        .limit(1)
+        .maybeSingle();
+
+      return { isReciprocal: !!existingVouch };
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
       queryClient.invalidateQueries({ queryKey: ['vouches', toUserId] });
       queryClient.invalidateQueries({ queryKey: ['vouches-with-skills', toUserId] });
-      
-      // Award credits for giving a vouch
-      await awardCredits('vouch_given');
+      queryClient.invalidateQueries({ queryKey: ['vouch-discovery'] });
+
+      // Award credits — reciprocal gets bonus XP
+      if (result?.isReciprocal) {
+        await awardCredits('vouch_reciprocal');
+      } else {
+        await awardCredits('vouch_given');
+      }
       
       toast({
         title: isHebrew ? 'ה-Vouch נשלח!' : 'Vouch sent!',

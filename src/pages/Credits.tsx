@@ -8,21 +8,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Zap, 
-  Gem, 
-  Copy, 
-  Check, 
-  ArrowUpRight, 
+import {
+  Zap,
+  Gem,
+  Copy,
+  Check,
+  ArrowUpRight,
   ArrowDownRight,
   Rocket,
   Share2,
   Users,
-  Clock
+  Clock,
+  Trophy
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { CREDIT_COSTS, RECURRING_REWARDS } from '@/lib/credit-costs';
+import { AmbassadorDashboard } from '@/components/ambassador/AmbassadorDashboard';
 
 const Credits = () => {
   const { credits, transactions, isLoading, totalCredits } = useCredits();
@@ -61,6 +63,14 @@ const Credits = () => {
       social_github_star: { en: 'GitHub Star', he: 'כוכב GitHub' },
       social_linkedin_follow: { en: 'LinkedIn Follow', he: 'עקיבה LinkedIn' },
       referral_bonus: { en: 'Referral Bonus', he: 'בונוס הפניה' },
+      referral_signup: { en: 'Referral Signup', he: 'הפניה — הרשמה' },
+      referral_profile_complete: { en: 'Referral Profile', he: 'הפניה — פרופיל' },
+      referral_applied: { en: 'Referral Applied', he: 'הפניה — הגשה' },
+      referral_active_7d: { en: 'Referral Active', he: 'הפניה — פעיל' },
+      referral_hired: { en: 'Referral Hired', he: 'הפניה — התקבל!' },
+      referral_welcome: { en: 'Welcome Bonus', he: 'בונוס הצטרפות' },
+      xp_award: { en: 'XP Earned', he: 'XP נצבר' },
+      login_streak: { en: 'Login Streak', he: 'רצף התחברות' },
       vouch_received: { en: 'Vouch Received', he: 'המלצה התקבלה' },
       vouch_given: { en: 'Vouch Given', he: 'המלצה ניתנה' },
       community_share: { en: 'Community Share', he: 'שיתוף לקהילה' },
@@ -181,8 +191,12 @@ const Credits = () => {
         </motion.div>
 
         {/* Tabs Section */}
-        <Tabs defaultValue="history" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="ambassador" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="ambassador" className="gap-1.5">
+              <Trophy className="w-3.5 h-3.5" />
+              {isRTL ? 'שגריר' : 'Ambassador'}
+            </TabsTrigger>
             <TabsTrigger value="history">
               {isRTL ? 'היסטוריה' : 'History'}
             </TabsTrigger>
@@ -193,6 +207,11 @@ const Credits = () => {
               {isRTL ? 'הפניות' : 'Referrals'}
             </TabsTrigger>
           </TabsList>
+
+          {/* Ambassador Tab */}
+          <TabsContent value="ambassador">
+            <AmbassadorDashboard />
+          </TabsContent>
 
           {/* History Tab */}
           <TabsContent value="history">
@@ -368,9 +387,9 @@ const Credits = () => {
               <CardHeader>
                 <CardTitle>{isRTL ? 'הזמן חברים' : 'Invite Friends'}</CardTitle>
                 <CardDescription>
-                  {isRTL 
-                    ? 'שניכם תקבלו 10 קרדיטים קבועים!'
-                    : 'You both get 10 permanent credits!'}
+                  {isRTL
+                    ? 'הרווח עד 165 דלק לכל חבר שמצליח!'
+                    : 'Earn up to 165 fuel for each successful friend!'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -422,13 +441,30 @@ const Credits = () => {
 
                     <div className="bg-muted/50 rounded-lg p-4">
                       <h4 className="font-medium mb-2">
-                        {isRTL ? 'איך זה עובד?' : 'How it works'}
+                        {isRTL ? 'תגמולים פרוגרסיביים' : 'Progressive Rewards'}
                       </h4>
-                      <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                        <li>{isRTL ? 'שתף את הלינק עם חברים' : 'Share your link with friends'}</li>
-                        <li>{isRTL ? 'הם נרשמים דרך הלינק' : 'They sign up using your link'}</li>
-                        <li>{isRTL ? 'שניכם מקבלים 10 קרדיטים!' : 'You both get 10 credits!'}</li>
-                      </ol>
+                      <div className="text-sm text-muted-foreground space-y-2">
+                        <div className="flex justify-between">
+                          <span>{isRTL ? 'נרשם' : 'Signs up'}</span>
+                          <span className="font-bold text-[#00FF9D]">+15 {isRTL ? 'דלק' : 'fuel'} +10 XP</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>{isRTL ? 'השלים פרופיל' : 'Completes profile'}</span>
+                          <span className="font-bold text-[#00FF9D]">+10 {isRTL ? 'דלק' : 'fuel'} +5 XP</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>{isRTL ? 'הגיש מועמדות' : 'Applied to a job'}</span>
+                          <span className="font-bold text-[#00FF9D]">+25 {isRTL ? 'דלק' : 'fuel'} +25 XP</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>{isRTL ? 'פעיל 7 ימים' : 'Active 7 days'}</span>
+                          <span className="font-bold text-[#00FF9D]">+15 {isRTL ? 'דלק' : 'fuel'} +15 XP</span>
+                        </div>
+                        <div className="flex justify-between border-t border-border pt-2">
+                          <span className="font-medium">{isRTL ? 'התקבל לעבודה!' : 'Got hired!'}</span>
+                          <span className="font-bold text-[#00FF9D]">+100 {isRTL ? 'דלק' : 'fuel'} +100 XP</span>
+                        </div>
+                      </div>
                     </div>
                   </>
                 )}
@@ -470,8 +506,21 @@ const Credits = () => {
                   <span className="font-bold text-destructive">-{CREDIT_COSTS.HOME_TASK_REVIEW}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <span>{isRTL ? 'ניתוח קורות חיים' : 'Resume Analysis'}</span>
+                  <span className="font-bold text-destructive">-{CREDIT_COSTS.RESUME_ANALYSIS}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                   <span>{isRTL ? 'חיפוש חכם' : 'Smart Search'}</span>
                   <span className="font-bold text-destructive">-{CREDIT_COSTS.SMART_SEARCH}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div>
+                    <span>{isRTL ? 'צ\'אט PLUG' : 'PLUG Chat'}</span>
+                    <span className="text-xs text-muted-foreground ms-2">
+                      ({isRTL ? '5 הודעות/יום חינם' : '5 msgs/day free'})
+                    </span>
+                  </div>
+                  <span className="font-bold text-[#00FF9D]">{isRTL ? 'חינם' : 'FREE'}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                   <div>

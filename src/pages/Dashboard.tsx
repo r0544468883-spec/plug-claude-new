@@ -548,6 +548,7 @@ export default function Dashboard() {
             onCreatePost={() => setCurrentSection('create-feed-post')}
             onViewHub={(hubId) => { setViewingHubId(hubId); setCurrentSection('community-view'); }}
             onCreateHub={() => setCurrentSection('create-community')}
+            onOpenMessages={() => setCurrentSection('messages')}
             initialTab="feed"
           />
         );
@@ -575,6 +576,7 @@ export default function Dashboard() {
             onCreatePost={() => setCurrentSection('create-feed-post')}
             onViewHub={(hubId) => { setViewingHubId(hubId); setCurrentSection('community-view'); }}
             onCreateHub={() => setCurrentSection('create-community')}
+            onOpenMessages={() => setCurrentSection('messages')}
             initialTab="communities"
           />
         );

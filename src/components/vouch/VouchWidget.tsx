@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { GiveVouchDialog } from './GiveVouchDialog';
+import { RequestVouchDialog } from './RequestVouchDialog';
 
 interface VouchWidgetProps {
   onNavigate?: () => void;
@@ -58,7 +59,7 @@ export function VouchWidget({ onNavigate }: VouchWidgetProps) {
               <Heart className="w-4 h-4 text-pink-500" />
             </div>
           <span className="font-medium text-sm">
-            {isRTL ? 'Vouches' : 'Vouches'}
+            {isRTL ? 'המלצות' : 'Vouches'}
           </span>
           </div>
           <span className="text-2xl font-bold text-foreground">{total}</span>
@@ -73,12 +74,20 @@ export function VouchWidget({ onNavigate }: VouchWidgetProps) {
           </p>
         )}
 
-        <GiveVouchDialog trigger={
-          <Button variant="outline" size="sm" className="w-full gap-2">
-            <Heart className="w-4 h-4" />
-            {isRTL ? 'תן Vouch' : 'Give Vouch'}
-          </Button>
-        } />
+        <div className="flex gap-2">
+          <GiveVouchDialog trigger={
+            <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs">
+              <Heart className="w-3.5 h-3.5" />
+              {isRTL ? 'תן' : 'Give'}
+            </Button>
+          } />
+          <RequestVouchDialog trigger={
+            <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs">
+              <Heart className="w-3.5 h-3.5" />
+              {isRTL ? 'בקש' : 'Request'}
+            </Button>
+          } />
+        </div>
       </CardContent>
     </Card>
   );

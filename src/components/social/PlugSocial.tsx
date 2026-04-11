@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { FeedPage } from '@/components/feed/FeedPage';
@@ -9,21 +11,39 @@ import { FeedPeopleYouKnow } from '@/components/feed/FeedPeopleYouKnow';
 import { FeedJobSearchInsights } from '@/components/feed/FeedJobSearchInsights';
 import { CommunityHubsList } from '@/components/communities/CommunityHubsList';
 import { Button } from '@/components/ui/button';
-import { Newspaper, Globe, Plus, Sun, Moon } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Newspaper, Globe, Plus, Sun, Moon, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PlugSocialProps {
   onCreatePost?: () => void;
   onViewHub: (hubId: string) => void;
   onCreateHub: () => void;
+  onOpenMessages?: () => void;
   initialTab?: 'feed' | 'communities';
 }
 
-export function PlugSocial({ onCreatePost, onViewHub, onCreateHub, initialTab = 'feed' }: PlugSocialProps) {
+export function PlugSocial({ onCreatePost, onViewHub, onCreateHub, onOpenMessages, initialTab = 'feed' }: PlugSocialProps) {
   const [activeTab, setActiveTab] = useState<'feed' | 'communities'>(initialTab);
   const { language } = useLanguage();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const isRTL = language === 'he';
+
+  // Unread messages badge
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ['plug-social-unread-messages', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return 0;
+      const { count } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('to_user_id', user.id)
+        .eq('is_read', false);
+      return count || 0;
+    },
+    enabled: !!user?.id,
+    refetchInterval: 30000,
+  });
 
   const [isLightMode, setIsLightMode] = useState(() => {
     try { return localStorage.getItem('plug_feed_light_mode') === 'true'; } catch { return false; }
@@ -53,6 +73,26 @@ export function PlugSocial({ onCreatePost, onViewHub, onCreateHub, initialTab = 
               PLUG Social
             </h1>
             <div className="flex items-center gap-2">
+              {/* Messages button with unread badge */}
+              {onOpenMessages && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={onOpenMessages}
+                  className="h-9 w-9 rounded-full relative"
+                  title={isRTL ? 'הודעות' : 'Messages'}
+                  aria-label={isRTL ? 'פתח הודעות' : 'Open messages'}
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  {unreadCount > 0 && (
+                    <Badge
+                      className="absolute -top-1 -end-1 bg-primary text-white text-[10px] h-4 min-w-[16px] px-1 rounded-full border-2 border-card"
+                    >
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </Badge>
+                  )}
+                </Button>
+              )}
               {/* Dark/Light toggle */}
               <Button
                 variant="outline"

@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from './LanguageContext';
-import { CREDIT_COSTS, CONFIRMATION_THRESHOLD } from '@/lib/credit-costs';
+import { CREDIT_COSTS, CONFIRMATION_THRESHOLD, FUEL_WARNING_THRESHOLDS, getDailyFuelForXP, DAILY_USAGE_LIMITS } from '@/lib/credit-costs';
+import type { AmbassadorTier } from '@/lib/credit-costs';
 import { CreditConfirmDialog } from '@/components/credits/CreditConfirmDialog';
 import { InsufficientFuelDialog } from '@/components/credits/InsufficientFuelDialog';
 
@@ -18,6 +19,12 @@ interface UserCredits {
   referral_code: string | null;
   vouches_given_this_month: number;
   vouches_received_this_month: number;
+  // Ambassador fields
+  xp?: number;
+  ambassador_tier?: AmbassadorTier;
+  login_streak?: number;
+  last_login_date?: string;
+  chat_messages_today?: number;
 }
 
 interface CreditTransaction {
@@ -35,6 +42,8 @@ interface PendingDeduction {
   resolve: (result: { success: boolean; error?: string }) => void;
 }
 
+type FuelWarningLevel = 'ok' | 'info' | 'warning' | 'critical' | 'empty';
+
 interface CreditsContextType {
   credits: UserCredits | null;
   isLoading: boolean;
@@ -46,6 +55,10 @@ interface CreditsContextType {
   canAfford: (amount: number) => boolean;
   markOnboarded: () => Promise<void>;
   getCost: (action: keyof typeof CREDIT_COSTS) => number;
+  fuelWarningLevel: FuelWarningLevel;
+  fuelPercentRemaining: number;
+  canSendChatMessage: () => boolean;
+  incrementChatMessages: () => void;
 }
 
 const CreditsContext = createContext<CreditsContextType | undefined>(undefined);
@@ -67,8 +80,66 @@ export const CreditsProvider = ({ children }: { children: ReactNode }) => {
 
   const totalCredits = (credits?.daily_fuel || 0) + (credits?.permanent_fuel || 0);
 
+  // Chat message counter for daily limit
+  const [chatMessagesToday, setChatMessagesToday] = useState(0);
+
   const getCost = useCallback((action: keyof typeof CREDIT_COSTS): number => {
     return CREDIT_COSTS[action];
+  }, []);
+
+  // Fuel warning level calculation
+  const maxDailyFuel = getDailyFuelForXP(credits?.xp || 0);
+  const fuelPercentRemaining = maxDailyFuel > 0 ? (credits?.daily_fuel || 0) / maxDailyFuel : 1;
+  const fuelWarningLevel: FuelWarningLevel =
+    totalCredits <= 0 ? 'empty' :
+    fuelPercentRemaining <= FUEL_WARNING_THRESHOLDS.CRITICAL ? 'critical' :
+    fuelPercentRemaining <= FUEL_WARNING_THRESHOLDS.WARNING ? 'warning' :
+    fuelPercentRemaining <= FUEL_WARNING_THRESHOLDS.INFO ? 'info' :
+    'ok';
+
+  // Show toast warnings when fuel level changes
+  const prevWarningLevel = useRef<FuelWarningLevel>('ok');
+  useEffect(() => {
+    if (prevWarningLevel.current === fuelWarningLevel) return;
+    const prev = prevWarningLevel.current;
+    prevWarningLevel.current = fuelWarningLevel;
+
+    // Only warn on transitions to worse states
+    if (fuelWarningLevel === 'warning' && prev === 'ok' || fuelWarningLevel === 'warning' && prev === 'info') {
+      toast.warning(
+        isRTL ? `⚠️ נשאר לך מעט דלק (${credits?.daily_fuel || 0} יומי)` : `⚠️ Low fuel (${credits?.daily_fuel || 0} daily remaining)`,
+        { duration: 4000 }
+      );
+    } else if (fuelWarningLevel === 'critical') {
+      toast.warning(
+        isRTL ? '🔴 כמעט נגמר הדלק!' : '🔴 Almost out of fuel!',
+        {
+          duration: 6000,
+          description: isRTL
+            ? 'השלם משימות או חכה למחר לטעינה מחדש'
+            : 'Complete missions or wait until tomorrow for a refill',
+        }
+      );
+    } else if (fuelWarningLevel === 'empty') {
+      toast.error(
+        isRTL ? '⛽ נגמר הדלק' : '⛽ Out of fuel',
+        {
+          duration: 8000,
+          description: isRTL
+            ? 'צבור דלק ממשימות שגריר או חכה למחר'
+            : 'Earn fuel from ambassador missions or wait until tomorrow',
+        }
+      );
+    }
+  }, [fuelWarningLevel, credits?.daily_fuel, isRTL]);
+
+  // Chat message daily limit
+  const canSendChatMessage = useCallback(() => {
+    return chatMessagesToday < DAILY_USAGE_LIMITS.PLUG_CHAT_MESSAGES;
+  }, [chatMessagesToday]);
+
+  const incrementChatMessages = useCallback(() => {
+    setChatMessagesToday(prev => prev + 1);
   }, []);
 
   const refreshCredits = useCallback(async () => {
@@ -97,29 +168,42 @@ export const CreditsProvider = ({ children }: { children: ReactNode }) => {
         // Check if daily fuel needs reset
         const today = new Date().toISOString().split('T')[0];
         if (creditsData.last_refill_date !== today) {
-          // Reset daily fuel locally and update in background
+          // Tier-based daily fuel refill
+          const tierDailyFuel = getDailyFuelForXP(creditsData.xp || 0);
           const updatedCredits = {
             ...creditsData,
-            daily_fuel: 20,
+            daily_fuel: tierDailyFuel,
             pings_today: 0,
+            chat_messages_today: 0,
             last_refill_date: today,
           };
           setCredits(updatedCredits as UserCredits);
-          
+          setChatMessagesToday(0);
+
           // Update in database
-          await supabase
-            .from('user_credits')
-            .update({ 
-              daily_fuel: 20, 
-              pings_today: 0, 
-              last_refill_date: today 
+          await (supabase
+            .from('user_credits') as any)
+            .update({
+              daily_fuel: tierDailyFuel,
+              pings_today: 0,
+              chat_messages_today: 0,
+              last_refill_date: today
             })
             .eq('user_id', user.id);
 
           toast.success(
-            isRTL ? '⚡ הדלק היומי שלך התמלא!' : '⚡ Your daily fuel has been refilled!',
+            isRTL ? `⚡ הדלק היומי שלך התמלא! (${tierDailyFuel})` : `⚡ Your daily fuel has been refilled! (${tierDailyFuel})`,
             { duration: 3000 }
           );
+
+          // Track login streak
+          try {
+            await supabase.functions.invoke('award-credits', {
+              body: { action: 'login_streak' }
+            });
+          } catch (e) {
+            console.warn('[CreditsContext] Login streak update failed:', e);
+          }
         } else {
           setCredits(creditsData as UserCredits);
         }
@@ -350,6 +434,10 @@ export const CreditsProvider = ({ children }: { children: ReactNode }) => {
       canAfford,
       markOnboarded,
       getCost,
+      fuelWarningLevel,
+      fuelPercentRemaining,
+      canSendChatMessage,
+      incrementChatMessages,
     }}>
       {children}
       

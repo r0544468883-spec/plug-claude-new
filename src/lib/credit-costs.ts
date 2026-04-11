@@ -2,12 +2,20 @@
 export const CREDIT_COSTS = {
   CV_BUILDER: 10,
   RESUME_MATCH: 3,
+  RESUME_ANALYSIS: 8,
   AI_INTERVIEW: 5,
   INTERVIEW_TIPS: 5,
   HOME_TASK_REVIEW: 10,
   SMART_SEARCH: 2,
   PING_AFTER_FREE: 15,
-  FEED_INTERACTION: 1,
+  PLUG_CHAT: 0, // free — 5 messages/day limit enforced in context
+  FEED_INTERACTION: 0, // free — engagement should never cost credits
+} as const;
+
+// Daily usage limits (not credit-based, count-based)
+export const DAILY_USAGE_LIMITS = {
+  PLUG_CHAT_MESSAGES: 5,
+  FREE_RESUME_ANALYSIS: 1, // first analysis free, then RESUME_ANALYSIS cost
 } as const;
 
 // Action names mapped for display
@@ -19,6 +27,8 @@ export const CREDIT_ACTION_LABELS = {
   home_task_review: { en: 'Home Task Review', he: 'בדיקת משימת בית' },
   smart_search: { en: 'Smart Search', he: 'חיפוש חכם' },
   ping: { en: 'Internal Ping', he: 'פינג פנימי' },
+  resume_analysis: { en: 'Resume Analysis', he: 'ניתוח קורות חיים' },
+  plug_chat: { en: 'PLUG Chat', he: 'צ\'אט PLUG' },
   feed_like: { en: 'Feed Like', he: 'לייק בפיד' },
   feed_comment: { en: 'Feed Comment', he: 'תגובה בפיד' },
   feed_poll_vote: { en: 'Feed Poll Vote', he: 'הצבעה בסקר' },
@@ -122,11 +132,86 @@ export const SOCIAL_TASK_REWARDS: Record<string, { credits: number; label: strin
 export const RECURRING_REWARDS = {
   COMMUNITY_SHARE: { amount: 5, dailyCap: 3 },
   JOB_SHARE: { amount: 5, dailyCap: 5 },
-  REFERRAL: { amount: 10 },
+  REFERRAL_SIGNUP: { amount: 15 },         // referral registered
+  REFERRAL_PROFILE_COMPLETE: { amount: 10 }, // referral completed 80%+ profile
+  REFERRAL_APPLIED: { amount: 25 },        // referral applied to a job
+  REFERRAL_ACTIVE_7D: { amount: 15 },      // referral active 7 days
+  REFERRAL_HIRED: { amount: 100 },         // referral got hired
   VOUCH_RECEIVED: { amount: 25, monthlyCap: 5 },
   VOUCH_GIVEN: { amount: 5, monthlyCap: 5 },
-  SKILL_ADDED: { amount: 10 }, // Reward for adding new skill to global database
+  VOUCH_RECIPROCAL: { amount: 5 },         // returned a vouch
+  VOUCH_VIA_EXTERNAL_LINK: { amount: 15 }, // vouch from external link that brought a referral
+  VOUCH_FROM_RECRUITER: { amount: 50 },    // vouch from a recruiter (premium)
+  SKILL_ADDED: { amount: 10 },
+  LOGIN_STREAK: { amount: 2, dailyCap: 1 }, // daily login reward
 } as const;
+
+// XP rewards for ambassador system
+export const XP_REWARDS = {
+  REFERRAL_SIGNUP: 10,
+  REFERRAL_APPLIED: 25,
+  REFERRAL_HIRED: 100,
+  JOB_SHARE_CLICKED: 5,
+  CONTENT_CREATED: 50,       // wrote a review / success story
+  VIDEO_CONTENT: 100,        // TikTok/Reels about PLUG
+  STREAK_7_DAYS: 15,
+  STREAK_30_DAYS: 75,
+  SOCIAL_TASKS_COMPLETE: 50, // completed all 12 social tasks
+  VOUCH_GIVEN: 5,
+  VOUCH_RECEIVED: 10,
+  VOUCH_RECIPROCAL: 10,
+  VOUCH_VIA_EXTERNAL: 15,
+  DAILY_LOGIN: 1,
+  WEEKLY_INVITE_2: 20,       // invited 2+ friends in a week
+  WEEKLY_SHARE_10: 10,       // shared 10+ jobs in a week
+  WEEKLY_POST: 10,           // wrote a feed post this week
+} as const;
+
+// Ambassador tiers
+export const AMBASSADOR_TIERS = {
+  explorer:   { minXP: 0,     dailyFuel: 15, referralBonus: 0,  label: { en: 'Explorer',  he: 'חוקר' },  badge: null },
+  connector:  { minXP: 100,   dailyFuel: 20, referralBonus: 5,  label: { en: 'Connector', he: 'מקשר' },  badge: 'bronze' },
+  advocate:   { minXP: 500,   dailyFuel: 25, referralBonus: 10, label: { en: 'Advocate',  he: 'תומך' },  badge: 'silver' },
+  ambassador: { minXP: 2000,  dailyFuel: 30, referralBonus: 15, label: { en: 'Ambassador', he: 'שגריר' }, badge: 'gold' },
+  champion:   { minXP: 10000, dailyFuel: 40, referralBonus: 25, label: { en: 'Champion',  he: 'אלוף' },  badge: 'platinum' },
+} as const;
+
+export type AmbassadorTier = keyof typeof AMBASSADOR_TIERS;
+
+// Get tier from XP
+export function getTierFromXP(xp: number): AmbassadorTier {
+  if (xp >= AMBASSADOR_TIERS.champion.minXP) return 'champion';
+  if (xp >= AMBASSADOR_TIERS.ambassador.minXP) return 'ambassador';
+  if (xp >= AMBASSADOR_TIERS.advocate.minXP) return 'advocate';
+  if (xp >= AMBASSADOR_TIERS.connector.minXP) return 'connector';
+  return 'explorer';
+}
+
+// Get daily fuel for a given XP level
+export function getDailyFuelForXP(xp: number): number {
+  return AMBASSADOR_TIERS[getTierFromXP(xp)].dailyFuel;
+}
+
+// Fuel warning thresholds (percentage of daily fuel remaining)
+export const FUEL_WARNING_THRESHOLDS = {
+  INFO: 0.30,     // 70% used → 30% remaining → subtle indicator
+  WARNING: 0.15,  // 85% used → 15% remaining → toast notification
+  CRITICAL: 0.05, // 95% used → 5% remaining → toast + options
+  EMPTY: 0,       // 100% used → gentle block with CTA
+} as const;
+
+// Achievement milestones
+export const ACHIEVEMENTS = {
+  networker:         { xp: 50,  fuel: 50,  requirement: 'referrals_5',        label: { en: 'Networker', he: 'נטוורקר' } },
+  influencer:        { xp: 200, fuel: 200, requirement: 'referrals_20',       label: { en: 'Influencer', he: 'משפיען' } },
+  committed:         { xp: 75,  fuel: 100, requirement: 'streak_30',          label: { en: 'Committed', he: 'מחויב' } },
+  job_spreader:      { xp: 100, fuel: 100, requirement: 'job_shares_100',     label: { en: 'Job Spreader', he: 'מפיץ משרות' } },
+  community_builder: { xp: 50,  fuel: 75,  requirement: 'vouches_given_10',   label: { en: 'Community Builder', he: 'בונה קהילה' } },
+  social_butterfly:  { xp: 50,  fuel: 100, requirement: 'social_tasks_all',   label: { en: 'Social Butterfly', he: 'פרפר חברתי' } },
+  trusted_pro:       { xp: 30,  fuel: 50,  requirement: 'vouches_received_5', label: { en: 'Trusted Professional', he: 'מקצוען מהימן' } },
+} as const;
+
+export type AchievementId = keyof typeof ACHIEVEMENTS;
 
 // Calculate total potential from social tasks
 export const TOTAL_SOCIAL_CREDITS = Object.values(SOCIAL_TASK_REWARDS).reduce(
@@ -134,5 +219,5 @@ export const TOTAL_SOCIAL_CREDITS = Object.values(SOCIAL_TASK_REWARDS).reduce(
   0
 );
 
-// Default daily fuel amount
-export const DEFAULT_DAILY_FUEL = 20;
+// Default daily fuel amount (base tier — Explorer)
+export const DEFAULT_DAILY_FUEL = 15;

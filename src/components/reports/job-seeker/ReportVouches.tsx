@@ -23,10 +23,22 @@ export function ReportVouches() {
       setIsLoading(true);
       const { data: vouches } = await supabase
         .from('vouches')
-        .select('*, from_user:profiles!vouches_from_user_id_fkey(full_name)')
+        .select('*')
         .eq('to_user_id', user.id)
         .order('created_at', { ascending: false });
-      setData(vouches || []);
+
+      // Fetch from_user profiles separately (profiles_secure view)
+      const fromIds = (vouches || []).map(v => v.from_user_id);
+      const { data: profiles } = fromIds.length > 0
+        ? await supabase.from('profiles_secure').select('user_id, full_name').in('user_id', fromIds)
+        : { data: [] };
+
+      // Merge
+      const merged = (vouches || []).map(v => ({
+        ...v,
+        from_user: (profiles || []).find((p: any) => p.user_id === v.from_user_id),
+      }));
+      setData(merged || []);
       setIsLoading(false);
     };
     fetchData();
@@ -35,7 +47,7 @@ export function ReportVouches() {
   // Aggregate by skill
   const skillCounts: Record<string, number> = {};
   data.forEach(v => {
-    (v.skill_names || []).forEach((s: string) => {
+    (v.skills || []).forEach((s: string) => {
       skillCounts[s] = (skillCounts[s] || 0) + 1;
     });
   });
@@ -87,7 +99,7 @@ export function ReportVouches() {
               {data.slice(0, 10).map((v) => (
                 <tr key={v.id} className="border-b border-border/50">
                   <td className="py-2 pe-3 font-medium">{(v.from_user as any)?.full_name || '—'}</td>
-                  <td className="py-2 pe-3">{(v.skill_names || []).join(', ') || '—'}</td>
+                  <td className="py-2 pe-3">{(v.skills || []).join(', ') || '—'}</td>
                   <td className="py-2 text-muted-foreground">{format(new Date(v.created_at), 'dd/MM/yy')}</td>
                 </tr>
               ))}

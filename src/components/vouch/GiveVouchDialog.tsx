@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -28,6 +28,24 @@ export function GiveVouchDialog({ trigger }: GiveVouchDialogProps) {
     name: string;
     avatar?: string;
   } | null>(null);
+
+  // Listen for reciprocal vouch requests (from VouchNotifications)
+  const handleOpenGiveVouch = useCallback((e: Event) => {
+    const detail = (e as CustomEvent).detail;
+    if (detail?.userId && detail?.userName) {
+      setSelectedUser({
+        id: detail.userId,
+        name: detail.userName,
+        avatar: detail.avatarUrl,
+      });
+      setOpen(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('open-give-vouch', handleOpenGiveVouch);
+    return () => window.removeEventListener('open-give-vouch', handleOpenGiveVouch);
+  }, [handleOpenGiveVouch]);
   const { language, direction } = useLanguage();
   const { user } = useAuth();
   const isHebrew = language === 'he';

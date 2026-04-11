@@ -20,11 +20,21 @@ import {
 import { cn } from '@/lib/utils';
 
 export const CreditHUD = () => {
-  const { credits, totalCredits, isLoading } = useCredits();
+  const { credits, totalCredits, isLoading, fuelWarningLevel, fuelPercentRemaining } = useCredits();
   const { language } = useLanguage();
   const navigate = useNavigate();
   const isRTL = language === 'he';
   const [isOpen, setIsOpen] = useState(false);
+
+  // Visual styling based on warning level
+  const warningStyles = {
+    ok: { border: 'border-[#00FF9D]/20 hover:border-[#00FF9D]/40', glow: 'from-[#00FF9D]/5 to-[#B794F4]/5' },
+    info: { border: 'border-amber-400/30 hover:border-amber-400/50', glow: 'from-amber-400/10 to-[#B794F4]/5' },
+    warning: { border: 'border-orange-500/40 hover:border-orange-500/60', glow: 'from-orange-500/15 to-[#B794F4]/5' },
+    critical: { border: 'border-red-500/50 hover:border-red-500/70 animate-pulse', glow: 'from-red-500/20 to-red-500/10' },
+    empty: { border: 'border-red-500/60 hover:border-red-500/80', glow: 'from-red-500/20 to-red-500/10' },
+  };
+  const currentWarningStyle = warningStyles[fuelWarningLevel];
 
   if (isLoading || !credits) {
     return (
@@ -46,7 +56,8 @@ export const CreditHUD = () => {
               className={cn(
                 "relative flex items-center gap-2 px-3 py-1.5 h-auto rounded-full",
                 "bg-gradient-to-r from-[#00FF9D]/10 to-[#B794F4]/10",
-                "border border-[#00FF9D]/20 hover:border-[#00FF9D]/40",
+                "border",
+                currentWarningStyle.border,
                 "transition-all duration-300 hover:scale-105"
               )}
             >
@@ -115,7 +126,7 @@ export const CreditHUD = () => {
               )} />
 
               {/* Glow effect */}
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#00FF9D]/5 to-[#B794F4]/5 blur-xl -z-10" />
+              <div className={cn("absolute inset-0 rounded-full bg-gradient-to-r blur-xl -z-10", currentWarningStyle.glow)} />
             </Button>
           </DropdownMenuTrigger>
         </TooltipTrigger>
@@ -158,8 +169,38 @@ export const CreditHUD = () => {
             <span className="text-lg font-bold text-[#B794F4]">{credits.permanent_fuel}</span>
           </div>
 
-          {/* Progress bar for total */}
+          {/* Fuel level indicator */}
           <div className="pt-2">
+            <div className="flex justify-between text-xs text-muted-foreground mb-1">
+              <span>{isRTL ? 'מצב דלק יומי' : 'Daily Fuel Level'}</span>
+              <span>{Math.round(fuelPercentRemaining * 100)}%</span>
+            </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
+              <motion.div
+                className={cn(
+                  "h-full rounded-full",
+                  fuelWarningLevel === 'ok' ? 'bg-[#00FF9D]' :
+                  fuelWarningLevel === 'info' ? 'bg-amber-400' :
+                  fuelWarningLevel === 'warning' ? 'bg-orange-500' :
+                  'bg-red-500'
+                )}
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(fuelPercentRemaining * 100, 100)}%` }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+              />
+            </div>
+            {fuelWarningLevel !== 'ok' && fuelWarningLevel !== 'info' && (
+              <p className="text-xs text-orange-500 mt-1">
+                {fuelWarningLevel === 'empty'
+                  ? (isRTL ? 'נגמר הדלק — השלם משימות או חכה למחר' : 'Out of fuel — complete missions or wait until tomorrow')
+                  : (isRTL ? 'דלק נמוך — שקול לצבור עוד' : 'Low fuel — consider earning more')
+                }
+              </p>
+            )}
+          </div>
+
+          {/* Total credits */}
+          <div className="pt-1">
             <div className="flex justify-between text-xs text-muted-foreground mb-1">
               <span>{isRTL ? 'סה"כ' : 'Total'}</span>
               <span>{totalCredits}</span>

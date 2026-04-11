@@ -20,7 +20,7 @@ export function ReportCompanyVouches() {
       setIsLoading(true);
       const [givenRes, receivedRes] = await Promise.all([
         supabase.from('vouches').select('*').eq('from_user_id', user.id),
-        supabase.from('company_vouches').select('*').eq('company_id', user.id),
+        supabase.from('company_vouches').select('*').eq('user_id', user.id),
       ]);
       setGiven(givenRes.data || []);
       setReceived(receivedRes.data || []);
@@ -30,7 +30,7 @@ export function ReportCompanyVouches() {
   }, [user]);
 
   const skillCounts: Record<string, number> = {};
-  given.forEach(v => (v.skill_names || []).forEach((s: string) => { skillCounts[s] = (skillCounts[s] || 0) + 1; }));
+  given.forEach(v => (v.skills || []).forEach((s: string) => { skillCounts[s] = (skillCounts[s] || 0) + 1; }));
   const barData = Object.entries(skillCounts).slice(0, 10).map(([name, count]) => ({ name, count }));
 
   return (

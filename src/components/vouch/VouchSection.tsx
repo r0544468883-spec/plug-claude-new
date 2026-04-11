@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { VouchCard } from './VouchCard';
-import { GiveVouchForm } from './GiveVouchForm';
+import { GiveVouchDialog } from './GiveVouchDialog';
 import { WeightedSkillHeatmap } from './WeightedSkillHeatmap';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -71,7 +71,7 @@ export function VouchSection({ userId, userName, showGiveVouch = true }: VouchSe
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Heart className="h-5 w-5 text-primary" />
-          {isHebrew ? 'Vouches' : 'Vouches'}
+          {isHebrew ? 'המלצות' : 'Vouches'}
           {vouches && vouches.length > 0 && (
             <span className="text-sm text-muted-foreground font-normal">
               ({vouches.length})
@@ -79,7 +79,7 @@ export function VouchSection({ userId, userName, showGiveVouch = true }: VouchSe
           )}
         </CardTitle>
         {showGiveVouch && canVouch && (
-          <GiveVouchForm toUserId={userId} toUserName={userName} />
+          <GiveVouchDialog />
         )}
       </CardHeader>
       <CardContent className="space-y-4">

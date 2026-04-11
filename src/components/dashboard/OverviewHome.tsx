@@ -10,6 +10,7 @@ import { DashboardSection } from './DashboardLayout';
 import { FeedCarouselWidget } from '@/components/feed/FeedCarouselWidget';
 import { ExtensionAgentPanel } from '@/components/extension/ExtensionAgentPanel';
 import { VouchWidget } from '@/components/vouch/VouchWidget';
+import { VouchDiscovery } from '@/components/vouch/VouchDiscovery';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -380,8 +381,9 @@ export function OverviewHome({ onNavigate, onShowResumeDialog, onOpenChat }: Ove
                 <p className="text-[10px] text-muted-foreground">{isRTL ? 'ראיונות' : 'Interviews'}</p>
               </div>
             </div>
-            <div className="border-t border-border pt-3">
+            <div className="border-t border-border pt-3 space-y-3">
               <VouchWidget onNavigate={() => onNavigate('profile-settings')} />
+              <VouchDiscovery />
             </div>
           </CardContent>
         </Card>
