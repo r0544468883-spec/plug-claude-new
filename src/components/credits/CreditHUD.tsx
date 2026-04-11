@@ -53,6 +53,7 @@ export const CreditHUD = () => {
             <Button
               variant="ghost"
               size="sm"
+              data-tour="credit-hud"
               className={cn(
                 "relative flex items-center gap-2 px-3 py-1.5 h-auto rounded-full",
                 "bg-gradient-to-r from-[#00FF9D]/10 to-[#B794F4]/10",

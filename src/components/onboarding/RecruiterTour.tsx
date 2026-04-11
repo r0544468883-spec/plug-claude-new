@@ -354,12 +354,6 @@ export function RecruiterTour({ currentSection, onNavigate }: RecruiterTourProps
     }
   };
 
-  const handleSkipStep = () => {
-    if (currentStep < steps.length - 1) {
-      handleNext();
-    }
-  };
-
   const handleComplete = () => {
     localStorage.setItem(RECRUITER_TOUR_STORAGE_KEY, 'true');
     setIsActive(false);
@@ -402,7 +396,6 @@ export function RecruiterTour({ currentSection, onNavigate }: RecruiterTourProps
             onNext={handleNext}
             onPrev={handlePrev}
             onSkip={handleComplete}
-            onSkipStep={handleSkipStep}
             isFirst={currentStep === 0}
             isLast={currentStep === steps.length - 1}
             icon={step.icon}

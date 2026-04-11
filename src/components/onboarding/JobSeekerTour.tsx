@@ -8,9 +8,9 @@ import { TransitionScreen } from './TransitionScreen';
 import { useTourTips } from './useTourTips';
 import {
   Sparkles, Search, FileText,
-  Zap, Share2, Brain, MessageSquare, Heart, FileEdit, FolderOpen, Settings,
-  Link, SlidersHorizontal, Building2, Lightbulb, CheckCircle, Target, Trash2,
-  Mic, Newspaper, Globe, BarChart3, DollarSign
+  Zap, Share2, Brain, MessageSquare, Heart, FileEdit,
+  Link, SlidersHorizontal, Target,
+  Mic, Newspaper, Globe, BarChart3, Chrome, DollarSign
 } from 'lucide-react';
 import { toast } from 'sonner';
 import onboardingNotesImage from '@/assets/onboarding-notes-new.png';
@@ -26,187 +26,129 @@ interface TourStep {
   customImage?: string;
 }
 
+// Tour steps — each step moves to a DIFFERENT section so the screen changes.
+// Descriptions are action-oriented: WHERE to click, HOW it works, WHY it matters.
 const TOUR_STEPS: TourStep[] = [
-  // Step 1: Welcome - Plug Chat
-  {
-    section: 'overview',
-    targetSelector: '[data-tour="plug-chat"]',
-    titleHe: 'היי! אני Plug 👋',
-    titleEn: 'Hey! I\'m Plug 👋',
-    descriptionHe: 'אני ה-AI שלך לחיפוש עבודה! שאל אותי על משרות, קבל עזרה בהכנה לראיונות, או בקש טיפים לשיפור קורות החיים שלך.',
-    descriptionEn: 'I\'m your AI job search assistant! Ask me about positions, get help preparing for interviews, or request tips to improve your resume.',
-    icon: Sparkles,
-  },
-  // Step 2: Onboarding Checklist - NEW!
-  {
-    section: 'overview',
-    targetSelector: '[data-tour="onboarding-checklist"]',
-    titleHe: 'רשימת משימות חכמה ✅',
-    titleEn: 'Smart Onboarding Checklist ✅',
-    descriptionHe: 'עקוב אחרי ההתקדמות שלך! הרשימה מראה לך בדיוק מה צריך לעשות כדי להשלים את הפרופיל ולהתחיל לקבל הצעות מותאמות.',
-    descriptionEn: 'Track your progress! This list shows you exactly what to do to complete your profile and start getting personalized offers.',
-    icon: CheckCircle,
-  },
-  // Step 3: Plug Tips - NEW!
-  {
-    section: 'overview',
-    targetSelector: '[data-tour="plug-tip"]',
-    titleHe: 'טיפים קונטקסטואליים 💡',
-    titleEn: 'Contextual Tips 💡',
-    descriptionHe: 'Plug נותן לך טיפים חכמים לפי הפעילות שלך! הטיפים יעזרו לך למקסם את הסיכויים למצוא עבודה.',
-    descriptionEn: 'Plug gives you smart tips based on your activity! These tips help maximize your chances of finding a job.',
-    icon: Lightbulb,
-  },
-  // Step 2: Applications - Add Application
-  {
-    section: 'applications',
-    targetSelector: '[data-tour="add-application"]',
-    titleHe: 'הוסף מועמדות בקלות 📋',
-    titleEn: 'Add Applications Easily 📋',
-    descriptionHe: 'הדבק לינק למשרה מכל אתר - AI ישלוף את כל הפרטים אוטומטית! אפשר גם להוסיף ידנית.',
-    descriptionEn: 'Paste a job link from any site - AI will extract all details automatically! You can also add manually.',
-    icon: FileText,
-  },
-  // Step 3: Job Search - Filters
-  {
-    section: 'job-search',
-    targetSelector: '[data-tour="job-filters"]',
-    titleHe: 'חיפוש משרות חכם 🔍',
-    titleEn: 'Smart Job Search 🔍',
-    descriptionHe: 'סנן משרות לפי מיקום, קטגוריה, סוג משרה ושכר. הפעל GPS כדי למצוא משרות קרובות אליך!',
-    descriptionEn: 'Filter jobs by location, category, job type, and salary. Enable GPS to find jobs near you!',
-    icon: Search,
-  },
-  // Step 4: Job Search - Share Job
-  {
-    section: 'job-search',
-    targetSelector: '[data-tour="share-job"]',
-    titleHe: 'שתף עם הקהילה 🤝',
-    titleEn: 'Share with Community 🤝',
-    descriptionHe: 'מצאת משרה מעניינת? שתף אותה עם הקהילה! עזור לאחרים למצוא עבודה ובנה רשת קשרים מקצועית.',
-    descriptionEn: 'Found an interesting job? Share it with the community! Help others find work and build your professional network.',
-    icon: Share2,
-  },
-  // Step 5: Company Recommendations
-  {
-    section: 'job-search',
-    targetSelector: '[data-tour="company-recommendations"]',
-    titleHe: 'חברות מומלצות + התאמה 🎯',
-    titleEn: 'Recommendations + Match Me 🎯',
-    descriptionHe: 'לחץ על "מתאים לי" כדי לסנן משרות לפי הפרופיל שלך! ראה סטטיסטיקות וחברות מומלצות.',
-    descriptionEn: 'Click "Match Me" to filter jobs by your profile! View stats and recommended companies.',
-    icon: Target,
-  },
-  // Step 5: Documents - Resume Upload
-  {
-    section: 'profile-docs',
-    targetSelector: '[data-tour="resume-upload"]',
-    titleHe: 'ניתוח קו"ח עם AI 🧠',
-    titleEn: 'AI Resume Analysis 🧠',
-    descriptionHe: 'העלה את קורות החיים שלך ו-AI ינתח אותם: יזהה מיומנויות, ידרג את הפרופיל שלך, ויציע תפקידים מתאימים!',
-    descriptionEn: 'Upload your resume and AI will analyze it: identify skills, rate your profile, and suggest matching roles!',
-    icon: Brain,
-  },
-  // Step 6: CV Builder - NEW!
-  {
-    section: 'cv-builder',
-    targetSelector: '[data-tour="cv-builder"]',
-    titleHe: 'בונה קו"ח מקצועי 📄',
-    titleEn: 'Professional CV Builder 📄',
-    descriptionHe: 'צור קורות חיים מרשימים עם מגוון תבניות מעוצבות! בחר עיצוב, מלא פרטים, והורד PDF מוכן.',
-    descriptionEn: 'Create impressive resumes with various designed templates! Choose a design, fill in details, and download a ready PDF.',
-    icon: FileEdit,
-    customImage: onboardingNotesImage,
-  },
-  // Step 7: Portfolio & Links - NEW!
-  {
-    section: 'profile-docs',
-    targetSelector: '[data-tour="portfolio-links"]',
-    titleHe: 'קישורים מקצועיים 🔗',
-    titleEn: 'Professional Links 🔗',
-    descriptionHe: 'הוסף קישור לתיק עבודות, LinkedIn, GitHub ועוד. מגייסים יוכלו לראות את העבודות שלך!',
-    descriptionEn: 'Add links to your portfolio, LinkedIn, GitHub, and more. Recruiters can view your work!',
-    icon: Link,
-  },
-  // Step 8: Settings - Preferences
-  {
-    section: 'settings',
-    targetSelector: '[data-tour="preferences"]',
-    titleHe: 'העדפות עבודה ⚙️',
-    titleEn: 'Job Preferences ⚙️',
-    descriptionHe: 'הגדר תחומים מועדפים, סוגי משרות, ומיקומים רצויים. Plug ימצא עבורך את ההתאמות הטובות ביותר!',
-    descriptionEn: 'Set preferred fields, job types, and desired locations. Plug will find the best matches for you!',
-    icon: SlidersHorizontal,
-  },
-  // Step 9: Interview Prep
-  {
-    section: 'interview-prep',
-    targetSelector: '[data-tour="interview-prep"]',
-    titleHe: 'הכנה לראיון 🎙️',
-    titleEn: 'Interview Prep 🎙️',
-    descriptionHe: 'התכונן לראיונות עם AI! קבל שאלות מותאמות, תרגל בקול, ושפר את הביצועים שלך.',
-    descriptionEn: 'Prepare for interviews with AI! Get tailored questions, practice aloud, and improve your performance.',
-    icon: Mic,
-  },
-  // Step 10: PLUG Feed
-  {
-    section: 'feed',
-    targetSelector: '[data-tour="feed-content"]',
-    titleHe: 'PLUG Feed 📰',
-    titleEn: 'PLUG Feed 📰',
-    descriptionHe: 'פיד תוכן מותאם אישית! טיפים, סקרים, וידאו ותרבות ארגונית. הרוויחו דלק מכל אינטראקציה.',
-    descriptionEn: 'Personalized content feed! Tips, polls, video & culture. Earn fuel from every interaction.',
-    icon: Newspaper,
-  },
-  // Step 11: Communities
-  {
-    section: 'communities',
-    targetSelector: '[data-tour="communities-list"]',
-    titleHe: 'קהילות מקצועיות 🌍',
-    titleEn: 'Professional Communities 🌍',
-    descriptionHe: 'הצטרף לקהילות מקצועיות, שתף ידע, ובנה רשת קשרים. הקהילה עוזרת למצוא הזדמנויות!',
-    descriptionEn: 'Join professional communities, share knowledge, and build your network. Community helps find opportunities!',
-    icon: Globe,
-  },
-  // Step 12: Overview - Quick Actions
-  {
-    section: 'overview',
-    targetSelector: '[data-tour="quick-actions"]',
-    titleHe: 'פעולות מהירות ⚡',
-    titleEn: 'Quick Actions ⚡',
-    descriptionHe: 'קיצורי דרך לפעולות נפוצות! העלה קו"ח, חפש משרות, או עבור ישר למועמדויות שלך - הכל בלחיצה אחת.',
-    descriptionEn: 'Shortcuts to common actions! Upload your CV, search for jobs, or jump straight to your applications - all in one click.',
-    icon: Zap,
-  },
-  // Step 13: Overview - Stats
+  // 1. Dashboard overview — stats row (first thing you see)
   {
     section: 'overview',
     targetSelector: '[data-tour="stats-row"]',
-    titleHe: 'מעקב התקדמות 📊',
-    titleEn: 'Track Your Progress 📊',
-    descriptionHe: 'כאן תראה סטטיסטיקות בזמן אמת: כמה מועמדויות הגשת, ראיונות שמתקרבים, ומועמדויות פעילות.',
-    descriptionEn: 'See real-time stats here: how many applications you\'ve submitted, upcoming interviews, and active applications.',
+    titleHe: 'ברוכים הבאים ל-PLUG! 👋',
+    titleEn: 'Welcome to PLUG! 👋',
+    descriptionHe: 'זה הדשבורד שלך. המספרים כאן מראים כמה מועמדויות הגשת, ראיונות קרובים ומועמדויות פעילות — הכל בזמן אמת.',
+    descriptionEn: 'This is your dashboard. These numbers show your submitted applications, upcoming interviews, and active applications — all in real time.',
+    icon: BarChart3,
+  },
+  // 2. Profile & Documents — upload resume (most important first action)
+  {
+    section: 'profile-docs',
+    targetSelector: '[data-tour="resume-upload"]',
+    titleHe: 'שלב 1: העלה קורות חיים 📄',
+    titleEn: 'Step 1: Upload Your Resume 📄',
+    descriptionHe: 'לחץ כאן כדי להעלות קו"ח. ה-AI ינתח אותו ויזהה מיומנויות, ניסיון ותפקידים מתאימים — וכך מגייסים ימצאו אותך מהר יותר.',
+    descriptionEn: 'Click here to upload your resume. AI will analyze it and identify skills, experience, and matching roles — so recruiters find you faster.',
+    icon: Brain,
+  },
+  // 3. CV Builder
+  {
+    section: 'cv-builder',
+    targetSelector: '[data-tour="cv-builder"]',
+    titleHe: 'בנה קורות חיים מקצועיים 📝',
+    titleEn: 'Build a Professional CV 📝',
+    descriptionHe: 'אין לך קו"ח מוכן? בחר תבנית מעוצבת, מלא את הפרטים, ולחץ "הורד PDF". תוך דקות יש לך מסמך מקצועי.',
+    descriptionEn: 'No CV yet? Pick a designed template, fill in your details, and click "Download PDF". You\'ll have a professional document in minutes.',
+    icon: FileEdit,
+    customImage: onboardingNotesImage,
+  },
+  // 4. Job Search — filters
+  {
+    section: 'job-search',
+    targetSelector: '[data-tour="job-filters"]',
+    titleHe: 'חפש משרות לפי הקריטריונים שלך 🔍',
+    titleEn: 'Search Jobs by Your Criteria 🔍',
+    descriptionHe: 'השתמש בפילטרים האלה כדי לסנן לפי מיקום, קטגוריה, סוג משרה ושכר. לחץ "מתאים לי" לסינון אוטומטי לפי הפרופיל שלך.',
+    descriptionEn: 'Use these filters to narrow by location, category, job type, and salary. Click "Match Me" for auto-filtering based on your profile.',
+    icon: Search,
+  },
+  // 5. Job Search — Match Me button
+  {
+    section: 'job-search',
+    targetSelector: '[data-tour="company-recommendations"]',
+    titleHe: 'לחץ "מתאים לי" — AI בוחר בשבילך 🎯',
+    titleEn: 'Click "Match Me" — AI picks for you 🎯',
+    descriptionHe: 'הכפתור הזה מסנן את כל המשרות ומציג רק את אלו שמתאימות לכישורים שלך. ציון התאמה 80%+ = כדאי מאוד להגיש.',
+    descriptionEn: 'This button filters all jobs and shows only those matching your skills. Match score 80%+ = definitely worth applying.',
+    icon: Target,
+  },
+  // 6. Applications — add application
+  {
+    section: 'applications',
+    targetSelector: '[data-tour="add-application"]',
+    titleHe: 'הגשת מועמדות — הדבק לינק וזהו 📋',
+    titleEn: 'Apply — Just Paste a Link 📋',
+    descriptionHe: 'מצאת משרה באתר אחר? הדבק את הלינק כאן — AI ישלוף את כל הפרטים אוטומטית (שם חברה, תפקיד, דרישות). אפשר גם להוסיף ידנית.',
+    descriptionEn: 'Found a job on another site? Paste the link here — AI will extract all details automatically (company, role, requirements). You can also add manually.',
     icon: FileText,
   },
-  // Step 14: Messages - Inbox
+  // 7. Interview Prep
+  {
+    section: 'interview-prep',
+    targetSelector: '[data-tour="interview-prep"]',
+    titleHe: 'תרגל ראיון עם AI 🎙️',
+    titleEn: 'Practice Interviews with AI 🎙️',
+    descriptionHe: 'לחץ "התחל תרגול" כדי להתחיל סימולציית ראיון. ה-AI שואל שאלות מותאמות לתפקיד שלך, ואתה עונה בקול או בטקסט.',
+    descriptionEn: 'Click "Start Practice" to begin an interview simulation. AI asks role-specific questions, and you answer by voice or text.',
+    icon: Mic,
+  },
+  // 8. Settings — preferences (what kind of job you want)
+  {
+    section: 'settings',
+    targetSelector: '[data-tour="preferences"]',
+    titleHe: 'הגדר מה אתה מחפש ⚙️',
+    titleEn: 'Set What You\'re Looking For ⚙️',
+    descriptionHe: 'הגדר כאן תחומים, סוג משרה (מלאה/חלקית/פרילנס), ומיקום. ככל שתהיה מדויק יותר — כך המשרות שתקבל יהיו רלוונטיות יותר.',
+    descriptionEn: 'Set your preferred fields, job type (full/part-time/freelance), and location. The more specific you are, the more relevant your job matches.',
+    icon: SlidersHorizontal,
+  },
+  // 9. Messages
   {
     section: 'messages',
     targetSelector: '[data-tour="message-inbox"]',
-    titleHe: 'תקשורת ישירה 💬',
-    titleEn: 'Direct Communication 💬',
-    descriptionHe: 'קבל הודעות ממגייסים, שלח הודעות, וצרף קבצים. כל התקשורת המקצועית שלך במקום אחד!',
-    descriptionEn: 'Receive messages from recruiters, send messages, and attach files. All your professional communication in one place!',
+    titleHe: 'הודעות ממגייסים 💬',
+    titleEn: 'Messages from Recruiters 💬',
+    descriptionHe: 'כשמגייס מתעניין בך — ההודעה תגיע לכאן. תוכל לענות, לצרף קבצים, ולנהל את כל התקשורת במקום אחד.',
+    descriptionEn: 'When a recruiter is interested — the message arrives here. You can reply, attach files, and manage all communication in one place.',
     icon: MessageSquare,
   },
-  // Step 15: Vouches
+  // 10. Vouches
   {
     section: 'overview',
     targetSelector: '[data-tour="vouch-widget"]',
-    titleHe: 'המלצות וערבויות ❤️',
-    titleEn: 'Vouches & Recommendations ❤️',
-    descriptionHe: 'קבל המלצות מעמיתים ומנהלים! ה-Vouches מחזקים את הפרופיל שלך ומגדילים את הסיכוי להתקבל.',
-    descriptionEn: 'Get recommendations from colleagues and managers! Vouches strengthen your profile and increase your chances.',
+    titleHe: 'בקש המלצות מאנשים שעבדת איתם ❤️',
+    titleEn: 'Request Recommendations from Colleagues ❤️',
+    descriptionHe: 'לחץ "בקש" כדי ליצור לינק ולשלוח למנהל או עמית. המלצה (Vouch) מחזקת את הפרופיל שלך ומגייסים רואים אותה.',
+    descriptionEn: 'Click "Request" to create a link and send to a manager or colleague. A Vouch strengthens your profile and recruiters can see it.',
     icon: Heart,
+  },
+  // 11. Credits & Ambassador (HUD is in header, visible from any section)
+  {
+    section: 'overview',
+    targetSelector: '[data-tour="credit-hud"]',
+    titleHe: 'דלק ומערכת שגרירים ⚡',
+    titleEn: 'Fuel & Ambassador System ⚡',
+    descriptionHe: 'יש לך 15 דלק יומי שמתחדש כל בוקר. צבור XP ממשימות כדי לעלות דרגה ולקבל יותר דלק. הזמן חברים = עוד דלק בונוס!',
+    descriptionEn: 'You get 15 daily fuel that renews every morning. Earn XP from tasks to level up and get more fuel. Invite friends = bonus fuel!',
+    icon: DollarSign,
+  },
+  // 12. PLUG Extension
+  {
+    section: 'overview',
+    targetSelector: '[data-tour="plug-chat"]',
+    titleHe: 'טיפ: התקן את תוסף PLUG לכרום 🧩',
+    titleEn: 'Tip: Install the PLUG Chrome Extension 🧩',
+    descriptionHe: 'עם התוסף, PLUG עובד ישירות באתרי דרושים (LinkedIn, AllJobs ועוד). הוא ממלא טפסי הגשה אוטומטית, מנתח משרות בזמן אמת, ושומר הכל לדשבורד שלך.',
+    descriptionEn: 'With the extension, PLUG works directly on job boards (LinkedIn, AllJobs, etc.). It auto-fills application forms, analyzes jobs in real time, and saves everything to your dashboard.',
+    icon: Chrome,
   },
 ];
 
@@ -344,13 +286,6 @@ export function JobSeekerTour({ currentSection, onNavigate }: JobSeekerTourProps
     handleComplete();
   };
 
-  const handleSkipStep = () => {
-    // Skip current step without exiting the tour
-    if (currentStep < TOUR_STEPS.length - 1) {
-      handleNext();
-    }
-  };
-
   const handleComplete = () => {
     localStorage.setItem(TOUR_STORAGE_KEY, 'true');
     setIsActive(false);
@@ -398,7 +333,6 @@ export function JobSeekerTour({ currentSection, onNavigate }: JobSeekerTourProps
             onNext={handleNext}
             onPrev={handlePrev}
             onSkip={handleSkip}
-            onSkipStep={handleSkipStep}
             isFirst={currentStep === 0}
             isLast={currentStep === TOUR_STEPS.length - 1}
             icon={step.icon}
