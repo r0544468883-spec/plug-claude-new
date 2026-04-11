@@ -6,12 +6,13 @@ import { TourOverlay } from './TourOverlay';
 import { TourTooltip } from './TourTooltip';
 import { TransitionScreen } from './TransitionScreen';
 import { useTourTips } from './useTourTips';
-import { 
-  Sparkles, Search, FileText, 
+import {
+  Sparkles, Search, FileText,
   Zap, Share2, Brain, MessageSquare, Heart, FileEdit, FolderOpen, Settings,
   Link, SlidersHorizontal, Building2, Lightbulb, CheckCircle, Target, Trash2,
   Mic, Newspaper, Globe, BarChart3, DollarSign
 } from 'lucide-react';
+import { toast } from 'sonner';
 import onboardingNotesImage from '@/assets/onboarding-notes-new.png';
 
 interface TourStep {
@@ -343,12 +344,29 @@ export function JobSeekerTour({ currentSection, onNavigate }: JobSeekerTourProps
     handleComplete();
   };
 
+  const handleSkipStep = () => {
+    // Skip current step without exiting the tour
+    if (currentStep < TOUR_STEPS.length - 1) {
+      handleNext();
+    }
+  };
+
   const handleComplete = () => {
     localStorage.setItem(TOUR_STORAGE_KEY, 'true');
     setIsActive(false);
     setShowTransition(false);
     // Return to overview
     onNavigate('overview');
+    // Celebration toast
+    toast.success(
+      isHebrew ? '🎉 כל הכבוד! סיימת את הסיור המודרך!' : '🎉 Great job! You completed the guided tour!',
+      {
+        duration: 5000,
+        description: isHebrew
+          ? 'עכשיו אתה מכיר את כל הכלים. בהצלחה!'
+          : 'Now you know all the tools. Good luck!',
+      }
+    );
   };
 
   const step = TOUR_STEPS[currentStep];
@@ -380,6 +398,7 @@ export function JobSeekerTour({ currentSection, onNavigate }: JobSeekerTourProps
             onNext={handleNext}
             onPrev={handlePrev}
             onSkip={handleSkip}
+            onSkipStep={handleSkipStep}
             isFirst={currentStep === 0}
             isLast={currentStep === TOUR_STEPS.length - 1}
             icon={step.icon}

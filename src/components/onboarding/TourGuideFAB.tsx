@@ -130,7 +130,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
           tools: [
             { icon: '💬', label: 'Plug Chat', desc: isRTL ? 'קואצ\'ר קריירה AI 24/7' : 'AI career coach 24/7', section: 'chat' as DashboardSection },
             { icon: '📈', label: isRTL ? 'דוחות אישיים' : 'My Reports', desc: isRTL ? '8 דוחות אישיים + גרפים' : '8 personal reports + charts', section: 'settings' as DashboardSection, isNew: true },
-            { icon: '🔥', label: isRTL ? 'קרדיטים' : 'Credits', desc: isRTL ? '20 יומיים + צבירה' : '20 daily + earn more', section: 'settings' as DashboardSection },
+            { icon: '🔥', label: isRTL ? 'קרדיטים' : 'Credits', desc: isRTL ? '15 יומיים + צבירה + שגרירים' : '15 daily + earn more + ambassador', section: 'credits' as DashboardSection },
             { icon: '🔗', label: isRTL ? 'תוכנית שותפים' : 'Referral Program', desc: isRTL ? 'הזמן חברים → הרוויח קרדיטים' : 'Invite friends → earn credits', section: 'settings' as DashboardSection, isNew: true },
           ],
         },
@@ -324,20 +324,18 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
 
   return (
     <>
-      {/* FAB Button - mobile only */}
-      {isMobile && (
-        <button
-          onClick={() => setOpen(true)}
-          className={cn(
-            'fixed z-40 w-12 h-12 rounded-full bg-secondary border border-accent/30 shadow-lg flex items-center justify-center transition-all hover:scale-105 hover:border-accent',
-            'bottom-[88px]',
-            isRTL ? 'right-4' : 'left-4'
-          )}
-          aria-label={isRTL ? 'מדריך המערכת' : 'System Guide'}
-        >
-          <Route className="w-[22px] h-[22px] text-accent" />
-        </button>
-      )}
+      {/* FAB Button - visible on mobile and desktop */}
+      <button
+        onClick={() => setOpen(true)}
+        className={cn(
+          'fixed z-40 rounded-full bg-secondary border border-accent/30 shadow-lg flex items-center justify-center transition-all hover:scale-105 hover:border-accent',
+          isMobile ? 'w-12 h-12 bottom-[88px]' : 'w-10 h-10 bottom-6',
+          isRTL ? 'right-4' : 'left-4'
+        )}
+        aria-label={isRTL ? 'מדריך המערכת' : 'System Guide'}
+      >
+        <Route className={cn('text-accent', isMobile ? 'w-[22px] h-[22px]' : 'w-5 h-5')} />
+      </button>
 
       {/* Panel */}
       <AnimatePresence>

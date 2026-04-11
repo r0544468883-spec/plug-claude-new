@@ -16,7 +16,6 @@ interface TourOverlayProps {
 
 export function TourOverlay({ targetSelector, isActive, onElementFound }: TourOverlayProps) {
   const [spotlightRect, setSpotlightRect] = useState<SpotlightRect | null>(null);
-  const [searchAttempts, setSearchAttempts] = useState(0);
 
   const updateSpotlight = useCallback(() => {
     const element = document.querySelector(targetSelector);
@@ -33,7 +32,6 @@ export function TourOverlay({ targetSelector, isActive, onElementFound }: TourOv
       // Scroll element into view if needed
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
       onElementFound?.(true);
-      setSearchAttempts(0);
     } else {
       setSpotlightRect(null);
       onElementFound?.(false);
@@ -43,28 +41,23 @@ export function TourOverlay({ targetSelector, isActive, onElementFound }: TourOv
   useEffect(() => {
     if (!isActive || !targetSelector) {
       setSpotlightRect(null);
-      setSearchAttempts(0);
       return;
     }
 
     // Retry finding element with exponential backoff
     let attempts = 0;
     const maxAttempts = 8;
-    
+
     const tryFindElement = () => {
       const element = document.querySelector(targetSelector);
       if (element) {
         updateSpotlight();
-        setSearchAttempts(0);
       } else if (attempts < maxAttempts) {
         attempts++;
-        setSearchAttempts(attempts);
-        // Exponential backoff: 200, 400, 600, 800...
         setTimeout(tryFindElement, 200 + attempts * 100);
       } else {
         // Element not found after max attempts - proceed anyway
         onElementFound?.(false);
-        setSearchAttempts(0);
       }
     };
 
@@ -84,33 +77,35 @@ export function TourOverlay({ targetSelector, isActive, onElementFound }: TourOv
 
   return (
     <AnimatePresence>
-      {isActive && spotlightRect && (
-        <motion.div 
-          className="fixed inset-0 z-[9998] pointer-events-none"
+      {isActive && (
+        <motion.div
+          className="fixed inset-0 z-[9998]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
         >
-          {/* Dark overlay with hole */}
-          <svg className="absolute inset-0 w-full h-full">
+          {/* Dark overlay with hole — blocks clicks outside spotlight */}
+          <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'auto' }}>
             <defs>
               <mask id="spotlight-mask">
                 <rect x="0" y="0" width="100%" height="100%" fill="white" />
-                <motion.rect
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ 
-                    opacity: 1, 
-                    scale: 1,
-                    x: spotlightRect.left,
-                    y: spotlightRect.top,
-                    width: spotlightRect.width,
-                    height: spotlightRect.height,
-                  }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                  rx="12"
-                  fill="black"
-                />
+                {spotlightRect && (
+                  <motion.rect
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{
+                      opacity: 1,
+                      scale: 1,
+                      x: spotlightRect.left,
+                      y: spotlightRect.top,
+                      width: spotlightRect.width,
+                      height: spotlightRect.height,
+                    }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                    rx="12"
+                    fill="black"
+                  />
+                )}
               </mask>
             </defs>
             <rect
@@ -123,31 +118,47 @@ export function TourOverlay({ targetSelector, isActive, onElementFound }: TourOv
             />
           </svg>
 
+          {/* Transparent clickable area over the spotlight hole — lets clicks pass through to the element */}
+          {spotlightRect && (
+            <div
+              className="absolute"
+              style={{
+                top: spotlightRect.top,
+                left: spotlightRect.left,
+                width: spotlightRect.width,
+                height: spotlightRect.height,
+                pointerEvents: 'none',
+              }}
+            />
+          )}
+
           {/* Spotlight border/glow with pulse animation */}
-          <motion.div
-            className="absolute border-2 border-primary rounded-xl"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ 
-              opacity: 1, 
-              scale: 1,
-              boxShadow: [
-                '0 0 20px hsl(var(--primary) / 0.4)',
-                '0 0 40px hsl(var(--primary) / 0.6)',
-                '0 0 20px hsl(var(--primary) / 0.4)',
-              ],
-            }}
-            transition={{ 
-              opacity: { duration: 0.3 },
-              scale: { duration: 0.3 },
-              boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" },
-            }}
-            style={{
-              top: spotlightRect.top,
-              left: spotlightRect.left,
-              width: spotlightRect.width,
-              height: spotlightRect.height,
-            }}
-          />
+          {spotlightRect && (
+            <motion.div
+              className="absolute border-2 border-primary rounded-xl pointer-events-none"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+                boxShadow: [
+                  '0 0 20px hsl(var(--primary) / 0.4)',
+                  '0 0 40px hsl(var(--primary) / 0.6)',
+                  '0 0 20px hsl(var(--primary) / 0.4)',
+                ],
+              }}
+              transition={{
+                opacity: { duration: 0.3 },
+                scale: { duration: 0.3 },
+                boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+              }}
+              style={{
+                top: spotlightRect.top,
+                left: spotlightRect.left,
+                width: spotlightRect.width,
+                height: spotlightRect.height,
+              }}
+            />
+          )}
         </motion.div>
       )}
     </AnimatePresence>

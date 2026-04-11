@@ -5,10 +5,11 @@ import { DashboardSection } from '@/components/dashboard/DashboardLayout';
 import { TourOverlay } from './TourOverlay';
 import { TourTooltip } from './TourTooltip';
 import { TransitionScreen } from './TransitionScreen';
-import { 
+import {
   Sparkles, Users, Briefcase, Building2, Target, MessageSquare,
   Heart, Newspaper, Globe, User, Settings, BarChart3, Zap, FileEdit, LayoutGrid
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface TourStep {
   section: DashboardSection;
@@ -353,11 +354,26 @@ export function RecruiterTour({ currentSection, onNavigate }: RecruiterTourProps
     }
   };
 
+  const handleSkipStep = () => {
+    if (currentStep < steps.length - 1) {
+      handleNext();
+    }
+  };
+
   const handleComplete = () => {
     localStorage.setItem(RECRUITER_TOUR_STORAGE_KEY, 'true');
     setIsActive(false);
     setShowTransition(false);
     onNavigate('overview');
+    toast.success(
+      isHebrew ? '🎉 כל הכבוד! סיימת את הסיור המודרך!' : '🎉 Great job! You completed the guided tour!',
+      {
+        duration: 5000,
+        description: isHebrew
+          ? 'עכשיו אתה מכיר את כל הכלים. בהצלחה!'
+          : 'Now you know all the tools. Good luck!',
+      }
+    );
   };
 
   const step = steps[currentStep];
@@ -386,6 +402,7 @@ export function RecruiterTour({ currentSection, onNavigate }: RecruiterTourProps
             onNext={handleNext}
             onPrev={handlePrev}
             onSkip={handleComplete}
+            onSkipStep={handleSkipStep}
             isFirst={currentStep === 0}
             isLast={currentStep === steps.length - 1}
             icon={step.icon}
