@@ -25,6 +25,7 @@ import Assignments from "./pages/Assignments";
 import Analytics from "./pages/Analytics";
 import CandidateSearchPage from "./pages/CandidateSearchPage";
 import Vouches from "./pages/Vouches";
+import Network from "./pages/Network";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +65,7 @@ const App = () => (
                   <Route path="/analytics" element={<Analytics />} />
                   <Route path="/candidate-search" element={<CandidateSearchPage />} />
                   <Route path="/vouches" element={<Vouches />} />
+                  <Route path="/network" element={<Network />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

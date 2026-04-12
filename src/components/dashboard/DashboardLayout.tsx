@@ -23,7 +23,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-export type DashboardSection = 'overview' | 'profile-docs' | 'profile-settings' | 'applications' | 'candidates' | 'jobs' | 'job-search' | 'chat' | 'settings' | 'messages' | 'post-job' | 'saved-jobs' | 'cv-builder' | 'interview-prep' | 'feed' | 'create-feed-post' | 'create-webinar' | 'communities' | 'create-community' | 'community-view' | 'content-dashboard' | 'negotiation-sandbox' | 'content-hub' | 'b2b-suite' | 'recruiter-profile' | 'clients' | 'client-profile' | 'missions' | 'create-mission' | 'my-missions' | 'schedule' | 'hr-tools' | 'credits' | 'referrals' | 'analyses' | 'favorite-companies' | 'assignments' | 'candidate-search' | 'analytics' | 'my-stats' | 'vouches';
+export type DashboardSection = 'overview' | 'profile-docs' | 'profile-settings' | 'applications' | 'candidates' | 'jobs' | 'job-search' | 'chat' | 'settings' | 'messages' | 'post-job' | 'saved-jobs' | 'cv-builder' | 'interview-prep' | 'feed' | 'create-feed-post' | 'create-webinar' | 'communities' | 'create-community' | 'community-view' | 'content-dashboard' | 'negotiation-sandbox' | 'content-hub' | 'b2b-suite' | 'recruiter-profile' | 'clients' | 'client-profile' | 'missions' | 'create-mission' | 'my-missions' | 'schedule' | 'hr-tools' | 'credits' | 'referrals' | 'analyses' | 'favorite-companies' | 'assignments' | 'candidate-search' | 'analytics' | 'my-stats' | 'vouches' | 'network';
 
 interface NavItemConfig {
   icon: typeof LayoutDashboard;
@@ -87,6 +87,11 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
       setSidebarOpen(false);
       return;
     }
+    if (section === 'network') {
+      navigate('/network');
+      setSidebarOpen(false);
+      return;
+    }
     if (section === 'analytics') {
       navigate('/analytics');
       setSidebarOpen(false);
@@ -118,6 +123,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
         { icon: Calendar, label: isRTL ? 'יומן החיפוש שלי' : 'My applications schedule', section: 'schedule', tooltipHe: 'יומן ראיונות, מעקב ותזכורות', tooltipEn: 'Interviews, follow-ups and reminders calendar' },
         { icon: BarChart3, label: isRTL ? 'נתוני החיפוש שלי' : 'My Stats', section: 'my-stats' as DashboardSection, tooltipHe: 'סטטיסטיקות אישיות ונתוני שוק', tooltipEn: 'Personal statistics & market data' },
         { icon: Heart, label: isRTL ? 'ההמלצות שלי' : 'My Vouches', section: 'vouches' as DashboardSection, tooltipHe: 'המלצות שקיבלת ונתת — מחזקות את הפרופיל', tooltipEn: 'Vouches received and given — strengthen your profile' },
+        { icon: Users, label: isRTL ? 'הרשת שלי' : 'My Network', section: 'network' as DashboardSection, tooltipHe: 'קולגות, מגייסים וחברות — כל הקשרים שלך', tooltipEn: 'Colleagues, recruiters and companies — your connections' },
         // ── Preparation & Profile ──
         { icon: User, label: isRTL ? 'הפרופיל שלי' : 'My Profile', section: 'profile-settings', tooltipHe: 'פרופיל, הגדרות, אינטגרציות וחשבון', tooltipEn: 'Profile, settings, integrations & account' },
         { icon: FileEdit, label: isRTL ? 'בניית קורות חיים' : 'CV Builder', section: 'cv-builder', tooltipHe: 'בניית קורות חיים מקצועיים עם תבניות ו-AI', tooltipEn: 'Build professional CVs with templates and AI' },

@@ -142,6 +142,7 @@ export const RECURRING_REWARDS = {
   VOUCH_RECIPROCAL: { amount: 5 },         // returned a vouch
   VOUCH_VIA_EXTERNAL_LINK: { amount: 15 }, // vouch from external link that brought a referral
   VOUCH_FROM_RECRUITER: { amount: 50 },    // vouch from a recruiter (premium)
+  CONNECTION_ACCEPTED: { amount: 10, monthlyCap: 10 }, // new connection accepted
   SKILL_ADDED: { amount: 10 },
   LOGIN_STREAK: { amount: 2, dailyCap: 1 }, // daily login reward
 } as const;
@@ -161,6 +162,9 @@ export const XP_REWARDS = {
   VOUCH_RECEIVED: 10,
   VOUCH_RECIPROCAL: 10,
   VOUCH_VIA_EXTERNAL: 15,
+  CONNECTION_ACCEPTED: 5,
+  CONNECTION_MILESTONE_10: 25,
+  CONNECTION_MILESTONE_50: 75,
   DAILY_LOGIN: 1,
   WEEKLY_INVITE_2: 20,       // invited 2+ friends in a week
   WEEKLY_SHARE_10: 10,       // shared 10+ jobs in a week
@@ -209,6 +213,7 @@ export const ACHIEVEMENTS = {
   community_builder: { xp: 50,  fuel: 75,  requirement: 'vouches_given_10',   label: { en: 'Community Builder', he: 'בונה קהילה' } },
   social_butterfly:  { xp: 50,  fuel: 100, requirement: 'social_tasks_all',   label: { en: 'Social Butterfly', he: 'פרפר חברתי' } },
   trusted_pro:       { xp: 30,  fuel: 50,  requirement: 'vouches_received_5', label: { en: 'Trusted Professional', he: 'מקצוען מהימן' } },
+  super_connector:   { xp: 100, fuel: 100, requirement: 'connections_25',     label: { en: 'Super Connector', he: 'מקשר-על' } },
 } as const;
 
 export type AchievementId = keyof typeof ACHIEVEMENTS;

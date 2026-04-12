@@ -9,7 +9,9 @@ import { PlugLogo } from '@/components/PlugLogo';
 import { PersonalCard } from '@/components/profile/PersonalCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Heart, User, Shield } from 'lucide-react';
+import { Heart, User, Shield, Users } from 'lucide-react';
+import { ConnectButton } from '@/components/connections/ConnectButton';
+import { useConnections } from '@/hooks/useConnections';
 import { Link } from 'react-router-dom';
 
 export default function PublicProfile() {
@@ -189,6 +191,13 @@ export default function PublicProfile() {
           showActions={!isOwnProfile && !!user}
           showVideo={true}
         />
+
+        {/* Connection Actions */}
+        {!isOwnProfile && user && userId && (
+          <div className="flex items-center gap-3">
+            <ConnectButton targetUserId={userId} />
+          </div>
+        )}
 
         {/* Endorsements */}
         <Card className="bg-card border-border">

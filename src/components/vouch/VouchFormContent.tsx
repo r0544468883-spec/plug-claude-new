@@ -129,7 +129,42 @@ export function VouchFormContent({ toUserId, toUserName, onSuccess }: VouchFormC
       } else {
         await awardCredits('vouch_given');
       }
-      
+
+      // Auto-connect: send connection request (or auto-accept if reciprocal vouch)
+      try {
+        const vouchType = form.getValues('vouch_type');
+        const circle = vouchType === 'recruiter' ? 'recruiter' : 'colleague';
+
+        // Check if connection already exists
+        const { data: existingConn } = await (supabase as any)
+          .from('connections')
+          .select('id, status')
+          .or(`and(requester_id.eq.${user!.id},addressee_id.eq.${toUserId}),and(requester_id.eq.${toUserId},addressee_id.eq.${user!.id})`)
+          .limit(1)
+          .maybeSingle();
+
+        if (!existingConn) {
+          // No connection — create one. If reciprocal vouch, auto-accept.
+          await (supabase as any).from('connections').insert({
+            requester_id: user!.id,
+            addressee_id: toUserId,
+            circle,
+            status: result?.isReciprocal || circle === 'recruiter' ? 'accepted' : 'pending',
+            accepted_at: result?.isReciprocal || circle === 'recruiter' ? new Date().toISOString() : null,
+            source: 'vouch',
+          });
+        } else if (existingConn.status === 'pending' && result?.isReciprocal) {
+          // Pending connection + reciprocal vouch → auto-accept
+          await (supabase as any).from('connections')
+            .update({ status: 'accepted', accepted_at: new Date().toISOString() })
+            .eq('id', existingConn.id);
+        }
+
+        queryClient.invalidateQueries({ queryKey: ['connections'] });
+      } catch (e) {
+        console.warn('[VouchFormContent] Auto-connect failed:', e);
+      }
+
       toast({
         title: isHebrew ? 'ה-Vouch נשלח!' : 'Vouch sent!',
         description: isHebrew 

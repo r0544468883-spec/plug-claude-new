@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { FeedCard } from './FeedCard';
 import { WebinarFeedCard, WebinarData } from './WebinarFeedCard';
 import { generateFeedPosts, FeedPost } from './feedMockData';
-import { Flame, Newspaper, Lightbulb, Building2, BarChart3, Video, PenLine, ArrowUp, Loader2 } from 'lucide-react';
+import { Flame, Newspaper, Lightbulb, Building2, BarChart3, Video, PenLine, ArrowUp, Loader2, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface FeedPageProps {
@@ -45,6 +45,24 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
         userIds: data?.filter((f: any) => f.followed_user_id).map((f: any) => f.followed_user_id) || [],
         companyIds: data?.filter((f: any) => f.followed_company_id).map((f: any) => f.followed_company_id) || [],
       };
+    },
+    enabled: !!user?.id,
+  });
+
+  // Fetch connection user IDs for "My Network" tab
+  const { data: connectionUserIds } = useQuery({
+    queryKey: ['connection-user-ids', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [] as string[];
+      const { data } = await (supabase as any)
+        .from('connections')
+        .select('requester_id, addressee_id')
+        .eq('status', 'accepted')
+        .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
+      if (!data) return [];
+      return data.map((c: any) =>
+        c.requester_id === user.id ? c.addressee_id : c.requester_id
+      );
     },
     enabled: !!user?.id,
   });
@@ -267,6 +285,13 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
     return [...allPosts].sort((a, b) => (b.likes + b.comments) - (a.likes + a.comments)).slice(0, 20);
   }, [allPosts]);
 
+  // Network = posts from accepted connections only
+  const networkPosts = useMemo(() => {
+    if (!connectionUserIds || connectionUserIds.length === 0) return [];
+    const connSet = new Set(connectionUserIds);
+    return allPosts.filter(p => p.authorId && connSet.has(p.authorId));
+  }, [allPosts, connectionUserIds]);
+
   const filterPosts = (type?: string): FeedPost[] => {
     if (!type || type === 'all') return allPosts;
     return allPosts.filter(p => p.postType === type);
@@ -369,28 +394,32 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
 
         {/* ─── Tabs ──────────────────────────────────────── */}
         <Tabs defaultValue="all" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 bg-card border border-border">
-            <TabsTrigger value="all" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+          <TabsList className="flex w-full overflow-x-auto bg-card border border-border">
+            <TabsTrigger value="all" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 min-w-0">
               <Newspaper className="w-3.5 h-3.5" />
               {isRTL ? 'הכל' : 'All'}
             </TabsTrigger>
-            <TabsTrigger value="trending" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <TabsTrigger value="network" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 min-w-0">
+              <Users className="w-3.5 h-3.5" />
+              {isRTL ? 'רשת' : 'Network'}
+            </TabsTrigger>
+            <TabsTrigger value="trending" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 min-w-0">
               <Flame className="w-3.5 h-3.5" />
               {isRTL ? 'טרנדינג' : 'Trending'}
             </TabsTrigger>
-            <TabsTrigger value="tip" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <TabsTrigger value="tip" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 min-w-0">
               <Lightbulb className="w-3.5 h-3.5" />
               {isRTL ? 'טיפים' : 'Tips'}
             </TabsTrigger>
-            <TabsTrigger value="culture" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <TabsTrigger value="culture" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 min-w-0">
               <Building2 className="w-3.5 h-3.5" />
               {isRTL ? 'תרבות' : 'Culture'}
             </TabsTrigger>
-            <TabsTrigger value="poll" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <TabsTrigger value="poll" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 min-w-0">
               <BarChart3 className="w-3.5 h-3.5" />
               {isRTL ? 'סקרים' : 'Polls'}
             </TabsTrigger>
-            <TabsTrigger value="webinars" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <TabsTrigger value="webinars" className="gap-1 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 min-w-0">
               <Video className="w-3.5 h-3.5" />
               {isRTL ? 'וובינרים' : 'Webinars'}
             </TabsTrigger>
@@ -425,6 +454,10 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
             <>
               <TabsContent value="all" className="space-y-4">
                 {renderPosts(allPosts)}
+              </TabsContent>
+
+              <TabsContent value="network" className="space-y-4">
+                {renderPosts(networkPosts)}
               </TabsContent>
 
               <TabsContent value="trending" className="space-y-4">
