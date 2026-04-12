@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,11 +8,32 @@ import { VouchCard } from '@/components/vouch/VouchCard';
 import { PlugLogo } from '@/components/PlugLogo';
 import { PersonalCard } from '@/components/profile/PersonalCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Heart, User, Shield, Users } from 'lucide-react';
+import { Heart, User, Shield, FileText, Download, Eye } from 'lucide-react';
 import { ConnectButton } from '@/components/connections/ConnectButton';
 import { useConnections } from '@/hooks/useConnections';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
+
+/** Record a profile view/action */
+async function trackProfileAction(
+  profileUserId: string,
+  action: 'view' | 'resume_download' | 'video_play' | 'link_click',
+  viewerId?: string,
+) {
+  try {
+    await (supabase as any).from('profile_views').insert({
+      profile_user_id: profileUserId,
+      viewer_id: viewerId || null,
+      referrer: document.referrer || null,
+      viewer_user_agent: navigator.userAgent,
+      action,
+    });
+  } catch {
+    // Silent — tracking should never block UX
+  }
+}
 
 export default function PublicProfile() {
   const { userId } = useParams<{ userId: string }>();
@@ -21,12 +42,12 @@ export default function PublicProfile() {
   const isHebrew = language === 'he';
   const isOwnProfile = user?.id === userId;
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const viewTracked = useRef(false);
 
   // Fetch profile with professional links and new personal fields
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['public-profile', userId],
     queryFn: async () => {
-      // Use profiles_secure view for public profile to protect contact details
       const { data, error } = await supabase
         .from('profiles_secure')
         .select('user_id, full_name, avatar_url, bio, portfolio_url, linkedin_url, github_url, allow_recruiter_contact, email, personal_tagline, about_me, intro_video_url')
@@ -39,6 +60,33 @@ export default function PublicProfile() {
     enabled: !!userId,
   });
 
+  // Fetch resume for download button
+  const { data: resumeData } = useQuery({
+    queryKey: ['public-resume', userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('documents')
+        .select('id, file_name, file_path')
+        .eq('owner_id', userId!)
+        .eq('doc_type', 'resume')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userId,
+  });
+
+  // Track profile view (once per page load, not for own profile)
+  useEffect(() => {
+    if (userId && !isOwnProfile && profile && !viewTracked.current) {
+      viewTracked.current = true;
+      trackProfileAction(userId, 'view', user?.id);
+    }
+  }, [userId, isOwnProfile, profile, user?.id]);
+
   // Fetch video signed URL if needed
   useEffect(() => {
     const fetchVideoUrl = async () => {
@@ -49,8 +97,8 @@ export default function PublicProfile() {
         const filePath = videoPath.replace('profile-videos/', '');
         const { data } = await supabase.storage
           .from('profile-videos')
-          .createSignedUrl(filePath, 60 * 60); // 1 hour
-        
+          .createSignedUrl(filePath, 60 * 60);
+
         if (data?.signedUrl) {
           setVideoUrl(data.signedUrl);
         }
@@ -66,7 +114,6 @@ export default function PublicProfile() {
   const { data: vouches = [], isLoading: vouchesLoading } = useQuery({
     queryKey: ['public-vouches', userId],
     queryFn: async () => {
-      // Get vouches
       const { data: vouchesData, error: vouchesError } = await supabase
         .from('vouches')
         .select('*')
@@ -76,7 +123,6 @@ export default function PublicProfile() {
 
       if (vouchesError) throw vouchesError;
 
-      // Get profiles for from_user_ids (use profiles_secure for safety)
       const fromUserIds = vouchesData.map(v => v.from_user_id);
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles_secure')
@@ -85,7 +131,6 @@ export default function PublicProfile() {
 
       if (profilesError) throw profilesError;
 
-      // Merge
       return vouchesData.map(vouch => ({
         ...vouch,
         from_profile: profiles.find(p => p.user_id === vouch.from_user_id),
@@ -93,6 +138,40 @@ export default function PublicProfile() {
     },
     enabled: !!userId,
   });
+
+  // View count for own profile
+  const { data: viewCount } = useQuery({
+    queryKey: ['profile-view-count', userId],
+    queryFn: async () => {
+      const { count, error } = await (supabase as any)
+        .from('profile_views')
+        .select('id', { count: 'exact', head: true })
+        .eq('profile_user_id', userId)
+        .eq('action', 'view');
+
+      if (error) return 0;
+      return count || 0;
+    },
+    enabled: !!userId && isOwnProfile,
+  });
+
+  const handleResumeDownload = async () => {
+    if (!resumeData?.file_path || !userId) return;
+
+    // Track download
+    trackProfileAction(userId, 'resume_download', user?.id);
+
+    // Get signed URL and download
+    const { data } = await supabase.storage
+      .from('resumes')
+      .createSignedUrl(resumeData.file_path, 60 * 5); // 5 minutes
+
+    if (data?.signedUrl) {
+      window.open(data.signedUrl, '_blank');
+    } else {
+      toast.error(isHebrew ? 'שגיאה בהורדת קורות החיים' : 'Error downloading resume');
+    }
+  };
 
   const isLoading = profileLoading || vouchesLoading;
 
@@ -145,7 +224,7 @@ export default function PublicProfile() {
                 {isHebrew ? 'הפרופיל לא נמצא' : 'Profile not found'}
               </h2>
               <p className="text-muted-foreground">
-                {isHebrew 
+                {isHebrew
                   ? 'ייתכן שהפרופיל אינו קיים או אינו ציבורי'
                   : 'This profile may not exist or is not public'}
               </p>
@@ -164,9 +243,17 @@ export default function PublicProfile() {
           <Link to="/">
             <PlugLogo size="sm" />
           </Link>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Shield className="w-3.5 h-3.5" />
-            {isHebrew ? 'פרופיל מאומת' : 'Verified Profile'}
+          <div className="flex items-center gap-3">
+            {isOwnProfile && typeof viewCount === 'number' && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
+                <Eye className="w-3.5 h-3.5" />
+                {viewCount} {isHebrew ? 'צפיות' : 'views'}
+              </div>
+            )}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Shield className="w-3.5 h-3.5" />
+              {isHebrew ? 'פרופיל מאומת' : 'Verified Profile'}
+            </div>
           </div>
         </div>
       </header>
@@ -192,11 +279,46 @@ export default function PublicProfile() {
           showVideo={true}
         />
 
-        {/* Connection Actions */}
-        {!isOwnProfile && user && userId && (
-          <div className="flex items-center gap-3">
-            <ConnectButton targetUserId={userId} />
+        {/* Connection + Resume Actions */}
+        {!isOwnProfile && (
+          <div className="flex items-center gap-3 flex-wrap">
+            {user && userId && <ConnectButton targetUserId={userId} />}
+            {resumeData && (
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={handleResumeDownload}
+              >
+                <Download className="w-4 h-4" />
+                {isHebrew ? 'הורד קורות חיים' : 'Download Resume'}
+              </Button>
+            )}
           </div>
+        )}
+
+        {/* Own profile: show resume status */}
+        {isOwnProfile && (
+          <Card className="bg-card border-border">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <FileText className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">
+                    {resumeData
+                      ? (isHebrew ? 'קורות חיים מצורפים לפרופיל' : 'Resume attached to profile')
+                      : (isHebrew ? 'לא צורפו קורות חיים' : 'No resume attached')}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {resumeData
+                      ? resumeData.file_name
+                      : (isHebrew ? 'העלה קו"ח כדי שמגייסים יוכלו להוריד אותם מהפרופיל שלך' : 'Upload a resume so recruiters can download it from your profile')}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Endorsements */}
@@ -226,7 +348,7 @@ export default function PublicProfile() {
         {/* Footer */}
         <div className="text-center py-4">
           <p className="text-xs text-muted-foreground">
-            {isHebrew 
+            {isHebrew
               ? 'פרופיל זה נוצר באמצעות '
               : 'This profile is powered by '}
             <Link to="/" className="text-primary hover:underline">Plug</Link>

@@ -12,6 +12,7 @@ import { ExtensionAgentPanel } from '@/components/extension/ExtensionAgentPanel'
 import { VouchWidget } from '@/components/vouch/VouchWidget';
 import { VouchDiscovery } from '@/components/vouch/VouchDiscovery';
 import { ConnectionsWidget } from '@/components/connections/ConnectionsWidget';
+import { ProfileViewsWidget } from '@/components/profile/ProfileViewsWidget';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -292,6 +293,9 @@ export function OverviewHome({ onNavigate, onShowResumeDialog, onOpenChat }: Ove
             </Button>
           </CardContent>
         </Card>
+
+        {/* ── Profile Views ── */}
+        <ProfileViewsWidget />
 
         {/* ── My Network ── */}
         <ConnectionsWidget />
