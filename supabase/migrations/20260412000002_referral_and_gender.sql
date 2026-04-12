@@ -15,6 +15,12 @@ ALTER TABLE vouch_requests ADD COLUMN IF NOT EXISTS to_user_id UUID REFERENCES a
 CREATE INDEX IF NOT EXISTS idx_vouch_requests_to_user ON vouch_requests(to_user_id, status) WHERE to_user_id IS NOT NULL;
 
 -- RLS: users can view vouch_requests addressed to them
-CREATE POLICY IF NOT EXISTS "Users can view vouch requests to them"
-  ON vouch_requests FOR SELECT
-  USING (auth.uid() = to_user_id OR auth.uid() = from_user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE policyname = 'Users can view vouch requests to them' AND tablename = 'vouch_requests'
+  ) THEN
+    CREATE POLICY "Users can view vouch requests to them"
+      ON vouch_requests FOR SELECT
+      USING (auth.uid() = to_user_id OR auth.uid() = from_user_id);
+  END IF;
+END $$;
