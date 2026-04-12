@@ -283,6 +283,9 @@ export function OverviewHome({ onNavigate, onShowResumeDialog, onOpenChat }: Ove
           </CardContent>
         </Card>
 
+        {/* ── My Network ── */}
+        <ConnectionsWidget />
+
         {/* ── Matching Jobs ── */}
         <Card className="bg-card border-border lg:col-span-2">
           <CardContent className="p-4">
@@ -384,7 +387,6 @@ export function OverviewHome({ onNavigate, onShowResumeDialog, onOpenChat }: Ove
             </div>
             <div className="border-t border-border pt-3 space-y-3">
               <VouchWidget onNavigate={() => onNavigate('profile-settings')} />
-              <ConnectionsWidget />
               <VouchDiscovery />
             </div>
           </CardContent>
