@@ -3,19 +3,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Heart } from 'lucide-react';
+import { Heart, HandHeart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 /**
- * Subscribes to realtime vouches table.
- * When the current user receives a new vouch, shows a toast with
- * an option to return the vouch (reciprocal flow).
+ * Subscribes to realtime vouches + vouch_requests tables.
+ * Shows toasts for: new vouches received, vouch requests received.
  */
 export function VouchNotifications() {
   const { user } = useAuth();
   const { language } = useLanguage();
   const isHebrew = language === 'he';
-  // Keep latest language in ref so the realtime callback always reads the current value
   const langRef = useRef(isHebrew);
   langRef.current = isHebrew;
 
@@ -24,6 +22,7 @@ export function VouchNotifications() {
 
     const channel = supabase
       .channel('vouch-notifications')
+      // --- New vouch received ---
       .on(
         'postgres_changes',
         {
@@ -36,7 +35,6 @@ export function VouchNotifications() {
           const vouch = payload.new as any;
           if (!vouch) return;
 
-          // Fetch the voucher's name
           const { data: fromProfile } = await supabase
             .from('profiles_secure')
             .select('full_name, avatar_url')
@@ -59,11 +57,60 @@ export function VouchNotifications() {
               action: {
                 label: he ? 'החזר Vouch' : 'Vouch Back',
                 onClick: () => {
-                  // Navigate to give-vouch with pre-selected user
                   window.dispatchEvent(
                     new CustomEvent('open-give-vouch', {
                       detail: {
                         userId: vouch.from_user_id,
+                        userName: name,
+                        avatarUrl: fromProfile?.avatar_url,
+                      },
+                    })
+                  );
+                },
+              },
+            }
+          );
+        }
+      )
+      // --- Vouch request received (internal) ---
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'vouch_requests',
+          filter: `to_user_id=eq.${user.id}`,
+        },
+        async (payload) => {
+          const req = payload.new as any;
+          if (!req?.from_user_id) return;
+
+          const { data: fromProfile } = await supabase
+            .from('profiles_secure')
+            .select('full_name, avatar_url')
+            .eq('user_id', req.from_user_id)
+            .maybeSingle();
+
+          const name = fromProfile?.full_name || (langRef.current ? 'מישהו' : 'Someone');
+          const he = langRef.current;
+
+          toast(
+            he ? `${name} מבקש/ת ממך המלצה` : `${name} requested a vouch from you`,
+            {
+              duration: 12000,
+              icon: <HandHeart className="w-5 h-5 text-primary" />,
+              description: req.message
+                ? req.message.length > 80
+                  ? req.message.slice(0, 80) + '…'
+                  : req.message
+                : undefined,
+              action: {
+                label: he ? 'כתוב המלצה' : 'Write Vouch',
+                onClick: () => {
+                  window.dispatchEvent(
+                    new CustomEvent('open-give-vouch', {
+                      detail: {
+                        userId: req.from_user_id,
                         userName: name,
                         avatarUrl: fromProfile?.avatar_url,
                       },

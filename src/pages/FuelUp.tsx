@@ -7,6 +7,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { FuelCard } from '@/components/credits/FuelCard';
+import { InviteFriendDialog } from '@/components/credits/InviteFriendDialog';
 import { PromoCodeInput } from '@/components/credits/PromoCodeInput';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -248,6 +249,9 @@ const FuelUp = () => {
           </div>
         </motion.section>
       </main>
+
+      {/* Invite Friend Dialog (event-driven) */}
+      <InviteFriendDialog />
     </div>
   );
 };

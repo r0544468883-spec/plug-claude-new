@@ -17,7 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Heart, Users, Sparkles, ArrowLeft, ArrowRight,
-  Shield, Award, Crown, MessageSquare
+  Shield, Award, Crown, MessageSquare, HandHeart, Clock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -87,6 +87,36 @@ const Vouches = () => {
         ...vouch,
         // For given vouches, show the recipient profile as "from_profile" for VouchCard display
         from_profile: profiles?.find(p => p.user_id === vouch.to_user_id),
+      }));
+    },
+    enabled: !!user?.id,
+  });
+
+  // Fetch pending vouch requests sent TO me (I need to vouch for them)
+  const { data: pendingRequests = [] } = useQuery({
+    queryKey: ['pending-vouch-requests', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+
+      const { data: requests, error } = await (supabase as any)
+        .from('vouch_requests')
+        .select('id, from_user_id, message, created_at')
+        .eq('to_user_id', user.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      if (!requests?.length) return [];
+
+      const fromIds = requests.map((r: any) => r.from_user_id);
+      const { data: profiles } = await supabase
+        .from('profiles_secure')
+        .select('user_id, full_name, avatar_url')
+        .in('user_id', fromIds);
+
+      return requests.map((r: any) => ({
+        ...r,
+        profile: profiles?.find((p: any) => p.user_id === r.from_user_id),
       }));
     },
     enabled: !!user?.id,
@@ -173,6 +203,59 @@ const Vouches = () => {
             </Button>
           } />
         </div>
+
+        {/* Pending Vouch Requests (someone asked me to vouch) */}
+        {pendingRequests.length > 0 && (
+          <Card className="bg-card border-border mb-6 border-primary/30">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <HandHeart className="h-5 w-5 text-primary" />
+                {isHebrew ? 'בקשות המלצה שקיבלת' : 'Vouch Requests'}
+                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                  {pendingRequests.length}
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {pendingRequests.map((req: any) => (
+                <div key={req.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">
+                      {req.profile?.full_name || (isHebrew ? 'משתמש' : 'User')}
+                    </p>
+                    {req.message && (
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">
+                        "{req.message}"
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {new Date(req.created_at).toLocaleDateString(isHebrew ? 'he-IL' : 'en-US')}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="gap-1.5 shrink-0"
+                    onClick={() => {
+                      window.dispatchEvent(
+                        new CustomEvent('open-give-vouch', {
+                          detail: {
+                            userId: req.from_user_id,
+                            userName: req.profile?.full_name || '',
+                            avatarUrl: req.profile?.avatar_url,
+                          },
+                        })
+                      );
+                    }}
+                  >
+                    <Heart className="w-3.5 h-3.5" />
+                    {isHebrew ? 'כתוב המלצה' : 'Write Vouch'}
+                  </Button>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Return the Vouch suggestions */}
         <div className="mb-6">

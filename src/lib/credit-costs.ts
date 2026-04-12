@@ -42,8 +42,15 @@ export const CONFIRMATION_THRESHOLD = 5;
 
 // Social task rewards (one-time)
 export const SOCIAL_TASK_REWARDS: Record<string, { credits: number; label: string; labelHe: string; url: string; icon: string }> = {
+  invite_friend: {
+    credits: 150,
+    label: 'Invite a Friend to PLUG',
+    labelHe: 'הזמן חבר/ה ל-PLUG',
+    url: '__invite__', // special: handled by InviteFriendDialog, not external URL
+    icon: 'user-plus',
+  },
   github_star: {
-    credits: 100,
+    credits: 50,
     label: 'Star us on GitHub',
     labelHe: 'תנו לנו כוכב ב-GitHub',
     url: 'https://github.com/r0544468883-spec/Plug-for-users',

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PlugLogo } from '@/components/PlugLogo';
 import { LanguageToggle } from '@/components/LanguageToggle';
-import { ArrowLeft, ArrowRight, Loader2, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Eye, EyeOff, Sparkles, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 
 type AppRole = 'job_seeker' | 'freelance_hr' | 'inhouse_hr' | 'company_employee';
@@ -24,7 +25,7 @@ interface AuthFormProps {
 export function AuthForm({ selectedRole, onBack, onSuccess, onRegistration }: AuthFormProps) {
   const { t, direction } = useLanguage();
   const { signUp, signIn } = useAuth();
-  
+
   const [isLogin, setIsLogin] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -33,7 +34,10 @@ export function AuthForm({ selectedRole, onBack, onSuccess, onRegistration }: Au
   const [consentTerms, setConsentTerms] = useState(false);
   const [consentPrivacy, setConsentPrivacy] = useState(false);
   const [consentMarketing, setConsentMarketing] = useState(false);
-  
+  const [gender, setGender] = useState('');
+  const [referredBy, setReferredBy] = useState('');
+  const [showReferral, setShowReferral] = useState(false);
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -45,6 +49,16 @@ export function AuthForm({ selectedRole, onBack, onSuccess, onRegistration }: Au
   const ArrowBackIcon = direction === 'rtl' ? ArrowRight : ArrowLeft;
   const isHebrew = direction === 'rtl';
   const isJobSeeker = selectedRole === 'job_seeker';
+
+  // Auto-detect referral from URL param (?ref=...)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      setReferredBy(ref);
+      setShowReferral(true);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,9 +95,11 @@ export function AuthForm({ selectedRole, onBack, onSuccess, onRegistration }: Au
           formData.fullName,
           formData.phone,
           selectedRole,
-          isJobSeeker ? visibleToHR : undefined
+          isJobSeeker ? visibleToHR : undefined,
+          gender || undefined,
+          referredBy.trim() || undefined,
         );
-        
+
         if (error) {
           toast.error(error.message);
         } else {
@@ -178,6 +194,21 @@ export function AuthForm({ selectedRole, onBack, onSuccess, onRegistration }: Au
                     dir="ltr"
                   />
                 </div>
+
+                {/* Gender selection */}
+                <div className="space-y-2">
+                  <Label>{isHebrew ? 'מגדר' : 'Gender'}</Label>
+                  <Select value={gender} onValueChange={setGender}>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder={isHebrew ? 'בחר/י' : 'Select'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">{isHebrew ? 'זכר' : 'Male'}</SelectItem>
+                      <SelectItem value="female">{isHebrew ? 'נקבה' : 'Female'}</SelectItem>
+                      <SelectItem value="prefer_not">{isHebrew ? 'מעדיף/ה לא לציין' : 'Prefer not to say'}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </>
             )}
 
@@ -243,7 +274,7 @@ export function AuthForm({ selectedRole, onBack, onSuccess, onRegistration }: Au
                         {isHebrew ? 'גלוי למגייסים' : 'Visible to Recruiters'}
                       </Label>
                       <p className="text-xs text-muted-foreground">
-                        {isHebrew 
+                        {isHebrew
                           ? 'מגייסים יוכלו לראות את הפרופיל שלך ולפנות אליך'
                           : 'Recruiters can discover your profile and reach out'}
                       </p>
@@ -254,6 +285,39 @@ export function AuthForm({ selectedRole, onBack, onSuccess, onRegistration }: Au
                     />
                   </div>
                 )}
+
+                {/* Referral attribution */}
+                <div className="space-y-2">
+                  {!showReferral ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowReferral(true)}
+                      className="flex items-center gap-2 text-sm text-primary hover:underline"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      {isHebrew ? 'מישהו הפנה אותי ל-PLUG' : 'Someone referred me to PLUG'}
+                    </button>
+                  ) : (
+                    <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <UserPlus className="w-4 h-4 text-primary" />
+                        {isHebrew ? 'מי הפנה אותך?' : 'Who referred you?'}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {isHebrew
+                          ? 'הכנס את האימייל או הטלפון של מי שהפנה אותך — שניכם תקבלו בונוס!'
+                          : "Enter the email or phone of who referred you — you'll both get a bonus!"}
+                      </p>
+                      <Input
+                        value={referredBy}
+                        onChange={(e) => setReferredBy(e.target.value)}
+                        className="h-11"
+                        placeholder={isHebrew ? 'אימייל או טלפון' : 'Email or phone'}
+                        dir="ltr"
+                      />
+                    </div>
+                  )}
+                </div>
               </>
             )}
 

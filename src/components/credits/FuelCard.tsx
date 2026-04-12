@@ -2,17 +2,18 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useCredits } from '@/contexts/CreditsContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { 
-  Github, 
-  Linkedin, 
-  Youtube, 
-  Instagram, 
-  Facebook, 
+import {
+  Github,
+  Linkedin,
+  Youtube,
+  Instagram,
+  Facebook,
   MessageCircle,
   Share2,
   Check,
   ExternalLink,
-  Loader2
+  Loader2,
+  UserPlus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -55,6 +56,7 @@ const WhatsAppIcon = () => (
 );
 
 const ICON_MAP: Record<string, React.ReactNode> = {
+  'user-plus': <UserPlus className="w-5 h-5" />,
   github: <Github className="w-5 h-5" />,
   linkedin: <Linkedin className="w-5 h-5" />,
   whatsapp: <WhatsAppIcon />,
@@ -70,6 +72,7 @@ const ICON_MAP: Record<string, React.ReactNode> = {
 };
 
 const PLATFORM_COLORS: Record<string, string> = {
+  'user-plus': 'from-[#00FF9D] to-emerald-600',
   github: 'from-gray-700 to-gray-900',
   linkedin: 'from-blue-600 to-blue-800',
   whatsapp: 'from-green-500 to-green-700',
@@ -104,9 +107,15 @@ export const FuelCard = ({ taskId, credits, label, url, icon, isCompleted = fals
   const handleClick = async () => {
     if (completed) return;
 
+    if (url === '__invite__') {
+      // Special: open InviteFriendDialog via custom event
+      window.dispatchEvent(new CustomEvent('open-invite-friend', { detail: { taskId } }));
+      return;
+    }
+
     // Open link in new tab
     window.open(url, '_blank', 'noopener,noreferrer');
-    
+
     // Show confirmation after a short delay
     setTimeout(() => {
       setShowConfirm(true);

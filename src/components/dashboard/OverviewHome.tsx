@@ -20,6 +20,7 @@ import {
   TrendingUp, Send, MessageSquare, ClipboardList, Gem, Sparkles, Globe
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useGenderedText } from '@/hooks/useGenderedText';
 
 interface OverviewHomeProps {
   onNavigate: (section: DashboardSection) => void;
@@ -35,6 +36,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog, onOpenChat }: Ove
   const isRTL = language === 'he';
   const ArrowIcon = isRTL ? ChevronLeft : ChevronRight;
   const firstName = profile?.full_name?.split(' ')[0] || '';
+  const { gt } = useGenderedText();
 
   // ── Profile completion ──
   const profileCompletion = (() => {
@@ -124,10 +126,10 @@ export function OverviewHome({ onNavigate, onShowResumeDialog, onOpenChat }: Ove
     const stored = localStorage.getItem('plug-daily-tasks-' + new Date().toDateString());
     if (stored) return JSON.parse(stored);
     return [
-      { id: 'apply3', label: { he: 'הגש ל-3 משרות חדשות', en: 'Apply to 3 new jobs' }, done: false },
-      { id: 'updatecv', label: { he: 'עדכן קורות חיים', en: 'Update your CV' }, done: false },
-      { id: 'practice', label: { he: 'תרגל ראיון', en: 'Practice an interview' }, done: false },
-      { id: 'checkpending', label: { he: 'בדוק הגשות ממתינות', en: 'Check pending applications' }, done: false },
+      { id: 'apply3', label: { he_m: 'הגש ל-3 משרות חדשות', he_f: 'הגישי ל-3 משרות חדשות', en: 'Apply to 3 new jobs' }, done: false },
+      { id: 'updatecv', label: { he_m: 'עדכן קורות חיים', he_f: 'עדכני קורות חיים', en: 'Update your CV' }, done: false },
+      { id: 'practice', label: { he_m: 'תרגל ראיון', he_f: 'תרגלי ראיון', en: 'Practice an interview' }, done: false },
+      { id: 'checkpending', label: { he_m: 'בדוק הגשות ממתינות', he_f: 'בדקי הגשות ממתינות', en: 'Check pending applications' }, done: false },
     ];
   });
   const toggleTask = (id: string) => {
@@ -140,8 +142,16 @@ export function OverviewHome({ onNavigate, onShowResumeDialog, onOpenChat }: Ove
   // ── Helpers ──
   const greeting = (() => {
     const h = new Date().getHours();
-    if (isRTL) { if (h >= 5 && h < 12) return `בוקר טוב, ${firstName}`; if (h >= 12 && h < 17) return `צהריים טובים, ${firstName}`; if (h >= 17 && h < 21) return `ערב טוב, ${firstName}`; return `לילה טוב, ${firstName}`; }
-    if (h >= 5 && h < 12) return `Good morning, ${firstName}`; if (h >= 12 && h < 17) return `Good afternoon, ${firstName}`; if (h >= 17 && h < 21) return `Good evening, ${firstName}`; return `Good night, ${firstName}`;
+    if (isRTL) {
+      if (h >= 5 && h < 12) return `בוקר טוב, ${firstName}`;
+      if (h >= 12 && h < 17) return `צהריים טובים, ${firstName}`;
+      if (h >= 17 && h < 21) return `ערב טוב, ${firstName}`;
+      return `לילה טוב, ${firstName}`;
+    }
+    if (h >= 5 && h < 12) return `Good morning, ${firstName}`;
+    if (h >= 12 && h < 17) return `Good afternoon, ${firstName}`;
+    if (h >= 17 && h < 21) return `Good evening, ${firstName}`;
+    return `Good night, ${firstName}`;
   })();
 
   const stageLabel = (stage: string) => {
@@ -195,7 +205,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog, onOpenChat }: Ove
             <span className={cn('text-xs font-bold', profileCompletion < 40 ? 'text-red-400' : profileCompletion < 70 ? 'text-amber-400' : 'text-emerald-400')}>{profileCompletion}%</span>
             {profileCompletion < 100 && (
               <Button variant="link" size="sm" className="px-0 text-[11px] whitespace-nowrap" onClick={() => onNavigate('profile-settings')}>
-                {isRTL ? 'השלם' : 'Complete'}<ArrowIcon className="w-3 h-3 ms-0.5" />
+                {isRTL ? gt('השלם', 'השלימי') : 'Complete'}<ArrowIcon className="w-3 h-3 ms-0.5" />
               </Button>
             )}
           </div>
@@ -249,7 +259,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog, onOpenChat }: Ove
               {dailyTasks.map((task: any) => (
                 <button key={task.id} onClick={() => toggleTask(task.id)} className="w-full flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-muted/50 transition-colors text-start">
                   {task.done ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground shrink-0" />}
-                  <span className={cn('text-sm', task.done ? 'line-through text-muted-foreground' : 'text-foreground')}>{isRTL ? task.label.he : task.label.en}</span>
+                  <span className={cn('text-sm', task.done ? 'line-through text-muted-foreground' : 'text-foreground')}>{isRTL ? gt(task.label.he_m, task.label.he_f) : task.label.en}</span>
                 </button>
               ))}
             </div>
