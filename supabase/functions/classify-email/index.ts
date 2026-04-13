@@ -173,7 +173,16 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
     const token = authHeader.replace("Bearer ", "");
-    const isServiceRole = token === SUPABASE_SERVICE_KEY;
+    let isServiceRole = token === SUPABASE_SERVICE_KEY;
+
+    // Fallback: accept legacy JWT service_role keys
+    if (!isServiceRole && token.startsWith("eyJ")) {
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        if (payload.role === "service_role") isServiceRole = true;
+      } catch { /* not a valid JWT */ }
+    }
+
     let userId: string;
 
     const requestBody = await req.json();
