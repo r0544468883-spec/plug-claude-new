@@ -410,6 +410,7 @@ serve(async (req) => {
         debugInfo.processingStarted = true;
         debugInfo.emailsToProcess = emails.length;
         let skipped = 0, saved = 0, failed = 0;
+        const classifyPromises: Promise<void>[] = [];
         for (const email of emails) {
           // Check if already synced
           const { data: existing } = await supabase
@@ -458,9 +459,9 @@ serve(async (req) => {
           }
           saved++;
 
-          // Classify ALL saved emails with AI (fire-and-forget to avoid timeout)
+          // Queue classification for ALL saved emails (awaited at end)
           if (savedEmail) {
-            fetch(CLASSIFY_URL, {
+            const classifyPromise = fetch(CLASSIFY_URL, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -476,12 +477,22 @@ serve(async (req) => {
                 auto_update: true,
                 user_id: token.user_id,
               }),
-            }).catch(err => console.error("Classification failed:", err));
-            console.log(`[sync-emails] Classification triggered for "${email.subject}" (app=${applicationId || "unmatched"})`);
+            }).then(() => {
+              console.log(`[sync-emails] Classification done for "${email.subject}"`);
+            }).catch(err => console.error(`[sync-emails] Classification failed for "${email.subject}":`, err));
+            classifyPromises.push(classifyPromise);
+            console.log(`[sync-emails] Classification queued for "${email.subject}" (app=${applicationId || "unmatched"})`);
           }
 
           totalSynced++;
         }
+        // Wait for all classifications to complete before returning
+        if (classifyPromises.length > 0) {
+          console.log(`[sync-emails] Waiting for ${classifyPromises.length} classifications...`);
+          await Promise.allSettled(classifyPromises);
+          console.log(`[sync-emails] All classifications finished`);
+        }
+
         debugInfo.skipped = skipped;
         debugInfo.saved = saved;
         debugInfo.failed = failed;
