@@ -32,3 +32,27 @@ FROM jobs j
 WHERE a.job_id = j.id
   AND a.source = 'extension'
   AND (a.job_company IS NULL OR a.job_company = '');
+
+-- Step 7: Recover lost applications from job_history
+-- saveApplication() silently failed (expired JWT) but job_history was written.
+-- Recover by inserting from job_history entries that have matching jobs but no application.
+INSERT INTO applications (candidate_id, job_id, current_stage, status, source, job_url, job_title, last_interaction, created_at)
+SELECT
+  jh.user_id,
+  j.id,
+  'applied',
+  'active',
+  'extension',
+  jh.url,
+  jh.title,
+  jh.last_visit,
+  jh.last_visit
+FROM job_history jh
+INNER JOIN jobs j ON j.source_url = jh.url
+WHERE jh.url LIKE '%UploadSingle%'
+  AND NOT EXISTS (
+    SELECT 1 FROM applications a
+    WHERE a.candidate_id = jh.user_id
+      AND (a.job_url = jh.url OR a.job_id = j.id)
+  )
+ON CONFLICT (job_id, candidate_id) DO NOTHING;
