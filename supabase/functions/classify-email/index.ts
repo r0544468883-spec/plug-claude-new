@@ -175,12 +175,13 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     let isServiceRole = token === SUPABASE_SERVICE_KEY;
 
-    // Fallback: accept legacy JWT service_role keys
+    // Fallback: accept legacy JWT service_role keys (base64url → base64)
     if (!isServiceRole && token.startsWith("eyJ")) {
       try {
-        const payload = JSON.parse(atob(token.split(".")[1]));
+        const b64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+        const payload = JSON.parse(atob(b64));
         if (payload.role === "service_role") isServiceRole = true;
-      } catch { /* not a valid JWT */ }
+      } catch (e) { console.error("[classify-email] JWT decode failed:", e); }
     }
 
     let userId: string;
