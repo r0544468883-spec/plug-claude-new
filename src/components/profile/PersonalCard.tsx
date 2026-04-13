@@ -36,6 +36,7 @@ interface PersonalCardProps {
     portfolio_url: string | null;
     linkedin_url: string | null;
     github_url: string | null;
+    custom_links?: { label: string; url: string }[] | null;
     phone?: string | null;
     email?: string | null;
     allow_recruiter_contact?: boolean;
@@ -127,7 +128,8 @@ export function PersonalCard({
     fetchVideoUrl();
   }, [profile.intro_video_url]);
 
-  const hasLinks = profile.portfolio_url || profile.linkedin_url || profile.github_url;
+  const customLinks = Array.isArray(profile.custom_links) ? profile.custom_links.filter(l => l.url) : [];
+  const hasLinks = profile.portfolio_url || profile.linkedin_url || profile.github_url || customLinks.length > 0;
   const hasPersonalContent = profile.personal_tagline || profile.about_me || profile.intro_video_url;
 
   const openWhatsApp = () => {
@@ -269,6 +271,19 @@ export function PersonalCard({
                     <Github className="w-4 h-4 text-muted-foreground" />
                   </a>
                 )}
+                {customLinks.map((link, i) => (
+                  <a
+                    key={i}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-xs font-medium text-muted-foreground"
+                    title={link.url}
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    {link.label || new URL(link.url).hostname.replace('www.', '')}
+                  </a>
+                ))}
               </div>
             )}
 

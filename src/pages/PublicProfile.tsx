@@ -50,7 +50,7 @@ export default function PublicProfile() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles_secure')
-        .select('user_id, full_name, avatar_url, bio, portfolio_url, linkedin_url, github_url, allow_recruiter_contact, email, personal_tagline, about_me, intro_video_url')
+        .select('user_id, full_name, avatar_url, bio, portfolio_url, linkedin_url, github_url, allow_recruiter_contact, email, personal_tagline, about_me, intro_video_url, custom_links')
         .eq('user_id', userId)
         .maybeSingle();
 
