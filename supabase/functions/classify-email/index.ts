@@ -103,6 +103,65 @@ const CLASSIFICATION_TO_STAGE: Record<string, { stage: string; validFrom: string
   task_assignment: { stage: "task", validFrom: ["interview", "screening", "applied"] },
 };
 
+// Retry matching email to application using AI-extracted company/job info
+async function retryMatchWithAI(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  aiResult: { company_name: string | null; job_title: string | null },
+  subject: string,
+  fromEmail: string,
+): Promise<string | null> {
+  const { data: apps } = await supabase
+    .from("applications")
+    .select("id, job_company, job_title, job_url")
+    .eq("candidate_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (!apps || apps.length === 0) return null;
+
+  const senderDomain = fromEmail.split("@")[1]?.toLowerCase() || "";
+  const subjectLower = subject.toLowerCase();
+
+  // Match by AI-extracted company name
+  if (aiResult.company_name && aiResult.company_name.length >= 3) {
+    const companyLower = aiResult.company_name.toLowerCase();
+    for (const app of apps) {
+      if (app.job_company) {
+        const appCompany = app.job_company.toLowerCase();
+        if (appCompany.includes(companyLower) || companyLower.includes(appCompany)) return app.id;
+      }
+    }
+    // Check if sender domain contains the company name
+    const companyClean = companyLower.replace(/\s+/g, "");
+    if (companyClean.length >= 4 && senderDomain.includes(companyClean)) {
+      return apps[0].id;
+    }
+  }
+
+  // Match by AI-extracted job title
+  if (aiResult.job_title && aiResult.job_title.length >= 5) {
+    const titleLower = aiResult.job_title.toLowerCase();
+    for (const app of apps) {
+      if (app.job_title && app.job_title.toLowerCase().includes(titleLower)) return app.id;
+    }
+  }
+
+  // Last resort: sender domain vs job_url domain
+  if (senderDomain) {
+    for (const app of apps) {
+      if (app.job_url) {
+        try {
+          const jobDomain = new URL(app.job_url).hostname.replace("www.", "").split(".")[0].toLowerCase();
+          if (jobDomain.length >= 4 && senderDomain.includes(jobDomain)) return app.id;
+        } catch { /* invalid URL */ }
+      }
+    }
+  }
+
+  return null;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -118,7 +177,7 @@ serve(async (req) => {
     let userId: string;
 
     const requestBody = await req.json();
-    const { email_id, subject, body_text, application_id, auto_update, user_id: bodyUserId } = requestBody;
+    const { email_id, subject, body_text, from_email, application_id: rawApplicationId, auto_update, user_id: bodyUserId } = requestBody;
 
     if (isServiceRole) {
       // Called from sync-emails with service role key
@@ -136,11 +195,22 @@ serve(async (req) => {
     // Classify
     const result = await classifyWithAI(subject || "", body_text || "");
 
+    // If no application_id was provided, try to match using AI-extracted company/job info
+    let application_id = rawApplicationId || null;
+    if (!application_id && (result.company_name || result.job_title)) {
+      console.log(`[classify-email] No app match from sync — retrying with AI-extracted company="${result.company_name}", title="${result.job_title}"`);
+      application_id = await retryMatchWithAI(supabase, userId, result, subject || "", from_email || "");
+      if (application_id) {
+        console.log(`[classify-email] AI retry matched application: ${application_id}`);
+      }
+    }
+
     // Save classification to application_emails if email_id provided
     if (email_id) {
       await supabase
         .from("application_emails")
         .update({
+          application_id: application_id || null,
           ai_classification: result.classification,
           ai_confidence: result.confidence,
           ai_extracted_data: {

@@ -223,7 +223,8 @@ async function syncOutlook(
 async function matchEmailToApplication(
   supabase: ReturnType<typeof createClient>,
   email: ParsedEmail,
-  userId: string
+  userId: string,
+  extraCompanyName?: string | null,
 ): Promise<string | null> {
   // 1. Thread match — check if thread_id already exists in application_emails
   if (email.thread_id) {
@@ -239,52 +240,77 @@ async function matchEmailToApplication(
     if (existing?.application_id) return existing.application_id;
   }
 
-  // Get all active applications for matching
+  // Get ALL applications (including rejected — email may reference old ones)
   const { data: apps, error: appsErr } = await supabase
     .from("applications")
-    .select("id, job_company")
+    .select("id, job_company, job_title, job_url")
     .eq("candidate_id", userId)
-    .not("current_stage", "in", "(rejected,hired,withdrawn)")
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(200);
 
   if (appsErr) console.error(`[sync-emails] Failed to fetch apps: ${appsErr.message}`);
-  console.log(`[sync-emails] Active apps for user ${userId}: ${apps?.length || 0}`);
 
   if (!apps || apps.length === 0) return null;
 
   const senderDomain = email.from_email.split("@")[1]?.toLowerCase() || "";
   const subjectLower = (email.subject || "").toLowerCase();
-  const bodySnippet = (email.body_text || "").toLowerCase().substring(0, 500);
+  const bodySnippet = (email.body_text || "").toLowerCase().substring(0, 1000);
+  const haystack = `${subjectLower} ${bodySnippet}`;
 
   for (const app of apps) {
-    if (!app.job_company) continue;
-    const companyLower = app.job_company.toLowerCase().replace(/\s+/g, "");
-    const companyShort = companyLower.substring(0, 10);
-
     // 2. Domain match — sender domain contains company name
-    if (senderDomain && companyShort.length >= 4 && senderDomain.includes(companyShort)) {
-      return app.id;
+    if (app.job_company && app.job_company.length >= 4) {
+      const companyLower = app.job_company.toLowerCase().replace(/\s+/g, "");
+      const companyShort = companyLower.substring(0, 10);
+      if (senderDomain && companyShort.length >= 4 && senderDomain.includes(companyShort)) {
+        return app.id;
+      }
+      // 3. Subject/body match — contains company name
+      if (subjectLower.includes(app.job_company.toLowerCase())) return app.id;
+      if (bodySnippet.includes(app.job_company.toLowerCase())) return app.id;
     }
 
-    // 3. Subject match — subject contains company name
-    if (app.job_company.length >= 4 && subjectLower.includes(app.job_company.toLowerCase())) {
-      return app.id;
+    // 4. Job title match — subject contains the exact job title from the application
+    if (app.job_title && app.job_title.length >= 6) {
+      const titleLower = app.job_title.toLowerCase();
+      if (subjectLower.includes(titleLower)) return app.id;
     }
 
-    // 4. Body match — first 500 chars of body contains company name
-    if (app.job_company.length >= 4 && bodySnippet.includes(app.job_company.toLowerCase())) {
-      return app.id;
+    // 5. Job URL domain match — sender domain matches the ATS/company domain from job_url
+    if (app.job_url && senderDomain) {
+      try {
+        const jobDomain = new URL(app.job_url).hostname.replace("www.", "").split(".")[0].toLowerCase();
+        if (jobDomain.length >= 4 && senderDomain.includes(jobDomain)) return app.id;
+      } catch { /* invalid URL */ }
     }
   }
 
-  // 5. Fallback: if user has only ONE active application, attribute job-related emails to it
-  if (apps.length === 1) {
-    const jobKeywords = ["interview", "ראיון", "position", "משרה", "application", "מועמדות", "candidate", "מועמד", "job", "עבודה", "rejection", "דחי", "offer", "הצעה", "thank you for", "תודה על", "regret", "unfortunately", "לצערנו"];
-    const haystack = `${subjectLower} ${bodySnippet}`;
+  // 6. AI-extracted company name match (from classify-email)
+  if (extraCompanyName && extraCompanyName.length >= 3) {
+    const extraLower = extraCompanyName.toLowerCase();
+    for (const app of apps) {
+      if (app.job_company && app.job_company.toLowerCase().includes(extraLower)) return app.id;
+      if (app.job_title && app.job_title.toLowerCase().includes(extraLower)) return app.id;
+    }
+    // Also check sender domain
+    if (senderDomain.includes(extraLower.replace(/\s+/g, ""))) {
+      return apps[0].id; // Best guess
+    }
+  }
+
+  // 7. Fallback: if few active applications, match job-related emails
+  const activeApps = apps.filter(a => !["rejected", "hired", "withdrawn"].includes(""));
+  if (activeApps.length <= 3) {
+    const jobKeywords = ["interview", "ראיון", "position", "משרה", "application", "מועמדות", "candidate", "מועמד", "rejection", "דחי", "offer", "הצעה", "thank you for applying", "תודה על", "regret", "unfortunately", "לצערנו", "we have decided", "move forward with other", "not moving forward"];
     if (jobKeywords.some(k => haystack.includes(k))) {
-      console.log(`[sync-emails] Fallback match: only 1 active app, email looks job-related → matching to ${apps[0].id}`);
-      return apps[0].id;
+      // Try to pick the best match from active apps
+      if (activeApps.length === 1) return activeApps[0].id;
+      // For multiple, see if any company name appears in the email
+      for (const app of activeApps) {
+        if (app.job_company && app.job_company.length >= 3 && haystack.includes(app.job_company.toLowerCase())) {
+          return app.id;
+        }
+      }
     }
   }
 
@@ -432,8 +458,8 @@ serve(async (req) => {
           }
           saved++;
 
-          // Classify with AI if linked to an application (fire-and-forget to avoid timeout)
-          if (savedEmail && applicationId) {
+          // Classify ALL saved emails with AI (fire-and-forget to avoid timeout)
+          if (savedEmail) {
             fetch(CLASSIFY_URL, {
               method: "POST",
               headers: {
@@ -445,12 +471,13 @@ serve(async (req) => {
                 email_id: savedEmail.id,
                 subject: email.subject,
                 body_text: email.body_text,
-                application_id: applicationId,
+                from_email: email.from_email,
+                application_id: applicationId || null,
                 auto_update: true,
                 user_id: token.user_id,
               }),
             }).catch(err => console.error("Classification failed:", err));
-            console.log(`[sync-emails] Classification triggered for "${email.subject}"`);
+            console.log(`[sync-emails] Classification triggered for "${email.subject}" (app=${applicationId || "unmatched"})`);
           }
 
           totalSynced++;
