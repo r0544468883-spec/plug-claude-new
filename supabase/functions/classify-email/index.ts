@@ -174,14 +174,21 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
     const token = authHeader.replace("Bearer ", "");
     let isServiceRole = token === SUPABASE_SERVICE_KEY;
+    console.log(`[classify-email] token starts with: ${token.substring(0, 10)}..., env key starts with: ${SUPABASE_SERVICE_KEY.substring(0, 10)}..., match: ${isServiceRole}`);
 
-    // Fallback: accept legacy JWT service_role keys (base64url → base64)
+    // Fallback: accept legacy JWT service_role keys (base64url → base64 + padding)
     if (!isServiceRole && token.startsWith("eyJ")) {
       try {
-        const b64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-        const payload = JSON.parse(atob(b64));
-        if (payload.role === "service_role") isServiceRole = true;
+        const parts = token.split(".");
+        if (parts.length === 3) {
+          let b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+          while (b64.length % 4 !== 0) b64 += "=";
+          const decoded = atob(b64);
+          console.log(`[classify-email] JWT decoded payload snippet: ${decoded.substring(0, 80)}`);
+          if (decoded.includes('"service_role"')) isServiceRole = true;
+        }
       } catch (e) { console.error("[classify-email] JWT decode failed:", e); }
+      console.log(`[classify-email] After JWT check: isServiceRole=${isServiceRole}`);
     }
 
     let userId: string;
