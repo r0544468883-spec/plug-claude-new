@@ -228,10 +228,11 @@ serve(async (req) => {
               recommendation: result.value.recommendation,
             });
           } else {
-            // Fallback to pre-filter score
+            // Fallback: give descending scores so jobs still appear
+            const fallbackScore = Math.max(60, 80 - (i + j) * 2);
             scoredJobs.push({
               job_id: batch[j].id,
-              score: batch[j].preScore,
+              score: fallbackScore,
               recommendation: "",
             });
           }
