@@ -1,8 +1,9 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Bookmark, X, RefreshCw, Sparkles } from 'lucide-react';
+import { Check, Bookmark, X, RefreshCw, Sparkles, FileText } from 'lucide-react';
 import { CREDIT_COSTS } from '@/lib/credit-costs';
+import { useNavigate } from 'react-router-dom';
 
 interface MatchSummaryProps {
   applied: number;
@@ -16,6 +17,7 @@ interface MatchSummaryProps {
 export function MatchSummary({ applied, saved, skipped, total, onRefresh, hasFreeBatch }: MatchSummaryProps) {
   const { language } = useLanguage();
   const isHebrew = language === 'he';
+  const navigate = useNavigate();
 
   return (
     <Card className="w-full max-w-md mx-auto">
@@ -68,8 +70,14 @@ export function MatchSummary({ applied, saved, skipped, total, onRefresh, hasFre
           </div>
         </div>
 
-        {/* Refresh */}
+        {/* Actions */}
         <div className="space-y-2">
+          {applied > 0 && (
+            <Button variant="outline" onClick={() => navigate('/dashboard?section=applications')} className="gap-2 w-full">
+              <FileText className="w-4 h-4" />
+              {isHebrew ? 'צפה במועמדויות שלי' : 'View My Applications'}
+            </Button>
+          )}
           <Button onClick={onRefresh} className="gap-2 w-full">
             <RefreshCw className="w-4 h-4" />
             {isHebrew
