@@ -122,11 +122,20 @@ export default function MyMatches() {
     return formatDate(dateStr);
   };
 
-  const getActionBadge = (jobId: string) => {
+  const getActionBadge = (jobId: string, job: JobDetail | undefined) => {
     const action = actions[jobId];
     if (!action) return null;
 
     if (action.action === 'apply') {
+      // External job = user still needs to apply on the source site
+      if (job?.source_url) {
+        return (
+          <Badge className="bg-orange-500/10 text-orange-600 border-orange-500/30 gap-1">
+            <ExternalLink className="w-3 h-3" />
+            {isHebrew ? 'טרם הוגש' : 'Pending'}
+          </Badge>
+        );
+      }
       return (
         <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1">
           <Check className="w-3 h-3" />
@@ -169,10 +178,10 @@ export default function MyMatches() {
           href={job.source_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1 text-xs text-primary hover:underline"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium"
         >
-          <ExternalLink className="w-3 h-3" />
-          {source} — {isHebrew ? 'לחץ להגשה' : 'Click to apply'}
+          <ExternalLink className="w-3.5 h-3.5" />
+          {source} — {isHebrew ? 'לחץ כאן להגשה באתר' : 'Click to apply on site'}
         </a>
       );
     }
@@ -282,47 +291,42 @@ export default function MyMatches() {
                         i < batchJobs.length - 1 && 'border-b border-border/50'
                       )}
                     >
-                      {/* Row 1: Title + Score + Action */}
-                      <div className="flex items-start gap-3">
-                        <div className={cn(
-                          'w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0',
-                          bj.score >= 80 ? 'bg-emerald-500/10 text-emerald-600' :
-                          bj.score >= 70 ? 'bg-blue-500/10 text-blue-600' :
-                          'bg-amber-500/10 text-amber-600'
-                        )}>
-                          {bj.score}%
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium leading-tight">
-                            {job?.title || bj.job_id}
-                          </p>
-                        </div>
-                        <div className="shrink-0">
-                          {getActionBadge(bj.job_id)}
+                      {/* Row 1: Title + Action badge */}
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold leading-tight flex-1 min-w-0">
+                          {job?.title || bj.job_id}
+                        </p>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className={cn(
+                            'px-2 py-0.5 rounded-full text-xs font-bold',
+                            bj.score >= 80 ? 'bg-emerald-500/10 text-emerald-600' :
+                            bj.score >= 70 ? 'bg-blue-500/10 text-blue-600' :
+                            'bg-amber-500/10 text-amber-600'
+                          )}>
+                            {bj.score}%
+                          </div>
+                          {getActionBadge(bj.job_id, job)}
                         </div>
                       </div>
 
-                      {/* Row 2: Details grid */}
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 ms-[52px] text-xs">
-                        {/* Company */}
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Building2 className="w-3 h-3 shrink-0" />
-                          <span className="truncate">{job?.company_name || (isHebrew ? 'לא צוין' : 'Not specified')}</span>
-                        </div>
+                      {/* Row 2: Company + Date */}
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Building2 className="w-3.5 h-3.5 shrink-0" />
+                          {job?.company_name || (isHebrew ? 'חברה לא צוינה' : 'Company not specified')}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5 shrink-0" />
+                          {action?.created_at
+                            ? new Date(action.created_at).toLocaleDateString(isHebrew ? 'he-IL' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+                            : new Date(batch.created_at).toLocaleDateString(isHebrew ? 'he-IL' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+                          }
+                        </span>
+                      </div>
 
-                        {/* Date */}
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Calendar className="w-3 h-3 shrink-0" />
-                          <span>{action?.created_at
-                            ? new Date(action.created_at).toLocaleDateString(isHebrew ? 'he-IL' : 'en-US', { day: 'numeric', month: 'short' })
-                            : new Date(batch.created_at).toLocaleDateString(isHebrew ? 'he-IL' : 'en-US', { day: 'numeric', month: 'short' })
-                          }</span>
-                        </div>
-
-                        {/* Source + Link */}
-                        <div className="col-span-2 mt-0.5">
-                          {getSourceLabel(job)}
-                        </div>
+                      {/* Row 3: Source link */}
+                      <div className="text-xs">
+                        {getSourceLabel(job)}
                       </div>
                     </div>
                   );
