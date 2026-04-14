@@ -121,10 +121,10 @@ export function SwipeCard({ job, onSwipe, isTop }: SwipeCardProps) {
                 <span>{job.salary_range}</span>
               </div>
             )}
-            {job.field && (
+            {job.category && (
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Briefcase className="w-3.5 h-3.5" />
-                <span>{job.field}</span>
+                <span>{job.category}</span>
               </div>
             )}
           </div>

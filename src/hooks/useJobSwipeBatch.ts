@@ -11,7 +11,9 @@ export interface SwipeJob {
   location: string | null;
   salary_range: string | null;
   job_type: string | null;
-  field: string | null;
+  field_id: string | null;
+  category: string | null;
+  company_name: string | null;
   status: string;
   created_at: string;
   match_score: number;

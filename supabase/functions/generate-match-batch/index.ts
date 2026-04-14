@@ -69,7 +69,7 @@ serve(async (req) => {
         const jobIds = batchJobs.map((j: any) => j.job_id);
         const { data: jobDetails } = await supabase
           .from("jobs")
-          .select("id, title, description, requirements, location, salary_range, job_type, field, status, created_at")
+          .select("id, title, description, requirements, location, salary_range, job_type, field_id, category, status, created_at, company_name")
           .in("id", jobIds);
 
         // Get existing actions for this batch
@@ -134,7 +134,7 @@ serve(async (req) => {
     // ── Fetch active jobs ────────────────────────────────────
     const { data: allJobs, error: jobsError } = await supabase
       .from("jobs")
-      .select("id, title, description, requirements, location, salary_range, job_type, field, experience_level_id, status, created_at")
+      .select("id, title, description, requirements, location, salary_range, job_type, field_id, category, role_id, experience_level_id, status, created_at, company_name")
       .eq("status", "active")
       .order("created_at", { ascending: false })
       .limit(200);
@@ -164,7 +164,7 @@ serve(async (req) => {
 
         if (preferredFields.length > 0) {
           factors += 40;
-          if (job.field && preferredFields.includes(job.field)) score += 40;
+          if (job.field_id && preferredFields.includes(job.field_id)) score += 40;
         }
         if (preferredRoles.length > 0) {
           factors += 35;
@@ -296,7 +296,7 @@ serve(async (req) => {
     const jobIds = topJobs.map(j => j.job_id);
     const { data: jobDetails } = await supabase
       .from("jobs")
-      .select("id, title, description, requirements, location, salary_range, job_type, field, status, created_at")
+      .select("id, title, description, requirements, location, salary_range, job_type, field_id, category, status, created_at, company_name")
       .in("id", jobIds);
 
     const enriched = topJobs.map(tj => {
