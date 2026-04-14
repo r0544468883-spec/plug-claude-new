@@ -10,6 +10,7 @@ export const CREDIT_COSTS = {
   PING_AFTER_FREE: 15,
   PLUG_CHAT: 0, // free — 5 messages/day limit enforced in context
   FEED_INTERACTION: 0, // free — engagement should never cost credits
+  JOB_SWIPE_BATCH: 15,
 } as const;
 
 // Daily usage limits (not credit-based, count-based)
@@ -32,6 +33,7 @@ export const CREDIT_ACTION_LABELS = {
   feed_like: { en: 'Feed Like', he: 'לייק בפיד' },
   feed_comment: { en: 'Feed Comment', he: 'תגובה בפיד' },
   feed_poll_vote: { en: 'Feed Poll Vote', he: 'הצבעה בסקר' },
+  job_swipe_batch: { en: 'Job Match Refresh', he: 'רענון התאמות משרות' },
 } as const;
 
 // Free pings per day before credits are charged

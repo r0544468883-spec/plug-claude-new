@@ -23,7 +23,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-export type DashboardSection = 'overview' | 'profile-docs' | 'profile-settings' | 'applications' | 'candidates' | 'jobs' | 'job-search' | 'chat' | 'settings' | 'messages' | 'post-job' | 'saved-jobs' | 'cv-builder' | 'interview-prep' | 'feed' | 'create-feed-post' | 'create-webinar' | 'communities' | 'create-community' | 'community-view' | 'content-dashboard' | 'negotiation-sandbox' | 'content-hub' | 'b2b-suite' | 'recruiter-profile' | 'clients' | 'client-profile' | 'missions' | 'create-mission' | 'my-missions' | 'schedule' | 'hr-tools' | 'credits' | 'referrals' | 'analyses' | 'favorite-companies' | 'assignments' | 'candidate-search' | 'analytics' | 'my-stats' | 'vouches' | 'network';
+export type DashboardSection = 'overview' | 'profile-docs' | 'profile-settings' | 'applications' | 'candidates' | 'jobs' | 'job-search' | 'chat' | 'settings' | 'messages' | 'post-job' | 'saved-jobs' | 'cv-builder' | 'interview-prep' | 'feed' | 'create-feed-post' | 'create-webinar' | 'communities' | 'create-community' | 'community-view' | 'content-dashboard' | 'negotiation-sandbox' | 'content-hub' | 'b2b-suite' | 'recruiter-profile' | 'clients' | 'client-profile' | 'missions' | 'create-mission' | 'my-missions' | 'schedule' | 'hr-tools' | 'credits' | 'referrals' | 'analyses' | 'favorite-companies' | 'assignments' | 'candidate-search' | 'analytics' | 'my-stats' | 'vouches' | 'network' | 'job-swipe';
 
 interface NavItemConfig {
   icon: typeof LayoutDashboard;
@@ -92,6 +92,11 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
       setSidebarOpen(false);
       return;
     }
+    if (section === 'job-swipe') {
+      navigate('/job-swipe');
+      setSidebarOpen(false);
+      return;
+    }
     if (section === 'analytics') {
       navigate('/analytics');
       setSidebarOpen(false);
@@ -118,6 +123,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
         // ── Core ──
         { icon: LayoutDashboard, label: isRTL ? 'מסך ראשי' : 'Overview', section: 'overview', tooltipHe: 'מסך ראשי — הצצה לכל מה שקורה אצלך', tooltipEn: 'Home — a peek into everything happening' },
         { icon: Search, label: isRTL ? 'לוח המשרות שלי' : 'My Jobboard', section: 'job-search', tooltipHe: 'חיפוש משרות חדשות וסינון לפי מיקום, קטגוריה וסוג', tooltipEn: 'Search new jobs and filter by location, category, and type' },
+        { icon: Target, label: isRTL ? 'התאמות' : 'Matches', section: 'job-swipe' as DashboardSection, tooltipHe: 'סוויפ על משרות מותאמות — כמו אפליקציית הכרויות', tooltipEn: 'Swipe through matched jobs — dating-app style' },
         { icon: Sparkles, label: 'PLUG Feed', section: 'feed', tooltipHe: 'פיד מקצועי — טיפים, תוכן ומטלות ממגייסים וחברות', tooltipEn: 'Professional feed — tips, content & assignments from recruiters' },
         { icon: Briefcase, label: isRTL ? 'המשרות שהגשתי אליהם' : 'My job applications', section: 'applications', tooltipHe: 'משרות שהגשתי דרך פלאג, אולג\'ובס ולינקדין', tooltipEn: 'Jobs you applied to via PLUG, AllJobs & LinkedIn' },
         { icon: Calendar, label: isRTL ? 'יומן החיפוש שלי' : 'My applications schedule', section: 'schedule', tooltipHe: 'יומן ראיונות, מעקב ותזכורות', tooltipEn: 'Interviews, follow-ups and reminders calendar' },

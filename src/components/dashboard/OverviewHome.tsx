@@ -12,6 +12,7 @@ import { ExtensionAgentPanel } from '@/components/extension/ExtensionAgentPanel'
 import { VouchWidget } from '@/components/vouch/VouchWidget';
 import { VouchDiscovery } from '@/components/vouch/VouchDiscovery';
 import { ConnectionsWidget } from '@/components/connections/ConnectionsWidget';
+import { SwipeWidget } from '@/components/job-swipe/SwipeWidget';
 import { ProfileViewsWidget } from '@/components/profile/ProfileViewsWidget';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -402,6 +403,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog, onOpenChat }: Ove
             <div className="border-t border-border pt-3 space-y-3">
               <VouchWidget onNavigate={() => onNavigate('profile-settings')} />
               <VouchDiscovery />
+              {role === 'job_seeker' && <SwipeWidget />}
             </div>
           </CardContent>
         </Card>
