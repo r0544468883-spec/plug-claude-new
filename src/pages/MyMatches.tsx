@@ -273,43 +273,56 @@ export default function MyMatches() {
               <CardContent className="p-0">
                 {batchJobs.map((bj, i) => {
                   const job = jobDetails[bj.job_id];
+                  const action = actions[bj.job_id];
                   return (
                     <div
                       key={bj.job_id}
                       className={cn(
-                        'flex items-center gap-3 px-4 py-3',
+                        'px-4 py-3 space-y-2',
                         i < batchJobs.length - 1 && 'border-b border-border/50'
                       )}
                     >
-                      {/* Score */}
-                      <div className={cn(
-                        'w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0',
-                        bj.score >= 80 ? 'bg-emerald-500/10 text-emerald-600' :
-                        bj.score >= 70 ? 'bg-blue-500/10 text-blue-600' :
-                        'bg-amber-500/10 text-amber-600'
-                      )}>
-                        {bj.score}%
-                      </div>
-
-                      {/* Job info */}
-                      <div className="flex-1 min-w-0 space-y-0.5">
-                        <p className="text-sm font-medium truncate">
-                          {job?.title || bj.job_id}
-                        </p>
-                        <div className="flex items-center gap-3 flex-wrap">
-                          {job?.company_name && (
-                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <Building2 className="w-3 h-3" />
-                              {job.company_name}
-                            </span>
-                          )}
-                          {getSourceLabel(job)}
+                      {/* Row 1: Title + Score + Action */}
+                      <div className="flex items-start gap-3">
+                        <div className={cn(
+                          'w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0',
+                          bj.score >= 80 ? 'bg-emerald-500/10 text-emerald-600' :
+                          bj.score >= 70 ? 'bg-blue-500/10 text-blue-600' :
+                          'bg-amber-500/10 text-amber-600'
+                        )}>
+                          {bj.score}%
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium leading-tight">
+                            {job?.title || bj.job_id}
+                          </p>
+                        </div>
+                        <div className="shrink-0">
+                          {getActionBadge(bj.job_id)}
                         </div>
                       </div>
 
-                      {/* Action badge */}
-                      <div className="shrink-0">
-                        {getActionBadge(bj.job_id)}
+                      {/* Row 2: Details grid */}
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 ms-[52px] text-xs">
+                        {/* Company */}
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Building2 className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{job?.company_name || (isHebrew ? 'לא צוין' : 'Not specified')}</span>
+                        </div>
+
+                        {/* Date */}
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Calendar className="w-3 h-3 shrink-0" />
+                          <span>{action?.created_at
+                            ? new Date(action.created_at).toLocaleDateString(isHebrew ? 'he-IL' : 'en-US', { day: 'numeric', month: 'short' })
+                            : new Date(batch.created_at).toLocaleDateString(isHebrew ? 'he-IL' : 'en-US', { day: 'numeric', month: 'short' })
+                          }</span>
+                        </div>
+
+                        {/* Source + Link */}
+                        <div className="col-span-2 mt-0.5">
+                          {getSourceLabel(job)}
+                        </div>
                       </div>
                     </div>
                   );
