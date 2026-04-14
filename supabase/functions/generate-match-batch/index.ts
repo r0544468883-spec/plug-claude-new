@@ -42,8 +42,14 @@ serve(async (req) => {
     }
 
     const userId = user.id;
-    console.log(`[generate-match-batch] User: ${userId}, service key starts with: ${SUPABASE_SERVICE_KEY?.substring(0, 10)}...`);
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+    console.log(`[generate-match-batch] User: ${userId}`);
+    // Use user's auth for RLS-protected reads (jobs, profiles)
+    const supabase = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY") || SUPABASE_SERVICE_KEY, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    // Service role client for writes (batches, actions) that bypass RLS
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
@@ -247,7 +253,7 @@ serve(async (req) => {
 
     // ── Deduct credits for on_demand ─────────────────────────
     if (triggerType === "on_demand") {
-      await supabase.rpc("deduct_user_credits", {
+      await supabaseAdmin.rpc("deduct_user_credits", {
         p_user_id: userId,
         p_amount: JOB_SWIPE_CREDIT_COST,
         p_action: "job_swipe_batch",
@@ -258,7 +264,7 @@ serve(async (req) => {
     }
 
     // ── Store batch ──────────────────────────────────────────
-    const { data: batchRow, error: insertError } = await supabase
+    const { data: batchRow, error: insertError } = await supabaseAdmin
       .from("job_match_batches")
       .insert({
         user_id: userId,
@@ -273,7 +279,7 @@ serve(async (req) => {
       console.error("[generate-match-batch] Insert error:", insertError);
       // If unique constraint violation for weekly_free, fetch existing
       if (insertError.code === "23505" && triggerType === "weekly_free") {
-        const { data: existing } = await supabase
+        const { data: existing } = await supabaseAdmin
           .from("job_match_batches")
           .select("id")
           .eq("user_id", userId)
