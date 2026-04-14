@@ -199,37 +199,48 @@ serve(async (req) => {
     // ── AI scoring via Claude Haiku ──────────────────────────
     const scoredJobs: Array<{ job_id: string; score: number; recommendation: string }> = [];
 
-    if (!CLAUDE_API_KEY) {
-      // Fallback: assign decent scores to newest jobs when no API key
-      console.warn("[generate-match-batch] No Claude API key — using fallback scores");
+    // Try AI scoring first, fall back to simple scoring
+    let useAI = !!CLAUDE_API_KEY;
+
+    if (useAI) {
+      // Test the API key with first job before scoring all
+      const testResult = await scoreJobWithAI(profile, preFiltered[0]);
+      if (!testResult || testResult.score === 0) {
+        console.warn("[generate-match-batch] AI scoring failed or returned 0, switching to fallback");
+        useAI = false;
+      } else {
+        scoredJobs.push({ job_id: preFiltered[0].id, score: testResult.score, recommendation: testResult.recommendation });
+      }
+    }
+
+    if (!useAI) {
+      // Fallback: assign descending scores to newest jobs
+      console.log("[generate-match-batch] Using fallback scoring (no working AI key)");
       for (let i = 0; i < preFiltered.length; i++) {
-        const job = preFiltered[i];
-        // Give descending scores from 85 down, so newest/best pre-filtered jobs rank highest
-        const fallbackScore = Math.max(60, 85 - i * 2);
+        const fallbackScore = Math.max(62, 85 - i * 2);
         scoredJobs.push({
-          job_id: job.id,
+          job_id: preFiltered[i].id,
           score: fallbackScore,
           recommendation: "",
         });
       }
     } else {
-      // Batch AI scoring in groups
-      for (let i = 0; i < preFiltered.length; i += AI_BATCH_SIZE) {
+      // Score remaining jobs with AI (skip first, already scored)
+      for (let i = 1; i < preFiltered.length; i += AI_BATCH_SIZE) {
         const batch = preFiltered.slice(i, i + AI_BATCH_SIZE);
         const promises = batch.map((job: any) => scoreJobWithAI(profile, job));
         const results = await Promise.allSettled(promises);
 
         for (let j = 0; j < results.length; j++) {
           const result = results[j];
-          if (result.status === "fulfilled" && result.value) {
+          if (result.status === "fulfilled" && result.value && result.value.score > 0) {
             scoredJobs.push({
               job_id: batch[j].id,
               score: result.value.score,
               recommendation: result.value.recommendation,
             });
           } else {
-            // Fallback: give descending scores so jobs still appear
-            const fallbackScore = Math.max(60, 80 - (i + j) * 2);
+            const fallbackScore = Math.max(62, 80 - (i + j) * 2);
             scoredJobs.push({
               job_id: batch[j].id,
               score: fallbackScore,
