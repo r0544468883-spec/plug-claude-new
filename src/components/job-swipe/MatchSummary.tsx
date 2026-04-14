@@ -102,7 +102,7 @@ export function MatchSummary({ applied, saved, skipped, total, appliedJobs = [],
         {/* Actions */}
         <div className="space-y-2">
           {applied > 0 && (
-            <Button variant="outline" onClick={() => navigate('/dashboard?section=applications')} className="gap-2 w-full">
+            <Button variant="outline" onClick={() => navigate('/?section=applications')} className="gap-2 w-full">
               <FileText className="w-4 h-4" />
               {isHebrew ? 'צפה במועמדויות שלי' : 'View My Applications'}
             </Button>
