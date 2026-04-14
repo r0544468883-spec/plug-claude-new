@@ -42,7 +42,10 @@ serve(async (req) => {
     }
 
     const userId = user.id;
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    console.log(`[generate-match-batch] User: ${userId}, service key starts with: ${SUPABASE_SERVICE_KEY?.substring(0, 10)}...`);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
 
     // ── Parse request ────────────────────────────────────────
     const body = await req.json().catch(() => ({})) as { trigger_type?: string };
@@ -129,12 +132,16 @@ serve(async (req) => {
     const swipedJobIds = new Set((swipedActions || []).map((a: any) => a.job_id));
 
     // ── Fetch active jobs ────────────────────────────────────
-    const { data: allJobs } = await supabase
+    const { data: allJobs, error: jobsError } = await supabase
       .from("jobs")
       .select("id, title, description, requirements, location, salary_range, job_type, field, experience_level_id, status, created_at")
       .eq("status", "active")
       .order("created_at", { ascending: false })
       .limit(200);
+
+    if (jobsError) {
+      console.error("[generate-match-batch] Jobs query error:", jobsError);
+    }
 
     console.log(`[generate-match-batch] Found ${allJobs?.length || 0} active jobs, ${swipedJobIds.size} already swiped`);
 
