@@ -103,7 +103,7 @@ export function MatchSummary({ applied, saved, skipped, total, appliedJobs = [],
         <div className="space-y-2">
           <Button variant="outline" onClick={() => navigate('/my-matches')} className="gap-2 w-full">
             <FileText className="w-4 h-4" />
-            {isHebrew ? 'היסטוריית התאמות' : 'Match History'}
+            {isHebrew ? 'לצפייה בהתאמות ושליחת קורות החיים' : 'View matches & send CV'}
           </Button>
           <Button onClick={onRefresh} className="gap-2 w-full">
             <RefreshCw className="w-4 h-4" />
