@@ -9,7 +9,7 @@ export function SwipeWidget() {
   const { language } = useLanguage();
   const isHebrew = language === 'he';
   const navigate = useNavigate();
-  const { remainingCards, jobs, isLoading } = useJobSwipeBatch();
+  const { remainingCards, jobs } = useJobSwipeBatch();
 
   const ArrowIcon = isHebrew ? ArrowLeft : ArrowRight;
   const hasMatches = jobs.length > 0;
@@ -29,11 +29,7 @@ export function SwipeWidget() {
             <h3 className="font-semibold text-sm">
               {isHebrew ? 'התאמות השבוע' : 'Weekly Matches'}
             </h3>
-            {isLoading ? (
-              <p className="text-xs text-muted-foreground mt-1">
-                {isHebrew ? 'טוען...' : 'Loading...'}
-              </p>
-            ) : hasMatches ? (
+            {hasMatches ? (
               <>
                 <p className="text-xs text-muted-foreground mt-1">
                   {remaining > 0

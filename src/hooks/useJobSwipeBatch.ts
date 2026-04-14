@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,49 +29,30 @@ interface BatchResponse {
   balance?: number;
 }
 
+async function callGenerateBatch(triggerType: string): Promise<BatchResponse> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not authenticated');
+
+  const res = await supabase.functions.invoke('generate-match-batch', {
+    body: { trigger_type: triggerType },
+  });
+
+  if (res.error) throw res.error;
+  return res.data as BatchResponse;
+}
+
 export function useJobSwipeBatch() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [batchData, setBatchData] = useState<BatchResponse | null>(null);
 
-  // Fetch current batch (weekly free)
-  const {
-    data: batchData,
-    isLoading,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey: ['job-swipe-batch', user?.id],
-    queryFn: async (): Promise<BatchResponse> => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Not authenticated');
-
-      const res = await supabase.functions.invoke('generate-match-batch', {
-        body: { trigger_type: 'weekly_free' },
-      });
-
-      if (res.error) throw res.error;
-      return res.data as BatchResponse;
+  // Generate batch (weekly_free or on_demand)
+  const generateBatch = useMutation({
+    mutationFn: async (triggerType: string = 'weekly_free') => {
+      return callGenerateBatch(triggerType);
     },
-    enabled: !!user,
-    staleTime: 5 * 60 * 1000, // 5 min
-    refetchOnWindowFocus: false,
-  });
-
-  // Generate on-demand batch (costs credits)
-  const generateOnDemand = useMutation({
-    mutationFn: async (): Promise<BatchResponse> => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Not authenticated');
-
-      const res = await supabase.functions.invoke('generate-match-batch', {
-        body: { trigger_type: 'on_demand' },
-      });
-
-      if (res.error) throw res.error;
-      return res.data as BatchResponse;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['job-swipe-batch'] });
+    onSuccess: (data) => {
+      setBatchData(data);
     },
   });
 
@@ -92,12 +74,11 @@ export function useJobSwipeBatch() {
       return { jobId, action };
     },
     onSuccess: ({ jobId }) => {
-      // Update local cache to mark job as acted
-      queryClient.setQueryData(['job-swipe-batch', user?.id], (old: BatchResponse | undefined) => {
-        if (!old) return old;
+      setBatchData(prev => {
+        if (!prev) return prev;
         return {
-          ...old,
-          jobs: old.jobs.map(j => j.id === jobId ? { ...j, acted: true } : j),
+          ...prev,
+          jobs: prev.jobs.map(j => j.id === jobId ? { ...j, acted: true } : j),
         };
       });
     },
@@ -105,18 +86,17 @@ export function useJobSwipeBatch() {
 
   const jobs = batchData?.jobs || [];
   const remainingCards = jobs.filter(j => !j.acted);
-  const hasFreeBatchThisWeek = batchData?.is_cached === true || (batchData?.batch_id != null);
+  const hasFreeBatchThisWeek = batchData?.is_cached === true;
 
   return {
     batchId: batchData?.batch_id ?? null,
     jobs,
     remainingCards,
-    isLoading,
-    error,
+    isLoading: false,
+    error: generateBatch.error,
     hasFreeBatchThisWeek,
-    generateOnDemand: generateOnDemand.mutateAsync,
-    isGenerating: generateOnDemand.isPending,
+    generateBatch: generateBatch.mutateAsync,
+    isGenerating: generateBatch.isPending,
     recordAction: recordAction.mutateAsync,
-    refetch,
   };
 }

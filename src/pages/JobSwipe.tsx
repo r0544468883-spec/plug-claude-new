@@ -4,7 +4,6 @@ import { useJobSwipeBatch } from '@/hooks/useJobSwipeBatch';
 import { SwipeDeck } from '@/components/job-swipe/SwipeDeck';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Sparkles, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -20,14 +19,31 @@ export default function JobSwipe() {
     batchId,
     jobs,
     remainingCards,
-    isLoading,
     hasFreeBatchThisWeek,
-    generateOnDemand,
+    generateBatch,
     isGenerating,
     recordAction,
   } = useJobSwipeBatch();
 
   const BackIcon = isHebrew ? ArrowRight : ArrowLeft;
+
+  const handleGenerate = async (triggerType: string = 'weekly_free') => {
+    try {
+      const result = await generateBatch(triggerType);
+      if (result.jobs.length > 0) {
+        toast.success(isHebrew ? 'נמצאו התאמות!' : 'Matches found!');
+      } else {
+        toast.info(isHebrew ? 'לא נמצאו משרות מתאימות כרגע' : 'No matching jobs found right now');
+      }
+    } catch (err: any) {
+      console.error('Generate batch error:', err);
+      if (err?.error === 'insufficient_credits') {
+        toast.error(isHebrew ? 'אין מספיק קרדיטים' : 'Insufficient credits');
+      } else {
+        toast.error(isHebrew ? 'שגיאה ביצירת התאמות' : 'Error generating matches');
+      }
+    }
+  };
 
   const handleAction = async (jobId: string, action: 'apply' | 'skip' | 'save') => {
     try {
@@ -39,19 +55,6 @@ export default function JobSwipe() {
       }
     } catch {
       toast.error(isHebrew ? 'שגיאה, נסה שוב' : 'Error, try again');
-    }
-  };
-
-  const handleRefresh = async () => {
-    try {
-      await generateOnDemand();
-      toast.success(isHebrew ? 'התאמות חדשות נוצרו!' : 'New matches generated!');
-    } catch (err: any) {
-      if (err?.error === 'insufficient_credits') {
-        toast.error(isHebrew ? 'אין מספיק קרדיטים' : 'Insufficient credits');
-      } else {
-        toast.error(isHebrew ? 'שגיאה ביצירת התאמות' : 'Error generating matches');
-      }
     }
   };
 
@@ -74,13 +77,13 @@ export default function JobSwipe() {
               {isHebrew ? 'התאמות השבוע' : 'Weekly Matches'}
             </h1>
           </div>
-          <div className="w-10" /> {/* Spacer */}
+          <div className="w-10" />
         </div>
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6">
         {/* Loading */}
-        {(isLoading || isGenerating) && (
+        {isGenerating && (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="relative">
               <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center animate-pulse">
@@ -94,8 +97,8 @@ export default function JobSwipe() {
           </div>
         )}
 
-        {/* No matches / Generate CTA */}
-        {!isLoading && !isGenerating && jobs.length === 0 && (
+        {/* Generate CTA — shown when no batch loaded yet */}
+        {!isGenerating && jobs.length === 0 && (
           <Card className="mt-12">
             <CardContent className="p-8 text-center space-y-4">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
@@ -109,7 +112,7 @@ export default function JobSwipe() {
                   ? 'נמצא עבורך את 10 המשרות שהכי מתאימות לפרופיל שלך'
                   : "We'll find the top 10 jobs that best match your profile"}
               </p>
-              <Button onClick={() => refetch()} className="gap-2" size="lg">
+              <Button onClick={() => handleGenerate('weekly_free')} className="gap-2" size="lg">
                 <Sparkles className="w-4 h-4" />
                 {isHebrew ? 'צור התאמות (חינם)' : 'Generate Matches (Free)'}
               </Button>
@@ -118,12 +121,12 @@ export default function JobSwipe() {
         )}
 
         {/* Swipe Deck */}
-        {!isLoading && !isGenerating && jobs.length > 0 && batchId && (
+        {!isGenerating && jobs.length > 0 && batchId && (
           <SwipeDeck
             jobs={jobs}
             batchId={batchId}
             onAction={handleAction}
-            onRefresh={handleRefresh}
+            onRefresh={() => handleGenerate('on_demand')}
             hasFreeBatch={hasFreeBatchThisWeek}
           />
         )}
