@@ -136,6 +136,8 @@ serve(async (req) => {
       .order("created_at", { ascending: false })
       .limit(200);
 
+    console.log(`[generate-match-batch] Found ${allJobs?.length || 0} active jobs, ${swipedJobIds.size} already swiped`);
+
     if (!allJobs || allJobs.length === 0) {
       return new Response(JSON.stringify({ batch_id: null, jobs: [], message: "No active jobs found" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -173,6 +175,8 @@ serve(async (req) => {
       .sort((a: any, b: any) => b.preScore - a.preScore)
       .slice(0, 30);
 
+    console.log(`[generate-match-batch] Pre-filtered: ${preFiltered.length} jobs, user prefs: fields=${preferredFields.length}, roles=${preferredRoles.length}, expLevel=${preferredExpLevel || 'none'}`);
+
     if (preFiltered.length === 0) {
       return new Response(JSON.stringify({ batch_id: null, jobs: [], message: "No matching jobs found" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -183,12 +187,15 @@ serve(async (req) => {
     const scoredJobs: Array<{ job_id: string; score: number; recommendation: string }> = [];
 
     if (!CLAUDE_API_KEY) {
-      // Fallback: use pre-filter scores if no API key
-      console.warn("[generate-match-batch] No Claude API key — using pre-filter scores");
-      for (const job of preFiltered) {
+      // Fallback: assign decent scores to newest jobs when no API key
+      console.warn("[generate-match-batch] No Claude API key — using fallback scores");
+      for (let i = 0; i < preFiltered.length; i++) {
+        const job = preFiltered[i];
+        // Give descending scores from 85 down, so newest/best pre-filtered jobs rank highest
+        const fallbackScore = Math.max(60, 85 - i * 2);
         scoredJobs.push({
           job_id: job.id,
-          score: job.preScore,
+          score: fallbackScore,
           recommendation: "",
         });
       }
