@@ -1,20 +1,22 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Bookmark, X, RefreshCw, Sparkles, FileText } from 'lucide-react';
+import { Check, Bookmark, X, RefreshCw, Sparkles, FileText, ExternalLink } from 'lucide-react';
 import { CREDIT_COSTS } from '@/lib/credit-costs';
 import { useNavigate } from 'react-router-dom';
+import type { SwipeJob } from '@/hooks/useJobSwipeBatch';
 
 interface MatchSummaryProps {
   applied: number;
   saved: number;
   skipped: number;
   total: number;
+  appliedJobs?: SwipeJob[];
   onRefresh: () => void;
   hasFreeBatch: boolean;
 }
 
-export function MatchSummary({ applied, saved, skipped, total, onRefresh, hasFreeBatch }: MatchSummaryProps) {
+export function MatchSummary({ applied, saved, skipped, total, appliedJobs = [], onRefresh, hasFreeBatch }: MatchSummaryProps) {
   const { language } = useLanguage();
   const isHebrew = language === 'he';
   const navigate = useNavigate();
@@ -69,6 +71,33 @@ export function MatchSummary({ applied, saved, skipped, total, onRefresh, hasFre
             </span>
           </div>
         </div>
+
+        {/* Applied jobs with links */}
+        {appliedJobs.length > 0 && (
+          <div className="text-start space-y-2">
+            <p className="text-sm font-medium">
+              {isHebrew ? 'הגשת מועמדות ל:' : 'You applied to:'}
+            </p>
+            <div className="space-y-1.5">
+              {appliedJobs.map(job => (
+                <div key={job.id} className="flex items-center gap-2 text-sm">
+                  <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <span className="truncate flex-1">{job.title}</span>
+                  {job.source_url && (
+                    <a
+                      href={job.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline shrink-0 flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="space-y-2">

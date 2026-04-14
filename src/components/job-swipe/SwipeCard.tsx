@@ -3,7 +3,7 @@ import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MapPin, Briefcase, Clock, DollarSign, X, Bookmark, Check, Sparkles } from 'lucide-react';
+import { MapPin, Briefcase, Clock, DollarSign, X, Bookmark, Check, Sparkles, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SwipeJob } from '@/hooks/useJobSwipeBatch';
 
@@ -165,10 +165,25 @@ export function SwipeCard({ job, onSwipe, isTop }: SwipeCardProps) {
             </div>
           )}
 
-          {/* Posted date */}
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Clock className="w-3 h-3" />
-            {new Date(job.created_at).toLocaleDateString(isHebrew ? 'he-IL' : 'en-US')}
+          {/* Posted date + source link */}
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3 h-3" />
+              {new Date(job.created_at).toLocaleDateString(isHebrew ? 'he-IL' : 'en-US')}
+            </div>
+            {job.source_url && (
+              <a
+                href={job.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-primary hover:underline"
+                onClick={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+              >
+                <ExternalLink className="w-3 h-3" />
+                {isHebrew ? 'משרה מקורית' : 'Original post'}
+              </a>
+            )}
           </div>
         </div>
 

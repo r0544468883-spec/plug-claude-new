@@ -36,8 +36,8 @@ export function SwipeDeck({ jobs, batchId, onAction, onRefresh, hasFreeBatch }: 
   };
 
   if (isComplete) {
-    const applied = Object.values(actions).filter(a => a === 'apply').length +
-      jobs.filter(j => j.acted).length; // include pre-acted
+    const appliedJobs = jobs.filter(j => actions[j.id] === 'apply');
+    const applied = appliedJobs.length + jobs.filter(j => j.acted).length;
     const saved = Object.values(actions).filter(a => a === 'save').length;
     const skipped = Object.values(actions).filter(a => a === 'skip').length;
 
@@ -47,6 +47,7 @@ export function SwipeDeck({ jobs, batchId, onAction, onRefresh, hasFreeBatch }: 
         saved={saved}
         skipped={skipped}
         total={jobs.length}
+        appliedJobs={appliedJobs}
         onRefresh={onRefresh}
         hasFreeBatch={hasFreeBatch}
       />

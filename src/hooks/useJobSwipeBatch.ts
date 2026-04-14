@@ -14,6 +14,7 @@ export interface SwipeJob {
   field_id: string | null;
   category: string | null;
   company_name: string | null;
+  source_url: string | null;
   status: string;
   created_at: string;
   match_score: number;
