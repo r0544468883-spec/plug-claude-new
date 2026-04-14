@@ -224,36 +224,7 @@ serve(async (req) => {
       });
     }
 
-    // ── Deduct credits for on_demand ─────────────────────────
-    if (triggerType === "on_demand") {
-      const { data: creds } = await supabaseAdmin
-        .from("user_credits")
-        .select("daily_fuel, permanent_fuel")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (creds) {
-        const df = (creds as any).daily_fuel ?? 0;
-        const pf = (creds as any).permanent_fuel ?? 0;
-        const dailyDeduct = Math.min(df, JOB_SWIPE_CREDIT_COST);
-        const permDeduct = JOB_SWIPE_CREDIT_COST - dailyDeduct;
-
-        await supabaseAdmin
-          .from("user_credits")
-          .update({ daily_fuel: df - dailyDeduct, permanent_fuel: pf - permDeduct })
-          .eq("user_id", userId);
-
-        // Log transaction
-        const txns = [];
-        if (dailyDeduct > 0) txns.push({ user_id: userId, amount: -dailyDeduct, credit_type: "daily", action_type: "job_swipe_batch", description: `Used ${dailyDeduct} daily fuel for job match refresh` });
-        if (permDeduct > 0) txns.push({ user_id: userId, amount: -permDeduct, credit_type: "permanent", action_type: "job_swipe_batch", description: `Used ${permDeduct} permanent fuel for job match refresh` });
-        if (txns.length > 0) await supabaseAdmin.from("credit_transactions").insert(txns);
-
-        console.log(`[generate-match-batch] Deducted ${JOB_SWIPE_CREDIT_COST} credits (daily: -${dailyDeduct}, perm: -${permDeduct})`);
-      }
-    }
-
-    // ── Store batch ──────────────────────────────────────────
+    // ── Store batch (BEFORE credit deduction to avoid charging on failure) ──
     const { data: batchRow, error: insertError } = await supabaseAdmin
       .from("job_match_batches")
       .insert({
@@ -288,6 +259,34 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Failed to store batch" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // ── Deduct credits for on_demand (only after successful insert) ──
+    if (triggerType === "on_demand") {
+      const { data: creds } = await supabaseAdmin
+        .from("user_credits")
+        .select("daily_fuel, permanent_fuel")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (creds) {
+        const df = (creds as any).daily_fuel ?? 0;
+        const pf = (creds as any).permanent_fuel ?? 0;
+        const dailyDeduct = Math.min(df, JOB_SWIPE_CREDIT_COST);
+        const permDeduct = JOB_SWIPE_CREDIT_COST - dailyDeduct;
+
+        await supabaseAdmin
+          .from("user_credits")
+          .update({ daily_fuel: df - dailyDeduct, permanent_fuel: pf - permDeduct })
+          .eq("user_id", userId);
+
+        const txns = [];
+        if (dailyDeduct > 0) txns.push({ user_id: userId, amount: -dailyDeduct, credit_type: "daily", action_type: "job_swipe_batch", description: `Used ${dailyDeduct} daily fuel for job match refresh` });
+        if (permDeduct > 0) txns.push({ user_id: userId, amount: -permDeduct, credit_type: "permanent", action_type: "job_swipe_batch", description: `Used ${permDeduct} permanent fuel for job match refresh` });
+        if (txns.length > 0) await supabaseAdmin.from("credit_transactions").insert(txns);
+
+        console.log(`[generate-match-batch] Deducted ${JOB_SWIPE_CREDIT_COST} credits (daily: -${dailyDeduct}, perm: -${permDeduct})`);
+      }
     }
 
     // ── Enrich with job details ──────────────────────────────
