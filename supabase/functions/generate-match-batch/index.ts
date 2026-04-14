@@ -246,6 +246,8 @@ serve(async (req) => {
       .sort((a, b) => b.score - a.score)
       .slice(0, MAX_RESULTS);
 
+    console.log(`[generate-match-batch] Scored ${scoredJobs.length} jobs, ${topJobs.length} above threshold`);
+
     if (topJobs.length === 0) {
       return new Response(JSON.stringify({ batch_id: null, jobs: [], message: "No jobs scored above 60% match" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -275,6 +277,8 @@ serve(async (req) => {
       })
       .select("id")
       .single();
+
+    console.log(`[generate-match-batch] Insert result: batch=${batchRow?.id}, error=${insertError?.message || 'none'}`);
 
     if (insertError) {
       console.error("[generate-match-batch] Insert error:", insertError);
