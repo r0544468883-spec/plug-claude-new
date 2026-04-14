@@ -15,6 +15,7 @@ const CREDIT_COSTS: Record<string, number> = {
   'smart_search': 2,
   'ping': 15,
   'feed_interaction': 1,
+  'job_swipe_batch': 15,
 };
 
 serve(async (req) => {

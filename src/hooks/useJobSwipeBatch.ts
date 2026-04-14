@@ -73,6 +73,20 @@ export function useJobSwipeBatch() {
         });
 
       if (error) throw error;
+
+      // If applying, also create a real application record
+      if (action === 'apply') {
+        await (supabase as any)
+          .from('applications')
+          .insert({
+            job_id: jobId,
+            candidate_id: user.id,
+            apply_method: 'swipe',
+            status: 'active',
+            current_stage: 'applied',
+          });
+      }
+
       return { jobId, action };
     },
     onSuccess: ({ jobId }) => {

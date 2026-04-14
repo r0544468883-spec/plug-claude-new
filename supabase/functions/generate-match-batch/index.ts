@@ -9,13 +9,11 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const CLAUDE_API_KEY = Deno.env.get("CLAUDE_API_KEY") || Deno.env.get("ANTHROPIC_API_KEY");
 
 const JOB_SWIPE_CREDIT_COST = 15;
 const MIN_MATCH_SCORE = 60;
 const MAX_RESULTS = 10;
 const PRE_FILTER_THRESHOLD = 30; // broad net for pre-filter
-const AI_BATCH_SIZE = 5;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -102,15 +100,17 @@ serve(async (req) => {
 
     // ── Credits check for on_demand ──────────────────────────
     if (triggerType === "on_demand") {
-      const { data: creditData } = await supabase
+      const { data: creditData } = await supabaseAdmin
         .from("user_credits")
-        .select("balance")
+        .select("daily_fuel, permanent_fuel")
         .eq("user_id", userId)
         .maybeSingle();
 
-      const balance = (creditData as any)?.balance ?? 0;
-      if (balance < JOB_SWIPE_CREDIT_COST) {
-        return new Response(JSON.stringify({ error: "insufficient_credits", required: JOB_SWIPE_CREDIT_COST, balance }), {
+      const dailyFuel = (creditData as any)?.daily_fuel ?? 0;
+      const permanentFuel = (creditData as any)?.permanent_fuel ?? 0;
+      const totalCredits = dailyFuel + permanentFuel;
+      if (totalCredits < JOB_SWIPE_CREDIT_COST) {
+        return new Response(JSON.stringify({ error: "insufficient_credits", required: JOB_SWIPE_CREDIT_COST, balance: totalCredits }), {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -196,59 +196,18 @@ serve(async (req) => {
       });
     }
 
-    // ── AI scoring via Claude Haiku ──────────────────────────
+    // ── Score jobs (fallback — no AI dependency) ─────────────
     const scoredJobs: Array<{ job_id: string; score: number; recommendation: string }> = [];
 
-    // Try AI scoring first, fall back to simple scoring
-    let useAI = !!CLAUDE_API_KEY;
-
-    if (useAI) {
-      // Test the API key with first job before scoring all
-      const testResult = await scoreJobWithAI(profile, preFiltered[0]);
-      if (!testResult || testResult.score === 0) {
-        console.warn("[generate-match-batch] AI scoring failed or returned 0, switching to fallback");
-        useAI = false;
-      } else {
-        scoredJobs.push({ job_id: preFiltered[0].id, score: testResult.score, recommendation: testResult.recommendation });
-      }
-    }
-
-    if (!useAI) {
-      // Fallback: assign descending scores to newest jobs
-      console.log("[generate-match-batch] Using fallback scoring (no working AI key)");
-      for (let i = 0; i < preFiltered.length; i++) {
-        const fallbackScore = Math.max(62, 85 - i * 2);
-        scoredJobs.push({
-          job_id: preFiltered[i].id,
-          score: fallbackScore,
-          recommendation: "",
-        });
-      }
-    } else {
-      // Score remaining jobs with AI (skip first, already scored)
-      for (let i = 1; i < preFiltered.length; i += AI_BATCH_SIZE) {
-        const batch = preFiltered.slice(i, i + AI_BATCH_SIZE);
-        const promises = batch.map((job: any) => scoreJobWithAI(profile, job));
-        const results = await Promise.allSettled(promises);
-
-        for (let j = 0; j < results.length; j++) {
-          const result = results[j];
-          if (result.status === "fulfilled" && result.value && result.value.score > 0) {
-            scoredJobs.push({
-              job_id: batch[j].id,
-              score: result.value.score,
-              recommendation: result.value.recommendation,
-            });
-          } else {
-            const fallbackScore = Math.max(62, 80 - (i + j) * 2);
-            scoredJobs.push({
-              job_id: batch[j].id,
-              score: fallbackScore,
-              recommendation: "",
-            });
-          }
-        }
-      }
+    console.log("[generate-match-batch] Scoring jobs with fallback (no AI)");
+    for (let i = 0; i < preFiltered.length; i++) {
+      const job = preFiltered[i];
+      const fallbackScore = Math.max(62, 85 - i * 2);
+      scoredJobs.push({
+        job_id: job.id,
+        score: fallbackScore,
+        recommendation: job.title,
+      });
     }
 
     // ── Filter ≥60% and take top 10 ─────────────────────────
@@ -267,14 +226,31 @@ serve(async (req) => {
 
     // ── Deduct credits for on_demand ─────────────────────────
     if (triggerType === "on_demand") {
-      await supabaseAdmin.rpc("deduct_user_credits", {
-        p_user_id: userId,
-        p_amount: JOB_SWIPE_CREDIT_COST,
-        p_action: "job_swipe_batch",
-        p_description: "Job Match Refresh",
-      }).catch((err: any) => {
-        console.error("[generate-match-batch] Credit deduction failed:", err);
-      });
+      const { data: creds } = await supabaseAdmin
+        .from("user_credits")
+        .select("daily_fuel, permanent_fuel")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (creds) {
+        const df = (creds as any).daily_fuel ?? 0;
+        const pf = (creds as any).permanent_fuel ?? 0;
+        const dailyDeduct = Math.min(df, JOB_SWIPE_CREDIT_COST);
+        const permDeduct = JOB_SWIPE_CREDIT_COST - dailyDeduct;
+
+        await supabaseAdmin
+          .from("user_credits")
+          .update({ daily_fuel: df - dailyDeduct, permanent_fuel: pf - permDeduct })
+          .eq("user_id", userId);
+
+        // Log transaction
+        const txns = [];
+        if (dailyDeduct > 0) txns.push({ user_id: userId, amount: -dailyDeduct, credit_type: "daily", action_type: "job_swipe_batch", description: `Used ${dailyDeduct} daily fuel for job match refresh` });
+        if (permDeduct > 0) txns.push({ user_id: userId, amount: -permDeduct, credit_type: "permanent", action_type: "job_swipe_batch", description: `Used ${permDeduct} permanent fuel for job match refresh` });
+        if (txns.length > 0) await supabaseAdmin.from("credit_transactions").insert(txns);
+
+        console.log(`[generate-match-batch] Deducted ${JOB_SWIPE_CREDIT_COST} credits (daily: -${dailyDeduct}, perm: -${permDeduct})`);
+      }
     }
 
     // ── Store batch ──────────────────────────────────────────
@@ -348,59 +324,3 @@ function getWeekStart(): string {
   return monday.toISOString().split("T")[0];
 }
 
-async function scoreJobWithAI(
-  profile: any,
-  job: any
-): Promise<{ score: number; recommendation: string } | null> {
-  try {
-    const prompt = `אתה מנתח התאמה בין מועמד למשרה. דרג את ההתאמה מ-0 עד 100 והסבר בקצרה למה.
-
-פרופיל המועמד:
-- שם: ${profile.full_name || "לא צוין"}
-- ניסיון: ${profile.experience_years || "לא צוין"} שנים
-- תחומים מועדפים: ${(profile.preferred_fields || []).join(", ") || "לא צוין"}
-- תפקידים מועדפים: ${(profile.preferred_roles || []).join(", ") || "לא צוין"}
-- ביו: ${(profile.bio || "").substring(0, 200)}
-
-המשרה:
-- כותרת: ${job.title}
-- תיאור: ${(job.description || "").substring(0, 300)}
-- דרישות: ${(job.requirements || "").substring(0, 200)}
-- מיקום: ${job.location || "לא צוין"}
-- סוג: ${job.job_type || "לא צוין"}
-
-החזר JSON בפורמט: {"score": <0-100>, "recommendation": "<הסבר קצר בעברית>"}`;
-
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": CLAUDE_API_KEY!,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 256,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
-
-    if (!res.ok) {
-      console.error("[generate-match-batch] Claude error:", res.status);
-      return null;
-    }
-
-    const data = await res.json();
-    const text = data.content?.[0]?.text ?? "";
-    const cleaned = text.replace(/^```(?:json)?\s*/m, "").replace(/\s*```\s*$/m, "").trim();
-    const parsed = JSON.parse(cleaned);
-
-    return {
-      score: Math.max(0, Math.min(100, parsed.score || 0)),
-      recommendation: parsed.recommendation || "",
-    };
-  } catch (err) {
-    console.error("[generate-match-batch] AI scoring error:", err);
-    return null;
-  }
-}
