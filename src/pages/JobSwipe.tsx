@@ -109,7 +109,7 @@ export default function JobSwipe() {
                   ? 'נמצא עבורך את 10 המשרות שהכי מתאימות לפרופיל שלך'
                   : "We'll find the top 10 jobs that best match your profile"}
               </p>
-              <Button onClick={handleRefresh} className="gap-2" size="lg">
+              <Button onClick={() => refetch()} className="gap-2" size="lg">
                 <Sparkles className="w-4 h-4" />
                 {isHebrew ? 'צור התאמות (חינם)' : 'Generate Matches (Free)'}
               </Button>
