@@ -67,7 +67,7 @@ export default function MySecrets() {
           <div className="flex items-center gap-2">
             <Sparkles className="w-6 h-6 text-plug-mint" />
             <h1 className="text-xl font-bold text-white">
-              {isHebrew ? 'My Secrets — תובנות חברות' : 'My Secrets — Company Insights'}
+              {isHebrew ? 'הסודות שלי' : 'My Secrets'}
             </h1>
           </div>
         </div>

@@ -141,7 +141,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
         { icon: BarChart3, label: isRTL ? 'נתוני החיפוש שלי' : 'My Stats', section: 'my-stats' as DashboardSection, tooltipHe: 'סטטיסטיקות אישיות ונתוני שוק', tooltipEn: 'Personal statistics & market data' },
         { icon: Heart, label: isRTL ? 'ההמלצות שלי' : 'My Vouches', section: 'vouches' as DashboardSection, tooltipHe: 'המלצות שקיבלת ונתת — מחזקות את הפרופיל', tooltipEn: 'Vouches received and given — strengthen your profile' },
         { icon: Users, label: isRTL ? 'הרשת שלי' : 'My Network', section: 'network' as DashboardSection, tooltipHe: 'קולגות, מגייסים וחברות — כל הקשרים שלך', tooltipEn: 'Colleagues, recruiters and companies — your connections' },
-        { icon: Sparkles, label: 'My Secrets', section: 'my-secrets' as DashboardSection, tooltipHe: 'תובנות חברות מלינקדאין — מה החברה עושה, אנשי קשר והתאמה', tooltipEn: 'LinkedIn company insights — what they do, contacts & fit' },
+        { icon: Sparkles, label: isRTL ? 'הסודות שלי' : 'My Secrets', section: 'my-secrets' as DashboardSection, tooltipHe: 'תובנות חברות מלינקדאין — מה החברה עושה, אנשי קשר והתאמה', tooltipEn: 'LinkedIn company insights — what they do, contacts & fit' },
         // ── Preparation & Profile ──
         { icon: User, label: isRTL ? 'הפרופיל שלי' : 'My Profile', section: 'profile-settings', tooltipHe: 'פרופיל, הגדרות, אינטגרציות וחשבון', tooltipEn: 'Profile, settings, integrations & account' },
         { icon: FileEdit, label: isRTL ? 'בניית קורות חיים' : 'CV Builder', section: 'cv-builder', tooltipHe: 'בניית קורות חיים מקצועיים עם תבניות ו-AI', tooltipEn: 'Build professional CVs with templates and AI' },
