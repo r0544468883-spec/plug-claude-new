@@ -203,10 +203,30 @@ serve(async (req) => {
     for (let i = 0; i < preFiltered.length; i++) {
       const job = preFiltered[i];
       const fallbackScore = Math.max(62, 85 - i * 2);
+
+      // Build informative recommendation from available data
+      const parts: string[] = [];
+      if (job.title && job.company_name) {
+        parts.push(`משרת ${job.title} ב-${job.company_name}`);
+      } else if (job.title) {
+        parts.push(`משרת ${job.title}`);
+      } else if (job.company_name) {
+        parts.push(`משרה ב-${job.company_name}`);
+      }
+      if (job.location) parts.push(job.location);
+      if (job.field_id && preferredFields.includes(job.field_id)) {
+        parts.push("מתאים לתחום העדפתך");
+      }
+      if (job.experience_level_id && job.experience_level_id === preferredExpLevel) {
+        parts.push("מתאים לרמת הניסיון שלך");
+      }
+      if (job.job_type) parts.push(job.job_type);
+      const recommendation = parts.length > 0 ? parts.join(" — ") : (job.title || job.company_name || "");
+
       scoredJobs.push({
         job_id: job.id,
         score: fallbackScore,
-        recommendation: job.title,
+        recommendation,
       });
     }
 
