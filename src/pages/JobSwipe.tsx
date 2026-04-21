@@ -2,9 +2,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useJobSwipeBatch } from '@/hooks/useJobSwipeBatch';
 import { SwipeDeck } from '@/components/job-swipe/SwipeDeck';
+import { MatchHistoryTab } from '@/components/applications/MatchHistoryTab';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Sparkles, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { Sparkles, ArrowLeft, ArrowRight, Loader2, History } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { CREDIT_COSTS } from '@/lib/credit-costs';
@@ -74,7 +75,7 @@ export default function JobSwipe() {
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
             <h1 className="font-bold text-lg">
-              {isHebrew ? 'התאמות השבוע' : 'Weekly Matches'}
+              {isHebrew ? 'ספרינט' : 'Sprint'}
             </h1>
           </div>
           <div className="w-10" />
@@ -130,6 +131,15 @@ export default function JobSwipe() {
             hasFreeBatch={hasFreeBatchThisWeek}
           />
         )}
+
+        {/* Match History */}
+        <div className="mt-8">
+          <h2 className="font-bold text-base flex items-center gap-2 mb-4">
+            <History className="w-5 h-5 text-muted-foreground" />
+            {isHebrew ? 'היסטוריית מאצ׳ים' : 'Match History'}
+          </h2>
+          <MatchHistoryTab />
+        </div>
       </main>
     </div>
   );

@@ -649,16 +649,6 @@ export default function Dashboard() {
     <DashboardLayout 
       currentSection={currentSection} 
       onSectionChange={(next) => {
-        // Handle encoded section:tab format (e.g. 'applications:matches')
-        if ((next as string).startsWith('applications:')) {
-          const tab = (next as string).split(':')[1];
-          setAppsInitialTab(tab);
-          setAppsStageFilter(undefined);
-          if (next !== 'chat') setChatContextSection('applications' as DashboardSection);
-          setCurrentSection('applications');
-          return;
-        }
-        if (next === 'applications') setAppsInitialTab(undefined);
         if (next !== 'chat') setChatContextSection(next);
         setCurrentSection(next);
       }}
