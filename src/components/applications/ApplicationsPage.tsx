@@ -7,6 +7,7 @@ import { ApplicationsFilters, StatusFilter, StageFilter, SortOption } from './Ap
 import VerticalApplicationCard from './VerticalApplicationCard';
 import AnalysisHistory from '@/components/jobs/AnalysisHistory';
 import { ExtensionJobHistory } from '@/components/extension/ExtensionJobHistory';
+import { MatchHistoryTab } from './MatchHistoryTab';
 import AddApplicationForm from './AddApplicationForm';
 import { ApplicationDetailsSheet } from './ApplicationDetailsSheet';
 import { InterviewFlowDialog } from './InterviewFlowDialog';
@@ -24,7 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Briefcase, Loader2, Sparkles, FileSpreadsheet, Bookmark, ExternalLink, Heart, Building2, Plus, BarChart3 } from 'lucide-react';
+import { Briefcase, Loader2, Sparkles, FileSpreadsheet, Bookmark, ExternalLink, Heart, Building2, Plus, BarChart3, History } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Application {
@@ -625,6 +626,10 @@ export function ApplicationsPage({ initialStageFilter, onNavigate }: Application
               <Badge variant="secondary" className="ms-1.5 text-[10px] px-1.5 py-0">{savedJobs.length}</Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="matches" className="rounded-md">
+            <History className="w-4 h-4 me-1.5" />
+            {isRTL ? 'היסטוריית התאמות' : 'Match History'}
+          </TabsTrigger>
           {user && (
             <TabsTrigger value="extension" className="rounded-md">
               <Sparkles className="w-4 h-4 me-1.5" />
@@ -754,6 +759,11 @@ export function ApplicationsPage({ initialStageFilter, onNavigate }: Application
               })}
             </div>
           )}
+        </TabsContent>
+
+        {/* ── Match History Tab ── */}
+        <TabsContent value="matches" className="mt-4">
+          <MatchHistoryTab />
         </TabsContent>
 
         {/* ── Extension Activity Tab ── */}
