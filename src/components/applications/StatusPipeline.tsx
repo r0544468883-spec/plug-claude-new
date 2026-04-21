@@ -12,8 +12,8 @@ interface StatusPipelineProps {
 }
 
 const STAGES: Stage[] = [
+  { key: 'viewed', label: 'נצפתה' },
   { key: 'applied', label: 'הוגש' },
-  { key: 'viewed', label: 'נצפה' },
   { key: 'screening', label: 'בסינון' },
   { key: 'interview', label: 'ראיון' },
   { key: 'offer', label: 'הצעה' },

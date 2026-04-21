@@ -18,6 +18,9 @@ export interface StageDefinition {
 }
 
 export const STAGES: StageDefinition[] = [
+  // ── Viewed (extension detected, not yet applied) ──
+  { slug: 'viewed',             he: 'נצפתה',            en: 'Viewed',             group: 'application', color: 'bg-slate-500/20 text-slate-400',          chartColor: '#94a3b8', order: -0.5 },
+
   // ── Application ──
   { slug: 'applied',            he: 'הגשתי',            en: 'Applied',            group: 'application', color: 'bg-secondary text-secondary-foreground',  chartColor: '#6366f1', order: 0 },
 
