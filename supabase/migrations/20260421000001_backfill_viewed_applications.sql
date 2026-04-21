@@ -13,7 +13,7 @@ SELECT
   COALESCE(jh.title, j.title),
   COALESCE(jh.company, j.company_name),
   jh.last_visit,
-  jh.created_at
+  jh.last_visit
 FROM job_history jh
 INNER JOIN jobs j
   ON j.external_source = jh.source
@@ -24,7 +24,8 @@ WHERE NOT EXISTS (
     AND a.job_id = j.id
 )
 -- Safety: only backfill for last 90 days
-AND jh.created_at > NOW() - INTERVAL '90 days';
+AND jh.last_visit > NOW() - INTERVAL '90 days'
+ON CONFLICT (job_id, candidate_id) DO NOTHING;
 
 -- Also catch jobs matched by source_url (AllJobs uses URL as ID, not normalized_url)
 INSERT INTO applications (candidate_id, job_id, current_stage, status, source, job_url, job_title, job_company, last_interaction, created_at)
@@ -38,7 +39,7 @@ SELECT
   COALESCE(jh.title, j.title),
   COALESCE(jh.company, j.company_name),
   jh.last_visit,
-  jh.created_at
+  jh.last_visit
 FROM job_history jh
 INNER JOIN jobs j
   ON j.source_url = jh.url
@@ -47,4 +48,5 @@ WHERE NOT EXISTS (
   WHERE a.candidate_id = jh.user_id
     AND a.job_id = j.id
 )
-AND jh.created_at > NOW() - INTERVAL '90 days';
+AND jh.last_visit > NOW() - INTERVAL '90 days'
+ON CONFLICT (job_id, candidate_id) DO NOTHING;
