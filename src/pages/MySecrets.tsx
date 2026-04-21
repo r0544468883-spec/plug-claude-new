@@ -6,9 +6,19 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Building2, Users, ArrowLeft, ArrowRight, ExternalLink, Trash2 } from 'lucide-react';
+import { Sparkles, Building2, Users, ArrowLeft, ArrowRight, ExternalLink, Trash2, Copy, Check, Briefcase, TrendingUp, Target, MessageSquare, Handshake } from 'lucide-react';
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+
+interface InsightsSections {
+  company_overview?: string;
+  what_they_look_for?: string;
+  role_fit_growth?: string;
+  relevant_people?: Array<{ name: string; title: string; relevance: string; url?: string }>;
+  networking_tip?: string;
+  message_suggestion?: string;
+}
 
 interface CompanyInsight {
   id: string;
@@ -20,6 +30,10 @@ interface CompanyInsight {
   insights: string | null;
   known_people: string[];
   analyzed_at: string;
+  mutual_connections_count?: number;
+  applied_job_title?: string | null;
+  insights_sections?: InsightsSections | null;
+  networking_recommendation?: string | null;
 }
 
 export default function MySecrets() {
@@ -135,8 +149,90 @@ export default function MySecrets() {
                     {/* Expanded content */}
                     {isExpanded && (
                       <div className="mt-4 pt-3 border-t border-plug-border/40 space-y-3">
-                        {/* AI Insights */}
-                        {insight.insights && (
+                        {/* Badges row: mutual connections + applied job */}
+                        <div className="flex flex-wrap gap-2">
+                          {(insight.mutual_connections_count ?? 0) > 0 && (
+                            <span className="inline-flex items-center gap-1 text-[11px] bg-plug-mint/10 border border-plug-mint/30 text-plug-mint px-2 py-0.5 rounded-full font-medium">
+                              <Handshake className="w-3 h-3" />
+                              {insight.mutual_connections_count} {isHebrew ? 'קשרים משותפים' : 'mutual connections'}
+                            </span>
+                          )}
+                          {insight.applied_job_title && (
+                            <span className="inline-flex items-center gap-1 text-[11px] bg-blue-500/10 border border-blue-500/30 text-blue-400 px-2 py-0.5 rounded-full font-medium">
+                              <Briefcase className="w-3 h-3" />
+                              {isHebrew ? 'הגשת מועמדות ל:' : 'Applied for:'} {insight.applied_job_title}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Structured sections */}
+                        {insight.insights_sections && Object.keys(insight.insights_sections).length > 0 ? (
+                          <div className="space-y-2.5">
+                            {insight.insights_sections.company_overview && (
+                              <InsightSection
+                                icon={<Building2 className="w-3.5 h-3.5" />}
+                                title={isHebrew ? 'מה החברה עושה' : 'Company Overview'}
+                                text={insight.insights_sections.company_overview}
+                              />
+                            )}
+                            {insight.insights_sections.what_they_look_for && (
+                              <InsightSection
+                                icon={<Target className="w-3.5 h-3.5" />}
+                                title={isHebrew ? 'מה הם מחפשים' : 'What They Look For'}
+                                text={insight.insights_sections.what_they_look_for}
+                              />
+                            )}
+                            {insight.insights_sections.role_fit_growth && (
+                              <InsightSection
+                                icon={<TrendingUp className="w-3.5 h-3.5" />}
+                                title={isHebrew ? 'התאמת התפקיד' : 'Role Fit'}
+                                text={insight.insights_sections.role_fit_growth}
+                              />
+                            )}
+                            {insight.insights_sections.relevant_people && insight.insights_sections.relevant_people.length > 0 && (
+                              <div className="bg-plug-navy/50 border border-plug-border/40 rounded-lg p-3">
+                                <div className="flex items-center gap-1.5 mb-2">
+                                  <Users className="w-3.5 h-3.5 text-plug-mint" />
+                                  <span className="text-xs text-plug-mint font-semibold">
+                                    {isHebrew ? 'אנשים רלוונטיים' : 'Relevant People'}
+                                  </span>
+                                </div>
+                                <div className="space-y-1.5">
+                                  {insight.insights_sections.relevant_people.map((p, i) => (
+                                    <div key={i} className="flex items-center gap-2 text-xs">
+                                      <span className="text-white font-medium">{p.name}</span>
+                                      {p.title && <span className="text-plug-gray text-[11px]">{p.title}</span>}
+                                      <RelevanceBadge relevance={p.relevance} isHebrew={isHebrew} />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {insight.insights_sections.networking_tip && (
+                              <InsightSection
+                                icon={<MessageSquare className="w-3.5 h-3.5" />}
+                                title={isHebrew ? 'טיפ לנטוורקינג' : 'Networking Tip'}
+                                text={insight.insights_sections.networking_tip}
+                              />
+                            )}
+                            {insight.insights_sections.message_suggestion && (
+                              <div className="bg-plug-navy/50 border border-plug-border/40 rounded-lg p-3">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-1.5">
+                                    <Sparkles className="w-3.5 h-3.5 text-plug-mint" />
+                                    <span className="text-xs text-plug-mint font-semibold">
+                                      {isHebrew ? 'הודעה מוצעת' : 'Suggested Message'}
+                                    </span>
+                                  </div>
+                                  <CopyButton text={insight.insights_sections.message_suggestion} isHebrew={isHebrew} />
+                                </div>
+                                <p className="text-xs text-plug-gray leading-relaxed whitespace-pre-wrap">
+                                  {insight.insights_sections.message_suggestion}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        ) : insight.insights ? (
                           <div
                             className="text-sm text-plug-gray leading-relaxed whitespace-pre-wrap"
                             dangerouslySetInnerHTML={{
@@ -146,10 +242,10 @@ export default function MySecrets() {
                               ),
                             }}
                           />
-                        )}
+                        ) : null}
 
-                        {/* Known people */}
-                        {insight.known_people?.length > 0 && (
+                        {/* Known people (legacy fallback) */}
+                        {insight.known_people?.length > 0 && (!insight.insights_sections?.relevant_people?.length) && (
                           <div className="mt-2">
                             <div className="flex items-center gap-1.5 mb-1.5">
                               <Users className="w-3.5 h-3.5 text-plug-mint" />
@@ -202,5 +298,53 @@ export default function MySecrets() {
         )}
       </div>
     </DashboardLayout>
+  );
+}
+
+function InsightSection({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
+  return (
+    <div className="bg-plug-navy/50 border border-plug-border/40 rounded-lg p-3">
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <span className="text-plug-mint">{icon}</span>
+        <span className="text-xs text-plug-mint font-semibold">{title}</span>
+      </div>
+      <p className="text-xs text-plug-gray leading-relaxed">{text}</p>
+    </div>
+  );
+}
+
+function RelevanceBadge({ relevance, isHebrew }: { relevance: string; isHebrew: boolean }) {
+  const config: Record<string, { label: string; className: string }> = {
+    hiring_manager: { label: isHebrew ? 'מגייס' : 'Hiring Manager', className: 'bg-green-500/15 text-green-400 border-green-500/30' },
+    senior_mgmt: { label: isHebrew ? 'הנהלה' : 'Senior Mgmt', className: 'bg-purple-500/15 text-purple-400 border-purple-500/30' },
+    team_lead: { label: isHebrew ? 'ראש צוות' : 'Team Lead', className: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
+    peer: { label: isHebrew ? 'עמית' : 'Peer', className: 'bg-slate-500/15 text-slate-400 border-slate-500/30' },
+  };
+  const c = config[relevance] || config.peer;
+  return (
+    <span className={`text-[9px] px-1.5 py-0.5 rounded border font-medium ${c.className}`}>
+      {c.label}
+    </span>
+  );
+}
+
+function CopyButton({ text, isHebrew }: { text: string; isHebrew: boolean }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      toast.success(isHebrew ? 'הועתק!' : 'Copied!');
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      className="inline-flex items-center gap-1 text-[10px] text-plug-mint hover:text-plug-mint/80 transition-colors"
+    >
+      {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+      {copied ? (isHebrew ? 'הועתק' : 'Copied') : (isHebrew ? 'העתק' : 'Copy')}
+    </button>
   );
 }

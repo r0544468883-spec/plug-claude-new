@@ -32,11 +32,12 @@ serve(async (req) => {
     // ── Parse request ─────────────────────────────────────────
     const body = await req.json() as {
       prompt?: string;
+      system?: string;
       returnType?: "json" | "text";
       maxTokens?: number;
     };
 
-    const { prompt, returnType = "json", maxTokens = 1024 } = body;
+    const { prompt, system, returnType = "json", maxTokens = 1024 } = body;
 
     if (!prompt || typeof prompt !== "string") {
       return new Response(
@@ -62,6 +63,7 @@ serve(async (req) => {
     const claudeBody = JSON.stringify({
       model: "claude-haiku-4-5-20251001",
       max_tokens: Math.min(maxTokens, 4096),
+      ...(system ? { system } : {}),
       messages: [{ role: "user", content: prompt }],
     });
 
