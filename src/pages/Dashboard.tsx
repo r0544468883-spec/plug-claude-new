@@ -122,6 +122,7 @@ export default function Dashboard() {
   const [viewingHubId, setViewingHubId] = useState<string | null>(null);
   const [viewingClientId, setViewingClientId] = useState<string | null>(null);
   const [appsStageFilter, setAppsStageFilter] = useState<string | undefined>();
+  const [appsInitialTab, setAppsInitialTab] = useState<string | undefined>();
   const [messageTargetUserId, setMessageTargetUserId] = useState<string | undefined>();
   const chatRef = useRef<HTMLDivElement>(null);
   const [showProfileCard, setShowProfileCard] = useState(() =>
@@ -484,7 +485,7 @@ export default function Dashboard() {
       case 'applications':
         return withBackButton(
           <div className="space-y-6">
-            <ApplicationsPage initialStageFilter={appsStageFilter} onNavigate={(s) => setCurrentSection(s as any)} />
+            <ApplicationsPage initialStageFilter={appsStageFilter} initialTab={appsInitialTab} onNavigate={(s) => setCurrentSection(s as any)} />
             <PlugChat contextPage="applications" />
           </div>
         );
@@ -648,6 +649,16 @@ export default function Dashboard() {
     <DashboardLayout 
       currentSection={currentSection} 
       onSectionChange={(next) => {
+        // Handle encoded section:tab format (e.g. 'applications:matches')
+        if ((next as string).startsWith('applications:')) {
+          const tab = (next as string).split(':')[1];
+          setAppsInitialTab(tab);
+          setAppsStageFilter(undefined);
+          if (next !== 'chat') setChatContextSection('applications' as DashboardSection);
+          setCurrentSection('applications');
+          return;
+        }
+        if (next === 'applications') setAppsInitialTab(undefined);
         if (next !== 'chat') setChatContextSection(next);
         setCurrentSection(next);
       }}

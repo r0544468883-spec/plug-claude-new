@@ -59,10 +59,11 @@ interface Application {
 
 interface ApplicationsPageProps {
   initialStageFilter?: string;
+  initialTab?: string;
   onNavigate?: (section: string) => void;
 }
 
-export function ApplicationsPage({ initialStageFilter, onNavigate }: ApplicationsPageProps = {}) {
+export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }: ApplicationsPageProps = {}) {
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const isRTL = language === 'he';
@@ -612,7 +613,7 @@ export function ApplicationsPage({ initialStageFilter, onNavigate }: Application
       />
 
       {/* ── Tabs: Applications | Saved | Extension ── */}
-      <Tabs defaultValue="applications" className="w-full">
+      <Tabs defaultValue={initialTab || "applications"} className="w-full">
         <TabsList className="w-full justify-start bg-muted/50 rounded-lg p-1 plug-glow-purple">
           <TabsTrigger value="applications" className="rounded-md data-[state=active]:plug-glow-purple">
             <Briefcase className="w-4 h-4 me-1.5" />

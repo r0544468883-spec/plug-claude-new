@@ -98,7 +98,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
       return;
     }
     if (section === 'my-matches') {
-      navigate('/my-matches');
+      onSectionChange('applications:matches' as DashboardSection);
       setSidebarOpen(false);
       return;
     }
@@ -134,6 +134,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
         { icon: LayoutDashboard, label: isRTL ? 'מסך ראשי' : 'Overview', section: 'overview', tooltipHe: 'מסך ראשי — הצצה לכל מה שקורה אצלך', tooltipEn: 'Home — a peek into everything happening' },
         { icon: Search, label: isRTL ? 'לוח המשרות שלי' : 'My Jobboard', section: 'job-search', tooltipHe: 'חיפוש משרות חדשות וסינון לפי מיקום, קטגוריה וסוג', tooltipEn: 'Search new jobs and filter by location, category, and type' },
         { icon: Target, label: isRTL ? 'התאמות' : 'Matches', section: 'job-swipe' as DashboardSection, tooltipHe: 'סוויפ על משרות מותאמות — כמו אפליקציית הכרויות', tooltipEn: 'Swipe through matched jobs — dating-app style' },
+        { icon: History, label: isRTL ? 'היסטוריית מאצ׳ים' : 'Match History', section: 'my-matches' as DashboardSection, tooltipHe: 'כל ההתאמות שעשית עד היום', tooltipEn: 'All your past match sessions' },
         { icon: Sparkles, label: 'PLUG Feed', section: 'feed', tooltipHe: 'פיד מקצועי — טיפים, תוכן ומטלות ממגייסים וחברות', tooltipEn: 'Professional feed — tips, content & assignments from recruiters' },
         { icon: Briefcase, label: isRTL ? 'המשרות שהגשתי אליהם' : 'My job applications', section: 'applications', tooltipHe: 'משרות שהגשתי דרך פלאג, אולג\'ובס ולינקדין', tooltipEn: 'Jobs you applied to via PLUG, AllJobs & LinkedIn' },
         { icon: Calendar, label: isRTL ? 'יומן החיפוש שלי' : 'My applications schedule', section: 'schedule', tooltipHe: 'יומן ראיונות, מעקב ותזכורות', tooltipEn: 'Interviews, follow-ups and reminders calendar' },
