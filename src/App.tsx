@@ -29,6 +29,7 @@ import Network from "./pages/Network";
 import JobSwipe from "./pages/JobSwipe";
 import MyMatches from "./pages/MyMatches";
 import MySecrets from "./pages/MySecrets";
+import Ideas from "./pages/Ideas";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const App = () => (
                   <Route path="/job-swipe" element={<JobSwipe />} />
                   <Route path="/my-matches" element={<MyMatches />} />
                   <Route path="/my-secrets" element={<MySecrets />} />
+                  <Route path="/ideas" element={<Ideas />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

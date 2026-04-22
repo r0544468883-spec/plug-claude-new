@@ -34,6 +34,7 @@ export const CREDIT_ACTION_LABELS = {
   feed_comment: { en: 'Feed Comment', he: 'תגובה בפיד' },
   feed_poll_vote: { en: 'Feed Poll Vote', he: 'הצבעה בסקר' },
   job_swipe_batch: { en: 'Job Match Refresh', he: 'רענון התאמות משרות' },
+  feature_request_submit: { en: 'Feature Idea Submitted', he: 'רעיון לפיצ׳ר הוגש' },
 } as const;
 
 // Free pings per day before credits are charged
@@ -121,6 +122,13 @@ export const SOCIAL_TASK_REWARDS: Record<string, { credits: number; label: strin
     url: 'https://www.instagram.com/plug_hr.ai/',
     icon: 'instagram',
   },
+  feature_request_submit: {
+    credits: 5,
+    label: 'Submit a Feature Idea',
+    labelHe: 'הגשת רעיון לפיצ׳ר',
+    url: '__internal__',
+    icon: 'lightbulb',
+  },
   linkedin_post_share: {
     credits: 25,
     label: 'Share Launch Post',
@@ -178,6 +186,9 @@ export const XP_REWARDS = {
   WEEKLY_INVITE_2: 20,       // invited 2+ friends in a week
   WEEKLY_SHARE_10: 10,       // shared 10+ jobs in a week
   WEEKLY_POST: 10,           // wrote a feed post this week
+  FEATURE_REQUEST_SUBMIT: 10,
+  FEATURE_REQUEST_PLANNED: 25,
+  FEATURE_REQUEST_SHIPPED: 100,
 } as const;
 
 // Ambassador tiers
