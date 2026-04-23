@@ -41,7 +41,7 @@ export default function Ideas() {
     setLoading(true);
     try {
       let query = (supabase.from('feature_requests') as any)
-        .select('*, profiles:author_id(full_name), user_badges:author_id(badge_type)')
+        .select('*, profiles:author_id(full_name)')
         .eq('is_active', true);
 
       // Tab filters

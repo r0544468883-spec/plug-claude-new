@@ -75,8 +75,10 @@ export function FeatureRequestForm({ open, onOpenChange, onSubmitted }: FeatureR
       }
 
       // Insert feature request
-      const { data, error } = await (supabase.from('feature_requests') as any)
+      const requestId = crypto.randomUUID();
+      const { error } = await (supabase.from('feature_requests') as any)
         .insert({
+          id: requestId,
           author_id: user.id,
           title: title.trim(),
           description: description.trim() || null,
@@ -84,13 +86,12 @@ export function FeatureRequestForm({ open, onOpenChange, onSubmitted }: FeatureR
           target_audience: targetAudience,
           priority,
           voice_url: voicePath,
-          attachments: attachmentPaths,
+          attachments: attachmentPaths.length > 0 ? attachmentPaths : [],
           link_url: linkUrl.trim() || null,
-        })
-        .select('id')
-        .single();
+        });
 
       if (error) throw error;
+      const data = { id: requestId };
 
       // Award credits
       try {
