@@ -15,6 +15,19 @@
 /* PLUG Design System - Dark Theme First */
 
 @layer base {
+  /* Typography — LTR: Space Grotesk, RTL (Hebrew): Heebo */
+  body {
+    font-family: 'Space Grotesk', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    font-feature-settings: "kern" 1, "liga" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  [dir="rtl"] body,
+  [dir="rtl"] {
+    font-family: 'Heebo', ui-sans-serif, system-ui, sans-serif;
+  }
+
   :root {
     /* Dark theme as default - Deep Navy */
     --background: 220 47% 5.5%;
