@@ -159,7 +159,7 @@ export function FeatureRequestCard({ request, hasVoted, onVoteChange }: FeatureR
 
             {/* Meta row */}
             <div className="flex items-center gap-2 mt-2 text-[10px] text-muted-foreground">
-              <span>{request.profiles?.full_name || (isHe ? 'אנונימי' : 'Anonymous')}</span>
+              <span>{(request.profiles as any)?.full_name || (isHe ? 'אנונימי' : 'Anonymous')}</span>
               {request.user_badges && request.user_badges.length > 0 && (
                 <BadgeDisplay badges={request.user_badges} size="sm" />
               )}
