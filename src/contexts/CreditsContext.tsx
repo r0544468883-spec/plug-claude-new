@@ -100,6 +100,7 @@ export const CreditsProvider = ({ children }: { children: ReactNode }) => {
   // Show toast warnings when fuel level changes
   const prevWarningLevel = useRef<FuelWarningLevel>('ok');
   useEffect(() => {
+    if (isLoading || credits === null) return; // wait for real data before showing warnings
     if (prevWarningLevel.current === fuelWarningLevel) return;
     const prev = prevWarningLevel.current;
     prevWarningLevel.current = fuelWarningLevel;
@@ -107,12 +108,12 @@ export const CreditsProvider = ({ children }: { children: ReactNode }) => {
     // Only warn on transitions to worse states
     if (fuelWarningLevel === 'warning' && prev === 'ok' || fuelWarningLevel === 'warning' && prev === 'info') {
       toast.warning(
-        isRTL ? `⚠️ נשאר לך מעט דלק (${credits?.daily_fuel || 0} יומי)` : `⚠️ Low fuel (${credits?.daily_fuel || 0} daily remaining)`,
+        isRTL ? `נשאר לך מעט דלק (${credits?.daily_fuel || 0} יומי)` : `Low fuel (${credits?.daily_fuel || 0} daily remaining)`,
         { duration: 4000 }
       );
     } else if (fuelWarningLevel === 'critical') {
       toast.warning(
-        isRTL ? '🔴 כמעט נגמר הדלק!' : '🔴 Almost out of fuel!',
+        isRTL ? 'כמעט נגמר הדלק!' : 'Almost out of fuel!',
         {
           duration: 6000,
           description: isRTL
@@ -122,7 +123,7 @@ export const CreditsProvider = ({ children }: { children: ReactNode }) => {
       );
     } else if (fuelWarningLevel === 'empty') {
       toast.error(
-        isRTL ? '⛽ נגמר הדלק' : '⛽ Out of fuel',
+        isRTL ? 'נגמר הדלק' : 'Out of fuel',
         {
           duration: 8000,
           description: isRTL
@@ -192,7 +193,7 @@ export const CreditsProvider = ({ children }: { children: ReactNode }) => {
             .eq('user_id', user.id);
 
           toast.success(
-            isRTL ? `⚡ הדלק היומי שלך התמלא! (${tierDailyFuel})` : `⚡ Your daily fuel has been refilled! (${tierDailyFuel})`,
+            isRTL ? `הדלק היומי שלך התמלא! (${tierDailyFuel})` : `Daily fuel refilled! (${tierDailyFuel})`,
             { duration: 3000 }
           );
 
