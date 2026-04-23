@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCredits } from '@/contexts/CreditsContext';
@@ -27,17 +26,29 @@ export function FeatureRequestForm({ open, onOpenChange, onSubmitted }: FeatureR
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [systemArea, setSystemArea] = useState('other');
-  const [targetAudience, setTargetAudience] = useState('both');
+  const [selectedAreas, setSelectedAreas] = useState<string[]>(['other']);
+  const [selectedAudiences, setSelectedAudiences] = useState<string[]>(['both']);
   const [priority, setPriority] = useState(3);
   const [linkUrl, setLinkUrl] = useState('');
   const [voiceBlob, setVoiceBlob] = useState<Blob | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
+  const toggleArea = (key: string) => {
+    setSelectedAreas(prev =>
+      prev.includes(key) ? (prev.length > 1 ? prev.filter(a => a !== key) : prev) : [...prev, key]
+    );
+  };
+
+  const toggleAudience = (key: string) => {
+    setSelectedAudiences(prev =>
+      prev.includes(key) ? (prev.length > 1 ? prev.filter(a => a !== key) : prev) : [...prev, key]
+    );
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newFiles = Array.from(e.target.files || []);
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = 10 * 1024 * 1024;
     const valid = newFiles.filter(f => f.size <= maxSize);
     if (valid.length < newFiles.length) {
       toast.error(isHe ? 'קבצים מעל 10MB הוסרו' : 'Files over 10MB removed');
@@ -74,6 +85,9 @@ export function FeatureRequestForm({ open, onOpenChange, onSubmitted }: FeatureR
         if (!error) attachmentPaths.push(path);
       }
 
+      const systemArea = selectedAreas.join(',');
+      const targetAudience = selectedAudiences.join(',');
+
       // Insert feature request (let DB generate UUID)
       const { data: inserted, error } = await (supabase.from('feature_requests') as any)
         .insert({
@@ -93,11 +107,28 @@ export function FeatureRequestForm({ open, onOpenChange, onSubmitted }: FeatureR
         console.error('Insert error:', error.code, error.message, error.details, error.hint);
         throw error;
       }
-      const data = { id: inserted?.[0]?.id ?? null };
+      const requestId = inserted?.[0]?.id ?? null;
+
+      // Create feed post so the idea appears in the community feed
+      if (requestId) {
+        const areaLabels = selectedAreas
+          .map(k => SYSTEM_AREAS[k as keyof typeof SYSTEM_AREAS]?.[isHe ? 'he' : 'en'] || k)
+          .join(', ');
+        const desc = description.trim();
+        await (supabase.from('feed_posts') as any).insert({
+          author_id: user.id,
+          post_type: 'feature_request',
+          content_en: `💡 New feature idea: "${title.trim()}"${desc ? '\n' + desc.slice(0, 200) : ''}\n\nArea: ${areaLabels}`,
+          content_he: `💡 רעיון חדש לפיצ׳ר: "${title.trim()}"${desc ? '\n' + desc.slice(0, 200) : ''}\n\nתחום: ${areaLabels}`,
+          is_published: true,
+          likes_count: 0,
+          comments_count: 0,
+        });
+      }
 
       // Award credits
       try {
-        await awardCredits('feature_request_submit' as any, data.id);
+        await awardCredits('feature_request_submit' as any, requestId);
       } catch { /* credits award failed silently */ }
 
       // Award builder badge (first-time check)
@@ -105,7 +136,7 @@ export function FeatureRequestForm({ open, onOpenChange, onSubmitted }: FeatureR
         await (supabase.from('user_badges') as any).insert({
           user_id: user.id,
           badge_type: 'builder',
-          feature_request_id: data.id,
+          feature_request_id: requestId,
         });
       } catch { /* badge already exists or error */ }
 
@@ -116,8 +147,8 @@ export function FeatureRequestForm({ open, onOpenChange, onSubmitted }: FeatureR
       // Reset form
       setTitle('');
       setDescription('');
-      setSystemArea('other');
-      setTargetAudience('both');
+      setSelectedAreas(['other']);
+      setSelectedAudiences(['both']);
       setPriority(3);
       setLinkUrl('');
       setVoiceBlob(null);
@@ -155,33 +186,49 @@ export function FeatureRequestForm({ open, onOpenChange, onSubmitted }: FeatureR
             />
           </div>
 
-          {/* System Area + Target Audience */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                {isHe ? 'איזור במערכת' : 'System Area'}
-              </label>
-              <Select value={systemArea} onValueChange={setSystemArea}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(SYSTEM_AREAS).map(([key, val]) => (
-                    <SelectItem key={key} value={key}>{val[isHe ? 'he' : 'en']}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* System Area — multi-select chips */}
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-2 block">
+              {isHe ? 'איזור במערכת (ניתן לבחור כמה)' : 'System Area (select multiple)'}
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(SYSTEM_AREAS).map(([key, val]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => toggleArea(key)}
+                  className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                    selectedAreas.includes(key)
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background text-muted-foreground border-border hover:border-primary/50'
+                  }`}
+                >
+                  {val[isHe ? 'he' : 'en']}
+                </button>
+              ))}
             </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                {isHe ? 'קהל יעד' : 'Target Audience'}
-              </label>
-              <Select value={targetAudience} onValueChange={setTargetAudience}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(TARGET_AUDIENCES).map(([key, val]) => (
-                    <SelectItem key={key} value={key}>{val[isHe ? 'he' : 'en']}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          </div>
+
+          {/* Target Audience — multi-select chips */}
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-2 block">
+              {isHe ? 'קהל יעד (ניתן לבחור כמה)' : 'Target Audience (select multiple)'}
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(TARGET_AUDIENCES).map(([key, val]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => toggleAudience(key)}
+                  className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                    selectedAudiences.includes(key)
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background text-muted-foreground border-border hover:border-primary/50'
+                  }`}
+                >
+                  {val[isHe ? 'he' : 'en']}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -256,7 +303,7 @@ export function FeatureRequestForm({ open, onOpenChange, onSubmitted }: FeatureR
                 {files.map((f, i) => (
                   <span key={i} className="text-[10px] bg-muted px-2 py-0.5 rounded flex items-center gap-1">
                     {f.name.substring(0, 20)}{f.name.length > 20 ? '...' : ''}
-                    <button onClick={() => setFiles(prev => prev.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-300">×</button>
+                    <button onClick={() => setFiles(prev => prev.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-300">\xd7</button>
                   </span>
                 ))}
               </div>

@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { REQUEST_STATUSES, SYSTEM_AREAS, TARGET_AUDIENCES } from '@/lib/feature-badges';
 import { BadgeDisplay } from './BadgeDisplay';
-import { ChevronUp, Play, Paperclip, ExternalLink, MessageSquare } from 'lucide-react';
+import { ChevronUp, Play, Paperclip, ExternalLink, MessageSquare, Star, Send, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface FeatureRequest {
@@ -29,6 +30,15 @@ interface FeatureRequest {
   user_badges?: Array<{ badge_type: string }>;
 }
 
+interface Comment {
+  id: string;
+  user_id: string;
+  content: string;
+  rating: number | null;
+  created_at: string;
+  author_name?: string;
+}
+
 interface FeatureRequestCardProps {
   request: FeatureRequest;
   hasVoted: boolean;
@@ -43,9 +53,25 @@ export function FeatureRequestCard({ request, hasVoted, onVoteChange }: FeatureR
   const [expanded, setExpanded] = useState(false);
   const [playingAudio, setPlayingAudio] = useState(false);
 
+  // Comments state
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [commentRating, setCommentRating] = useState(0);
+  const [submittingComment, setSubmittingComment] = useState(false);
+
   const statusConfig = REQUEST_STATUSES[request.status as keyof typeof REQUEST_STATUSES] || REQUEST_STATUSES.submitted;
-  const areaLabel = SYSTEM_AREAS[request.system_area as keyof typeof SYSTEM_AREAS];
-  const audienceLabel = TARGET_AUDIENCES[request.target_audience as keyof typeof TARGET_AUDIENCES];
+
+  // Parse comma-separated areas/audiences
+  const areaKeys = request.system_area ? request.system_area.split(',').map(s => s.trim()) : [];
+  const audienceKeys = request.target_audience ? request.target_audience.split(',').map(s => s.trim()) : [];
+
+  const areaLabels = areaKeys
+    .map(k => SYSTEM_AREAS[k as keyof typeof SYSTEM_AREAS]?.[isHe ? 'he' : 'en'])
+    .filter(Boolean);
+  const audienceLabels = audienceKeys
+    .map(k => TARGET_AUDIENCES[k as keyof typeof TARGET_AUDIENCES]?.[isHe ? 'he' : 'en'])
+    .filter(Boolean);
 
   const handleVote = async () => {
     if (!user || voting) return;
@@ -81,6 +107,68 @@ export function FeatureRequestCard({ request, hasVoted, onVoteChange }: FeatureR
     } catch { /* ignore */ }
   };
 
+  const fetchComments = async () => {
+    setLoadingComments(true);
+    try {
+      const { data } = await (supabase.from('feature_request_comments') as any)
+        .select('*')
+        .eq('request_id', request.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+        .limit(20);
+
+      if (!data?.length) {
+        setComments([]);
+        setLoadingComments(false);
+        return;
+      }
+
+      // Fetch author names
+      const userIds = [...new Set((data as any[]).map((c: any) => c.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+      const nameMap: Record<string, string> = {};
+      profiles?.forEach((p: any) => { nameMap[p.id] = p.full_name; });
+
+      setComments((data as any[]).map((c: any) => ({
+        id: c.id,
+        user_id: c.user_id,
+        content: c.content,
+        rating: c.rating,
+        created_at: c.created_at,
+        author_name: nameMap[c.user_id] || (isHe ? 'אנונימי' : 'Anonymous'),
+      })));
+    } catch { /* ignore */ }
+    setLoadingComments(false);
+  };
+
+  useEffect(() => {
+    if (expanded) fetchComments();
+  }, [expanded]);
+
+  const handleSubmitComment = async () => {
+    if (!user || !commentText.trim()) return;
+    setSubmittingComment(true);
+    try {
+      const { error } = await (supabase.from('feature_request_comments') as any).insert({
+        request_id: request.id,
+        user_id: user.id,
+        content: commentText.trim(),
+        rating: commentRating > 0 ? commentRating : null,
+      });
+      if (error) throw error;
+      setCommentText('');
+      setCommentRating(0);
+      toast.success(isHe ? 'תגובה נשלחה!' : 'Comment posted!');
+      fetchComments();
+    } catch {
+      toast.error(isHe ? 'שגיאה בשליחת תגובה' : 'Error posting comment');
+    }
+    setSubmittingComment(false);
+  };
+
   const timeAgo = (date: string) => {
     const diff = Date.now() - new Date(date).getTime();
     const days = Math.floor(diff / 86400000);
@@ -90,6 +178,11 @@ export function FeatureRequestCard({ request, hasVoted, onVoteChange }: FeatureR
     if (hours > 0) return isHe ? `לפני ${hours} שעות` : `${hours}h ago`;
     return isHe ? 'עכשיו' : 'just now';
   };
+
+  const avgRating = comments.length > 0
+    ? comments.filter(c => c.rating).reduce((sum, c) => sum + (c.rating || 0), 0) /
+      comments.filter(c => c.rating).length
+    : null;
 
   return (
     <Card className="bg-card border-border hover:border-primary/20 transition-colors">
@@ -120,23 +213,31 @@ export function FeatureRequestCard({ request, hasVoted, onVoteChange }: FeatureR
               >
                 {request.title}
               </h3>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium whitespace-nowrap ${statusConfig.color}`}>
-                {statusConfig[isHe ? 'he' : 'en']}
-              </span>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {avgRating !== null && (
+                  <span className="text-[10px] text-yellow-500 font-medium flex items-center gap-0.5">
+                    <Star className="w-3 h-3 fill-yellow-500" />
+                    {avgRating.toFixed(1)}
+                  </span>
+                )}
+                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium whitespace-nowrap ${statusConfig.color}`}>
+                  {statusConfig[isHe ? 'he' : 'en']}
+                </span>
+              </div>
             </div>
 
             {/* Badges row */}
             <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-              {areaLabel && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                  {areaLabel[isHe ? 'he' : 'en']}
+              {areaLabels.map((label, i) => (
+                <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                  {label}
                 </span>
-              )}
-              {audienceLabel && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                  {audienceLabel[isHe ? 'he' : 'en']}
+              ))}
+              {audienceLabels.map((label, i) => (
+                <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600">
+                  {label}
                 </span>
-              )}
+              ))}
               {request.voice_url && (
                 <button onClick={playVoice} className="text-[10px] text-primary hover:underline inline-flex items-center gap-0.5">
                   <Play className="w-3 h-3" />
@@ -171,11 +272,23 @@ export function FeatureRequestCard({ request, hasVoted, onVoteChange }: FeatureR
                   <span>{'⭐'.repeat(Math.min(request.priority, 5))}</span>
                 </>
               )}
+              {request.comments_count > 0 && (
+                <>
+                  <span>•</span>
+                  <button
+                    className="inline-flex items-center gap-0.5 hover:text-foreground"
+                    onClick={() => setExpanded(true)}
+                  >
+                    <MessageSquare className="w-3 h-3" />
+                    {request.comments_count}
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Expanded content */}
             {expanded && (
-              <div className="mt-3 pt-3 border-t border-border/50 space-y-2">
+              <div className="mt-3 pt-3 border-t border-border/50 space-y-3">
                 {request.description && (
                   <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
                     {request.description}
@@ -189,6 +302,90 @@ export function FeatureRequestCard({ request, hasVoted, onVoteChange }: FeatureR
                     <p className="text-xs text-muted-foreground mt-1">{request.admin_response}</p>
                   </div>
                 )}
+
+                {/* Comments section */}
+                <div className="space-y-2">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                    {isHe ? 'תגובות' : 'Comments'}
+                  </p>
+
+                  {loadingComments ? (
+                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      {isHe ? 'טוען...' : 'Loading...'}
+                    </div>
+                  ) : comments.length === 0 ? (
+                    <p className="text-[10px] text-muted-foreground italic">
+                      {isHe ? 'אין תגובות עדיין. היו הראשונים!' : 'No comments yet. Be the first!'}
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {comments.map(c => (
+                        <div key={c.id} className="bg-muted/50 rounded-lg p-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-semibold text-foreground">{c.author_name}</span>
+                            <div className="flex items-center gap-1">
+                              {c.rating && (
+                                <span className="flex items-center gap-0.5">
+                                  {Array.from({ length: c.rating }).map((_, i) => (
+                                    <Star key={i} className="w-2.5 h-2.5 text-yellow-400 fill-yellow-400" />
+                                  ))}
+                                </span>
+                              )}
+                              <span className="text-[10px] text-muted-foreground">{timeAgo(c.created_at)}</span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-foreground/90 mt-0.5">{c.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add comment */}
+                  {user && (
+                    <div className="space-y-1.5">
+                      {/* Star rating picker */}
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-muted-foreground">
+                          {isHe ? 'דירוג:' : 'Rate:'}
+                        </span>
+                        {[1, 2, 3, 4, 5].map(n => (
+                          <button
+                            key={n}
+                            type="button"
+                            onClick={() => setCommentRating(prev => prev === n ? 0 : n)}
+                            className="p-0.5 transition-colors"
+                          >
+                            <Star
+                              className={`w-3.5 h-3.5 ${n <= commentRating ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/30'}`}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex gap-1.5">
+                        <Input
+                          value={commentText}
+                          onChange={e => setCommentText(e.target.value)}
+                          placeholder={isHe ? 'כתוב תגובה...' : 'Write a comment...'}
+                          className="text-xs h-8"
+                          onKeyDown={e => e.key === 'Enter' && handleSubmitComment()}
+                        />
+                        <Button
+                          size="sm"
+                          className="h-8 w-8 p-0 flex-shrink-0"
+                          onClick={handleSubmitComment}
+                          disabled={!commentText.trim() || submittingComment}
+                        >
+                          {submittingComment ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Send className="w-3.5 h-3.5" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

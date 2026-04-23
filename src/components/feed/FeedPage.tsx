@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -228,6 +228,33 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
     enabled: !!user?.id,
   });
 
+  // Fetch job spotlights (top active jobs)
+  const { data: jobSpotlights } = useQuery({
+    queryKey: ['feed-job-spotlights'],
+    queryFn: async () => {
+      const { data: jobs } = await (supabase as any)
+        .from('jobs')
+        .select('id, title, company_id, location, job_type, description, job_url, created_at, companies(name)')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      if (!jobs?.length) return [] as any[];
+      return (jobs as any[]).map((j): any => ({
+        id: `job-${j.id}`,
+        recruiterName: j.companies?.name || 'Company',
+        recruiterAvatar: (j.companies?.name || 'C').charAt(0).toUpperCase(),
+        companyName: j.companies?.name || '',
+        postType: 'job_spotlight',
+        content: `🔍 ${j.title}${j.location ? ' · ' + j.location : ''}${j.job_type ? ' · ' + j.job_type : ''}\n${(j.description || '').slice(0, 150)}${j.description?.length > 150 ? '...' : ''}`,
+        contentHe: `🔍 ${j.title}${j.location ? ' · ' + j.location : ''}${j.job_type ? ' · ' + j.job_type : ''}\n${(j.description || '').slice(0, 150)}${j.description?.length > 150 ? '...' : ''}`,
+        likes: 0,
+        comments: 0,
+        createdAt: j.created_at,
+        jobUrl: j.job_url || null,
+      }));
+    },
+  });
+
   // Fetch recent assignments for the feed
   const { data: assignmentPosts } = useQuery({
     queryKey: ['feed-assignments'],
@@ -322,10 +349,20 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
   const userName = (profile as any)?.full_name?.split(' ')[0] || '';
   const userInitial = userName.charAt(0).toUpperCase() || 'U';
 
-  // Render a paginated list of posts
+  // Render a paginated list of posts, injecting job spotlights every 5 posts
   const renderPosts = (posts: FeedPost[]) => {
     const visible = posts.slice(0, visibleCount);
     const hasMore = posts.length > visibleCount;
+    const spots = jobSpotlights || [];
+
+    const items: React.ReactNode[] = [];
+    visible.forEach((post, idx) => {
+      items.push(<FeedCard key={post.id} post={post} />);
+      if ((idx + 1) % 5 === 0 && spots.length > 0) {
+        const spot = spots[Math.floor((idx + 1) / 5 - 1) % spots.length];
+        items.push(<FeedCard key={`spot-${idx}`} post={spot} />);
+      }
+    });
 
     return (
       <>
@@ -333,7 +370,7 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
           <EmptyFeed isRTL={isRTL} onCreatePost={onCreatePost} />
         ) : (
           <>
-            {visible.map(post => <FeedCard key={post.id} post={post} />)}
+            {items}
             {hasMore && (
               <div ref={loadMoreRef} className="flex justify-center py-4">
                 <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />

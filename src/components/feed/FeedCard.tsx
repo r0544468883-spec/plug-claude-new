@@ -43,6 +43,8 @@ const POST_TYPE_ACCENT: Record<string, string> = {
   question: 'border-s-cyan-500',
   event: 'border-s-pink-500',
   assignment: 'border-s-emerald-500',
+  feature_request: 'border-s-yellow-500',
+  job_spotlight: 'border-s-indigo-500',
 };
 
 const POST_TYPE_BADGE: Record<string, { en: string; he: string; color: string }> = {
@@ -54,6 +56,8 @@ const POST_TYPE_BADGE: Record<string, { en: string; he: string; color: string }>
   question: { en: 'Question', he: 'שאלה', color: 'bg-cyan-500/10 text-cyan-600' },
   event: { en: 'Event', he: 'אירוע', color: 'bg-pink-500/10 text-pink-600' },
   assignment: { en: 'Assignment', he: 'מטלה', color: 'bg-emerald-500/10 text-emerald-600' },
+  feature_request: { en: 'Idea', he: 'רעיון', color: 'bg-yellow-500/10 text-yellow-600' },
+  job_spotlight: { en: 'Job', he: 'משרה', color: 'bg-indigo-500/10 text-indigo-600' },
 };
 
 // ─── Reaction types ────────────────────────────────────────
@@ -370,6 +374,34 @@ export function FeedCard({ post }: FeedCardProps) {
           {/* ─── Poll ───────────────────────────────────────── */}
           {post.postType === 'poll' && post.pollOptions && (
             <FeedPollCard options={post.pollOptions} postId={post.id} />
+          )}
+
+          {/* ─── Feature Request CTA ────────────────────────── */}
+          {post.postType === 'feature_request' && (
+            <div className="mt-2 mb-1">
+              <button
+                onClick={() => navigate('/ideas')}
+                className="text-xs text-primary font-medium hover:underline flex items-center gap-1"
+              >
+                <Lightbulb className="w-3.5 h-3.5" />
+                {isRTL ? 'הצבע על הרעיון ←' : 'Vote on this idea →'}
+              </button>
+            </div>
+          )}
+
+          {/* ─── Job Spotlight CTA ──────────────────────────── */}
+          {post.postType === 'job_spotlight' && (post as any).jobUrl && (
+            <div className="mt-2 mb-1">
+              <a
+                href={(post as any).jobUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/20 transition-colors px-3 py-1.5 rounded-full font-medium"
+              >
+                <ExternalLink className="w-3 h-3" />
+                {isRTL ? 'צפה במשרה' : 'View Job'}
+              </a>
+            </div>
           )}
 
           {/* ─── Engagement stats (like LinkedIn) ───────────── */}

@@ -51,9 +51,9 @@ export default function Ideas() {
         query = query.eq('status', 'shipped');
       }
 
-      // Area filter
+      // Area filter — use ilike to support comma-separated multi-area values
       if (areaFilter !== 'all') {
-        query = query.eq('system_area', areaFilter);
+        query = query.ilike('system_area', `%${areaFilter}%`);
       }
 
       // Status filter

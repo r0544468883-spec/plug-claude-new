@@ -1,4 +1,4 @@
-export type FeedPostType = 'tip' | 'culture' | 'poll' | 'visual' | 'video' | 'question' | 'event' | 'assignment';
+export type FeedPostType = 'tip' | 'culture' | 'poll' | 'visual' | 'video' | 'question' | 'event' | 'assignment' | 'feature_request' | 'job_spotlight';
 
 export interface FeedPost {
   id: string;
