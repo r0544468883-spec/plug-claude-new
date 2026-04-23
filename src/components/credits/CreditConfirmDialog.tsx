@@ -65,8 +65,8 @@ export const CreditConfirmDialog = ({
           >
             {/* Header with icon */}
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#00FF9D]/20 to-[#B794F4]/20 flex items-center justify-center">
-                <Zap className="w-6 h-6 text-[#00FF9D]" />
+              <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
+                <Zap className="w-6 h-6 text-primary" />
               </div>
               <div>
                 <h3 className="font-semibold text-lg">
@@ -82,7 +82,7 @@ export const CreditConfirmDialog = ({
                 <span className="text-sm text-muted-foreground">
                   {isRTL ? 'פעולה זו דורשת' : 'This action requires'}
                 </span>
-                <span className="text-2xl font-bold text-[#00FF9D]">{cost}</span>
+                <span className="text-2xl font-bold text-primary">{cost}</span>
               </div>
               
               {/* Breakdown */}
@@ -90,7 +90,7 @@ export const CreditConfirmDialog = ({
                 {dailyDeduct > 0 && (
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5 text-[#00FF9D]" />
+                      <Zap className="w-3.5 h-3.5 text-primary" />
                       {isRTL ? 'דלק יומי' : 'Daily Fuel'}
                     </span>
                     <span className="text-destructive">-{dailyDeduct}</span>
@@ -99,7 +99,7 @@ export const CreditConfirmDialog = ({
                 {permanentDeduct > 0 && (
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-[#B794F4]" />
+                      <AlertTriangle className="w-3.5 h-3.5 text-accent" />
                       {isRTL ? 'דלק קבוע' : 'Permanent Fuel'}
                     </span>
                     <span className="text-destructive">-{permanentDeduct}</span>
@@ -125,10 +125,7 @@ export const CreditConfirmDialog = ({
               >
                 {isRTL ? 'ביטול' : 'Cancel'}
               </Button>
-              <Button
-                onClick={onConfirm}
-                className="flex-1 bg-gradient-to-r from-[#00FF9D] to-[#00DD88] text-black hover:opacity-90"
-              >
+              <Button onClick={onConfirm} className="flex-1">
                 {isRTL ? 'המשך' : 'Continue'}
               </Button>
             </div>
