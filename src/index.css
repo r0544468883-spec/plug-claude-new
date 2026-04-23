@@ -24,7 +24,7 @@ html, body {
 
 html[dir="rtl"], html[dir="rtl"] body {
   font-family: 'Heebo', ui-sans-serif, system-ui, sans-serif;
-  font-weight: 400;
+  font-weight: 500;
 }
 
 @layer base {
