@@ -78,6 +78,9 @@ export const CreditsProvider = ({ children }: { children: ReactNode }) => {
   // Insufficient fuel dialog state
   const [insufficientFuel, setInsufficientFuel] = useState<{ required: number; available: number } | null>(null);
 
+  // Guard: daily refill toast shown only once per session
+  const refillToastShown = useRef(false);
+
   const totalCredits = (credits?.daily_fuel || 0) + (credits?.permanent_fuel || 0);
 
   // Chat message counter for daily limit
@@ -192,10 +195,13 @@ export const CreditsProvider = ({ children }: { children: ReactNode }) => {
             })
             .eq('user_id', user.id);
 
-          toast.success(
-            isRTL ? `הדלק היומי שלך התמלא! (${tierDailyFuel})` : `Daily fuel refilled! (${tierDailyFuel})`,
-            { duration: 3000 }
-          );
+          if (!refillToastShown.current) {
+            refillToastShown.current = true;
+            toast.success(
+              isRTL ? `הדלק היומי שלך התמלא! (${tierDailyFuel})` : `Daily fuel refilled! (${tierDailyFuel})`,
+              { duration: 3000 }
+            );
+          }
 
           // Track login streak
           try {
