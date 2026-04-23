@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,8 +11,16 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Building2, GraduationCap, Lightbulb, Video, Save, Loader2, Eye, Briefcase, X } from 'lucide-react';
+import { User, Building2, GraduationCap, Lightbulb, Video, Save, Loader2, Eye, Briefcase, X, Search } from 'lucide-react';
 import { PhotoUpload } from '@/components/profile/PhotoUpload';
+import { getCompanyLogoUrl } from '@/lib/company-logo';
+
+interface LinkedCompany {
+  id: string;
+  name: string;
+  website?: string | null;
+  logo_url?: string | null;
+}
 
 export function RecruiterProfileEditor() {
   const { language } = useLanguage();
@@ -21,19 +29,24 @@ export function RecruiterProfileEditor() {
 
   const [industries, setIndustries] = useState<string[]>([]);
   const [companies, setCompanies] = useState<string[]>([]);
+  const [linkedCompanies, setLinkedCompanies] = useState<LinkedCompany[]>([]);
   const [philosophy, setPhilosophy] = useState('');
   const [background, setBackground] = useState('');
   const [education, setEducation] = useState('');
   const [tip, setTip] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [newIndustry, setNewIndustry] = useState('');
-  const [newCompany, setNewCompany] = useState('');
+  const [companySearch, setCompanySearch] = useState('');
+  const [companySuggestions, setCompanySuggestions] = useState<LinkedCompany[]>([]);
+  const [searchingCompanies, setSearchingCompanies] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [saving, setSaving] = useState(false);
   const [previewMode, setPreviewMode] = useState<'edit' | 'companies' | 'candidates'>('edit');
+  const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
-    supabase.from('profiles').select('recruiter_industries, recruiter_companies, recruiter_philosophy, recruiter_background, recruiter_education, recruiter_tip, recruiter_video_url').eq('user_id', user.id).single().then(({ data }) => {
+    supabase.from('profiles').select('recruiter_industries, recruiter_companies, recruiter_company_ids, recruiter_philosophy, recruiter_background, recruiter_education, recruiter_tip, recruiter_video_url').eq('user_id', user.id).single().then(async ({ data }) => {
       if (data) {
         setIndustries((data as any).recruiter_industries || []);
         setCompanies((data as any).recruiter_companies || []);
@@ -42,6 +55,16 @@ export function RecruiterProfileEditor() {
         setEducation((data as any).recruiter_education || '');
         setTip((data as any).recruiter_tip || '');
         setVideoUrl((data as any).recruiter_video_url || '');
+
+        // Load linked company records for UUID-linked companies
+        const ids: string[] = (data as any).recruiter_company_ids || [];
+        if (ids.length > 0) {
+          const { data: companyRows } = await (supabase as any)
+            .from('companies')
+            .select('id, name, website, logo_url')
+            .in('id', ids);
+          if (companyRows) setLinkedCompanies(companyRows);
+        }
       }
     });
   }, [user?.id]);
@@ -52,7 +75,11 @@ export function RecruiterProfileEditor() {
     try {
       const { error } = await supabase.from('profiles').update({
         recruiter_industries: industries,
-        recruiter_companies: companies,
+        recruiter_companies: [
+          ...companies,
+          ...linkedCompanies.filter(lc => !companies.includes(lc.name)).map(lc => lc.name),
+        ],
+        recruiter_company_ids: linkedCompanies.map(lc => lc.id),
         recruiter_philosophy: philosophy,
         recruiter_background: background,
         recruiter_education: education,
@@ -80,6 +107,48 @@ export function RecruiterProfileEditor() {
     setList(list.filter((_, i) => i !== index));
   };
 
+  const handleCompanySearchChange = (value: string) => {
+    setCompanySearch(value);
+    setShowSuggestions(true);
+    if (searchDebounce.current) clearTimeout(searchDebounce.current);
+    if (!value.trim()) {
+      setCompanySuggestions([]);
+      return;
+    }
+    searchDebounce.current = setTimeout(async () => {
+      setSearchingCompanies(true);
+      const { data } = await (supabase as any)
+        .from('companies')
+        .select('id, name, website, logo_url')
+        .ilike('name', `%${value.trim()}%`)
+        .limit(6);
+      setCompanySuggestions(data || []);
+      setSearchingCompanies(false);
+    }, 300);
+  };
+
+  const selectLinkedCompany = (company: LinkedCompany) => {
+    if (!linkedCompanies.find(lc => lc.id === company.id)) {
+      setLinkedCompanies(prev => [...prev, company]);
+    }
+    setCompanySearch('');
+    setCompanySuggestions([]);
+    setShowSuggestions(false);
+  };
+
+  const addCompanyManually = () => {
+    const trimmed = companySearch.trim();
+    if (!trimmed) return;
+    if (!companies.includes(trimmed)) setCompanies(prev => [...prev, trimmed]);
+    setCompanySearch('');
+    setCompanySuggestions([]);
+    setShowSuggestions(false);
+  };
+
+  const removeLinkedCompany = (id: string) => {
+    setLinkedCompanies(prev => prev.filter(lc => lc.id !== id));
+  };
+
   // Preview: Company view
   const renderCompanyPreview = () => (
     <Card className="bg-card border-border">
@@ -97,8 +166,24 @@ export function RecruiterProfileEditor() {
         {industries.length > 0 && (
           <div><p className="text-sm font-medium mb-2">{isRTL ? 'תעשיות' : 'Industries'}</p><div className="flex flex-wrap gap-1.5">{industries.map((i, idx) => <Badge key={idx} variant="secondary">{i}</Badge>)}</div></div>
         )}
-        {companies.length > 0 && (
-          <div><p className="text-sm font-medium mb-2">{isRTL ? 'חברות' : 'Companies'}</p><div className="flex flex-wrap gap-1.5">{companies.map((c, idx) => <Badge key={idx} variant="outline">{c}</Badge>)}</div></div>
+        {(linkedCompanies.length > 0 || companies.length > 0) && (
+          <div>
+            <p className="text-sm font-medium mb-2">{isRTL ? 'חברות שאני עובד/ת איתן' : 'Companies I work with'}</p>
+            <div className="flex flex-wrap gap-2">
+              {linkedCompanies.map((lc, idx) => {
+                const logo = getCompanyLogoUrl(lc);
+                return (
+                  <Badge key={idx} variant="outline" className="gap-1.5 pl-1.5 pr-2 py-1 h-auto">
+                    <div className="w-5 h-5 rounded bg-muted flex items-center justify-center overflow-hidden">
+                      {logo ? <img src={logo} alt={lc.name} className="w-4 h-4 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} /> : <Building2 className="w-3 h-3 text-muted-foreground" />}
+                    </div>
+                    <span className="text-xs">{lc.name}</span>
+                  </Badge>
+                );
+              })}
+              {companies.map((c, idx) => <Badge key={`m-${idx}`} variant="outline">{c}</Badge>)}
+            </div>
+          </div>
         )}
         {background && <div><p className="text-sm font-medium mb-1">{isRTL ? 'רקע מקצועי' : 'Professional Background'}</p><p className="text-sm text-muted-foreground">{background}</p></div>}
         {education && <div><p className="text-sm font-medium mb-1">{isRTL ? 'רקע אקדמאי' : 'Education'}</p><p className="text-sm text-muted-foreground">{education}</p></div>}
@@ -201,14 +286,110 @@ export function RecruiterProfileEditor() {
             <div className="flex flex-wrap gap-1.5">{industries.map((t, i) => <Badge key={i} variant="secondary" className="gap-1">{t}<button onClick={() => removeTag(industries, setIndustries, i)}><X className="w-3 h-3" /></button></Badge>)}</div>
           </div>
 
-          {/* Companies */}
+          {/* Companies I work with — linked (with logos) */}
           <div className="space-y-2">
-            <Label className="flex items-center gap-2"><Building2 className="w-4 h-4" />{isRTL ? 'חברות' : 'Companies'}</Label>
-            <div className="flex gap-2">
-              <Input value={newCompany} onChange={(e) => setNewCompany(e.target.value)} placeholder={isRTL ? 'הוסף חברה...' : 'Add company...'} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag(companies, setCompanies, newCompany, setNewCompany))} />
-              <Button variant="outline" size="sm" onClick={() => addTag(companies, setCompanies, newCompany, setNewCompany)}>+</Button>
+            <Label className="flex items-center gap-2"><Building2 className="w-4 h-4" />{isRTL ? 'חברות שאני עובד/ת איתן' : 'Companies I work with'}</Label>
+            <p className="text-xs text-muted-foreground">{isRTL ? 'חפש חברה כדי לקשר אותה לפרופיל שלך עם לוגו' : 'Search to link companies with logos to your profile'}</p>
+
+            {/* Search input with dropdown */}
+            <div className="relative">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    value={companySearch}
+                    onChange={(e) => handleCompanySearchChange(e.target.value)}
+                    onFocus={() => companySearch && setShowSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                    placeholder={isRTL ? 'חפש חברה...' : 'Search company...'}
+                    className="ps-9"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') { e.preventDefault(); addCompanyManually(); }
+                    }}
+                  />
+                </div>
+                <Button variant="outline" size="sm" onClick={addCompanyManually} title={isRTL ? 'הוסף ידנית' : 'Add manually'}>+</Button>
+              </div>
+
+              {/* Dropdown suggestions */}
+              {showSuggestions && (companySearch.trim().length > 0) && (
+                <div className="absolute z-20 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-56 overflow-y-auto">
+                  {searchingCompanies && (
+                    <div className="px-3 py-2 text-sm text-muted-foreground flex items-center gap-2">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      {isRTL ? 'מחפש...' : 'Searching...'}
+                    </div>
+                  )}
+                  {!searchingCompanies && companySuggestions.map(company => {
+                    const logo = getCompanyLogoUrl(company);
+                    const alreadyLinked = !!linkedCompanies.find(lc => lc.id === company.id);
+                    return (
+                      <button
+                        key={company.id}
+                        type="button"
+                        disabled={alreadyLinked}
+                        onMouseDown={() => selectLinkedCompany(company)}
+                        className="w-full flex items-center gap-3 px-3 py-2 hover:bg-accent text-start disabled:opacity-50"
+                      >
+                        <div className="w-7 h-7 rounded flex items-center justify-center bg-muted flex-shrink-0 overflow-hidden">
+                          {logo ? (
+                            <img src={logo} alt={company.name} className="w-6 h-6 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                          ) : (
+                            <Building2 className="w-4 h-4 text-muted-foreground" />
+                          )}
+                        </div>
+                        <span className="text-sm flex-1">{company.name}</span>
+                        {alreadyLinked && <span className="text-xs text-muted-foreground">{isRTL ? 'כבר מקושר' : 'linked'}</span>}
+                      </button>
+                    );
+                  })}
+                  {!searchingCompanies && companySuggestions.length === 0 && (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      {isRTL ? 'לא נמצאה חברה — לחץ + להוספה ידנית' : 'Not found — press + to add manually'}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-            <div className="flex flex-wrap gap-1.5">{companies.map((c, i) => <Badge key={i} variant="outline" className="gap-1">{c}<button onClick={() => removeTag(companies, setCompanies, i)}><X className="w-3 h-3" /></button></Badge>)}</div>
+
+            {/* Linked companies (with logos) */}
+            {linkedCompanies.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {linkedCompanies.map(company => {
+                  const logo = getCompanyLogoUrl(company);
+                  return (
+                    <Badge key={company.id} variant="outline" className="gap-1.5 pl-1.5 pr-1 py-1 h-auto">
+                      <div className="w-5 h-5 rounded bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {logo ? (
+                          <img src={logo} alt={company.name} className="w-4 h-4 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        ) : (
+                          <Building2 className="w-3 h-3 text-muted-foreground" />
+                        )}
+                      </div>
+                      <span className="text-xs">{company.name}</span>
+                      <button type="button" onClick={() => removeLinkedCompany(company.id)} className="ml-0.5">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Free-text companies (not linked to DB) */}
+            {companies.length > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">{isRTL ? 'חברות ידניות:' : 'Manual entries:'}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {companies.map((c, i) => (
+                    <Badge key={i} variant="secondary" className="gap-1">
+                      {c}
+                      <button type="button" onClick={() => removeTag(companies, setCompanies, i)}><X className="w-3 h-3" /></button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Philosophy */}

@@ -10,11 +10,12 @@ import { PersonalCard } from '@/components/profile/PersonalCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Heart, User, Shield, FileText, Download, Eye } from 'lucide-react';
+import { Heart, User, Shield, FileText, Download, Eye, Building2, ExternalLink } from 'lucide-react';
 import { ConnectButton } from '@/components/connections/ConnectButton';
 import { useConnections } from '@/hooks/useConnections';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { getCompanyLogoUrl } from '@/lib/company-logo';
 
 /** Record a profile view/action */
 async function trackProfileAction(
@@ -43,6 +44,7 @@ export default function PublicProfile() {
   const isOwnProfile = user?.id === userId;
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const viewTracked = useRef(false);
+  const navigate = useNavigate();
 
   // Fetch profile with professional links and new personal fields
   const { data: profile, isLoading: profileLoading } = useQuery({
@@ -77,6 +79,37 @@ export default function PublicProfile() {
       return data;
     },
     enabled: !!userId,
+  });
+
+  // Fetch role + recruiter_company_ids for HR profiles
+  const { data: recruiterMeta } = useQuery({
+    queryKey: ['public-profile-recruiter-meta', userId],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('profiles')
+        .select('role, recruiter_company_ids')
+        .eq('user_id', userId!)
+        .maybeSingle();
+      return data as { role: string; recruiter_company_ids: string[] } | null;
+    },
+    enabled: !!userId,
+  });
+
+  const isHRProfile = recruiterMeta?.role === 'freelance_hr' || recruiterMeta?.role === 'inhouse_hr';
+
+  // Fetch linked company records
+  const { data: recruiterLinkedCompanies = [] } = useQuery({
+    queryKey: ['public-recruiter-companies', userId, recruiterMeta?.recruiter_company_ids],
+    queryFn: async () => {
+      const ids = recruiterMeta?.recruiter_company_ids;
+      if (!ids || ids.length === 0) return [];
+      const { data } = await (supabase as any)
+        .from('companies')
+        .select('id, name, website, logo_url')
+        .in('id', ids);
+      return (data || []) as { id: string; name: string; website?: string | null; logo_url?: string | null }[];
+    },
+    enabled: isHRProfile && (recruiterMeta?.recruiter_company_ids?.length ?? 0) > 0,
   });
 
   // Track profile view (once per page load, not for own profile)
@@ -278,6 +311,41 @@ export default function PublicProfile() {
           showActions={!isOwnProfile && !!user}
           showVideo={true}
         />
+
+        {/* Companies I work with — HR profiles only */}
+        {isHRProfile && recruiterLinkedCompanies.length > 0 && (
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Building2 className="h-5 w-5 text-primary" />
+                {isHebrew ? 'חברות שאני עובד/ת איתן' : 'Companies I work with'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {recruiterLinkedCompanies.map(company => {
+                  const logo = getCompanyLogoUrl(company);
+                  return (
+                    <button
+                      key={company.id}
+                      onClick={() => navigate(`/company/${company.id}`)}
+                      className="flex items-center gap-2.5 p-2.5 rounded-lg border border-border hover:bg-accent transition-colors text-start"
+                    >
+                      <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {logo ? (
+                          <img src={logo} alt={company.name} className="w-8 h-8 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        ) : (
+                          <Building2 className="w-4 h-4 text-muted-foreground" />
+                        )}
+                      </div>
+                      <span className="text-sm font-medium leading-tight line-clamp-2">{company.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Connection + Resume Actions */}
         {!isOwnProfile && (
