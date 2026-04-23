@@ -79,19 +79,6 @@ html[dir="rtl"], html[dir="rtl"] body {
     --plug-navy: 220 47% 5.5%;
     --plug-navy-light: 220 40% 12%;
 
-    /* ── PLUG Nudge Popup Palette ─────────────────────────────
-     * 4 gradient schemes used in PlugNudgePopup.
-     * Reference these via Tailwind: from-plug-nudge-indigo etc.
-     * or via CSS class: .plug-nudge-gradient-{credits|profile|chat|referral}
-     * ──────────────────────────────────────────────────────── */
-    --plug-nudge-indigo:      239 84% 57%;   /* indigo-600  — credits start   */
-    --plug-nudge-violet:      263 70% 50%;   /* violet-700  — credits end     */
-    --plug-nudge-violet-mid:  262 83% 58%;   /* violet-600  — profile start   */
-    --plug-nudge-purple:      271 81% 47%;   /* purple-700  — profile end     */
-    --plug-nudge-purple-mid:  270 91% 56%;   /* purple-600  — chat start      */
-    --plug-nudge-indigo-dark: 244 75% 50%;   /* indigo-700  — chat end        */
-    --plug-nudge-rose:        347 90% 50%;   /* rose-600    — referral start  */
-    --plug-nudge-pink:        334 79% 42%;   /* pink-700    — referral end    */
   }
 
   /* Light theme override */
@@ -135,33 +122,6 @@ html[dir="rtl"], html[dir="rtl"] body {
   }
 }
 
-/* ════════════════════════════════════════════════════════════
- * PLUG Nudge Popup — Gradient Utility Classes
- * Use these class names on the popup card for consistent branding.
- * New popup types: copy one of these and adjust the colors.
- * ════════════════════════════════════════════════════════════ */
-@layer utilities {
-  .plug-nudge-gradient-credits {
-    background: linear-gradient(135deg,
-      hsl(var(--plug-nudge-indigo)) 0%,
-      hsl(var(--plug-nudge-violet)) 100%);
-  }
-  .plug-nudge-gradient-profile {
-    background: linear-gradient(135deg,
-      hsl(var(--plug-nudge-violet-mid)) 0%,
-      hsl(var(--plug-nudge-purple)) 100%);
-  }
-  .plug-nudge-gradient-chat {
-    background: linear-gradient(135deg,
-      hsl(var(--plug-nudge-purple-mid)) 0%,
-      hsl(var(--plug-nudge-indigo-dark)) 100%);
-  }
-  .plug-nudge-gradient-referral {
-    background: linear-gradient(135deg,
-      hsl(var(--plug-nudge-rose)) 0%,
-      hsl(var(--plug-nudge-pink)) 100%);
-  }
-}
 
 @layer base {
   * {
