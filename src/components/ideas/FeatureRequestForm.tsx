@@ -74,11 +74,9 @@ export function FeatureRequestForm({ open, onOpenChange, onSubmitted }: FeatureR
         if (!error) attachmentPaths.push(path);
       }
 
-      // Insert feature request
-      const requestId = crypto.randomUUID();
-      const { error } = await (supabase.from('feature_requests') as any)
+      // Insert feature request (let DB generate UUID)
+      const { data: inserted, error } = await (supabase.from('feature_requests') as any)
         .insert({
-          id: requestId,
           author_id: user.id,
           title: title.trim(),
           description: description.trim() || null,
@@ -86,12 +84,16 @@ export function FeatureRequestForm({ open, onOpenChange, onSubmitted }: FeatureR
           target_audience: targetAudience,
           priority,
           voice_url: voicePath,
-          attachments: attachmentPaths.length > 0 ? attachmentPaths : [],
+          attachments: attachmentPaths,
           link_url: linkUrl.trim() || null,
-        });
+        })
+        .select('id');
 
-      if (error) throw error;
-      const data = { id: requestId };
+      if (error) {
+        console.error('Insert error:', error.code, error.message, error.details, error.hint);
+        throw error;
+      }
+      const data = { id: inserted?.[0]?.id ?? null };
 
       // Award credits
       try {
