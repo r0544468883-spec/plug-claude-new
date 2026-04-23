@@ -5,6 +5,7 @@ export interface FeedPost {
   recruiterName: string;
   recruiterAvatar: string;
   companyName: string;
+  companyLogoUrl?: string;
   postType: FeedPostType;
   content: string;
   contentHe: string;

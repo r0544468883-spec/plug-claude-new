@@ -266,11 +266,17 @@ export function FeedCard({ post }: FeedCardProps) {
           {/* ─── Header ─────────────────────────────────────── */}
           <div className="flex items-center gap-3 mb-3">
             <Avatar
-              className="h-12 w-12 cursor-pointer"
-              onClick={() => (post as any).authorId && navigate(`/p/${(post as any).authorId}`)}
+              className="h-12 w-12 cursor-pointer rounded-xl"
+              onClick={() => {
+                if ((post as any).companyId) navigate(`/company/${(post as any).companyId}`);
+                else if ((post as any).authorId) navigate(`/p/${(post as any).authorId}`);
+              }}
             >
-              <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
-                {post.recruiterAvatar}
+              {(post as any).companyLogoUrl && (
+                <AvatarImage src={(post as any).companyLogoUrl} className="object-contain p-1" />
+              )}
+              <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm rounded-xl">
+                {(post as any).companyLogoUrl ? (post.companyName || post.recruiterAvatar).slice(0, 2).toUpperCase() : post.recruiterAvatar}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
@@ -289,7 +295,15 @@ export function FeedCard({ post }: FeedCardProps) {
                 )}
               </div>
               <p className="text-xs text-muted-foreground truncate">
-                {post.companyName}{post.companyName ? ' · ' : ''}{timeLabel}
+                {(post as any).companyId && post.companyName ? (
+                  <button
+                    className="hover:underline hover:text-foreground transition-colors"
+                    onClick={() => navigate(`/company/${(post as any).companyId}`)}
+                  >
+                    {post.companyName}
+                  </button>
+                ) : post.companyName}
+                {post.companyName ? ' · ' : ''}{timeLabel}
               </p>
             </div>
 

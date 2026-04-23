@@ -99,9 +99,14 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
 
       const companyIds = [...new Set(posts.filter((p: any) => p.company_id).map((p: any) => p.company_id))];
       let companyMap: Record<string, string> = {};
+      let companyLogoMap: Record<string, string | null> = {};
       if (companyIds.length > 0) {
-        const { data: companies } = await supabase.from('companies').select('id, name').in('id', companyIds);
-        companies?.forEach((c: any) => { companyMap[c.id] = c.name; });
+        const { data: companies } = await supabase.from('companies').select('id, name, logo_url, website').in('id', companyIds);
+        companies?.forEach((c: any) => {
+          companyMap[c.id] = c.name;
+          const logo = c.logo_url || (c.website ? `https://logo.clearbit.com/${new URL(c.website.startsWith('http') ? c.website : 'https://' + c.website).hostname.replace(/^www\./, '')}` : null);
+          companyLogoMap[c.id] = logo;
+        });
       }
 
       // Track latest post time for realtime
@@ -114,6 +119,7 @@ export function FeedPage({ onCreatePost }: FeedPageProps) {
         recruiterName: profileMap[p.author_id] || 'Recruiter',
         recruiterAvatar: (profileMap[p.author_id] || 'R').charAt(0).toUpperCase(),
         companyName: p.company_id ? (companyMap[p.company_id] || '') : '',
+        companyLogoUrl: p.company_id ? (companyLogoMap[p.company_id] || undefined) : undefined,
         postType: p.post_type,
         content: p.content_en || p.content_he || '',
         contentHe: p.content_he || p.content_en || '',

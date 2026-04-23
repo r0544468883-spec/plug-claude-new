@@ -6,14 +6,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { FollowButton } from '@/components/feed/FollowButton';
+import { CompanyClaimDialog } from '@/components/company/CompanyClaimDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getCompanyLogoUrl } from '@/lib/company-logo';
 import {
   ArrowLeft, ArrowRight, Building2, Briefcase, Globe, TrendingUp,
   Flame, Target, Sparkles, Calendar, ExternalLink, MapPin, DollarSign,
+  Pencil, ShieldCheck,
 } from 'lucide-react';
 
 const SIXTY_DAYS_MS = 60 * 24 * 60 * 60 * 1000;
@@ -117,12 +120,41 @@ export default function CompanyProfile() {
           </div>
         ) : (
           <>
+            {/* ── Claim / Edit Banner ── */}
+            {!company.is_claimed && user && user.id !== company.claimed_by && (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-amber-700">
+                    {isHe ? 'האם זו החברה שלך?' : 'Is this your company?'}
+                  </p>
+                  <p className="text-xs text-amber-600/80">
+                    {isHe ? 'תבע את הדף ונהל אותו בעצמך' : 'Claim this page and manage it yourself'}
+                  </p>
+                </div>
+                <CompanyClaimDialog companyId={companyId!} companyName={company.name} />
+              </div>
+            )}
+            {company.is_claimed && user?.id === company.claimed_by && (
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-primary" />
+                  <p className="text-sm font-medium text-primary">
+                    {isHe ? 'זה הדף שלך' : 'This is your company page'}
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={() => navigate(`/company/${companyId}/dashboard`)}>
+                  <Pencil className="w-3.5 h-3.5" />
+                  {isHe ? 'ערוך' : 'Edit'}
+                </Button>
+              </div>
+            )}
+
             {/* ── Company Header ── */}
             <Card>
               <CardContent className="p-5">
                 <div className="flex items-start gap-4">
                   <Avatar className="w-16 h-16 rounded-xl flex-shrink-0">
-                    <AvatarImage src={company.logo_url || undefined} />
+                    <AvatarImage src={getCompanyLogoUrl(company) || undefined} />
                     <AvatarFallback className="rounded-xl bg-primary/10 text-primary text-xl font-bold">
                       {company.name?.slice(0, 2).toUpperCase()}
                     </AvatarFallback>
@@ -156,8 +188,11 @@ export default function CompanyProfile() {
                       <FollowButton targetCompanyId={companyId} size="sm" />
                     </div>
 
+                    {company.tagline && (
+                      <p className="text-sm font-medium text-foreground/80 mt-2 italic">{company.tagline}</p>
+                    )}
                     {company.description && (
-                      <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{company.description}</p>
+                      <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">{company.description}</p>
                     )}
 
                     {company.website && (
