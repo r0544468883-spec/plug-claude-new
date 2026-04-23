@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -26,6 +27,7 @@ interface JobRow {
 
 interface CompanyAggregate {
   name: string;
+  companyId: string | null;
   logo: string | null;
   website: string | null;
   activeJobs: JobRow[];
@@ -47,6 +49,7 @@ export function RecommendedCompaniesPanel({ onOpenJob }: Props) {
   const { user } = useAuth();
   const { language } = useLanguage();
   const isHebrew = language === 'he';
+  const navigate = useNavigate();
 
   // Fetch user profile (for matching)
   const { data: userProfile } = useQuery({
@@ -70,7 +73,7 @@ export function RecommendedCompaniesPanel({ onOpenJob }: Props) {
       const sinceIso = new Date(Date.now() - SIXTY_DAYS_MS).toISOString();
       const { data, error } = await supabase
         .from('jobs')
-        .select(`id, title, description, requirements, location, salary_range, status, source_url, created_at, company_name, company:companies(id, name, logo_url, website)`)
+        .select(`id, title, description, requirements, location, salary_range, status, source_url, created_at, company_name, company_id, company:companies(id, name, logo_url, website)`)
         .gte('created_at', sinceIso)
         .order('created_at', { ascending: false })
         .limit(500);
@@ -108,6 +111,7 @@ export function RecommendedCompaniesPanel({ onOpenJob }: Props) {
 
       const existing = map.get(name) || {
         name,
+        companyId: (job as any).company_id || job.company?.id || null,
         logo: job.company?.logo_url || null,
         website: job.company?.website || null,
         activeJobs: [],
@@ -240,6 +244,20 @@ export function RecommendedCompaniesPanel({ onOpenJob }: Props) {
               </AccordionTrigger>
 
               <AccordionContent className="pb-3">
+                {/* View full company profile */}
+                {company.companyId && (
+                  <div className="pb-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-1.5 h-8 text-xs"
+                      onClick={e => { e.stopPropagation(); navigate(`/company/${company.companyId}`); }}
+                    >
+                      <Building2 className="w-3.5 h-3.5" />
+                      {isHebrew ? 'צפה בכרטיס החברה' : 'View Company Profile'}
+                    </Button>
+                  </div>
+                )}
                 {company.activeJobs.length > 0 ? (
                   /* ── Has open positions ── */
                   <div className="space-y-2 pt-1">

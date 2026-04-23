@@ -30,6 +30,7 @@ import JobSwipe from "./pages/JobSwipe";
 import MyMatches from "./pages/MyMatches";
 import MySecrets from "./pages/MySecrets";
 import Ideas from "./pages/Ideas";
+import CompanyProfile from "./pages/CompanyProfile";
 
 const queryClient = new QueryClient();
 
@@ -74,6 +75,7 @@ const App = () => (
                   <Route path="/my-matches" element={<MyMatches />} />
                   <Route path="/my-secrets" element={<MySecrets />} />
                   <Route path="/ideas" element={<Ideas />} />
+                  <Route path="/company/:companyId" element={<CompanyProfile />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
