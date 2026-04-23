@@ -146,7 +146,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
         { icon: FileEdit, label: isRTL ? 'בניית קורות חיים' : 'CV Builder', section: 'cv-builder', tooltipHe: 'בניית קורות חיים מקצועיים עם תבניות ו-AI', tooltipEn: 'Build professional CVs with templates and AI' },
         { icon: Mic, label: isRTL ? 'הכנה לראיון עבודה' : 'Interview Prep', section: 'interview-prep', tooltipHe: 'הכנה לראיון עבודה עם שאלות ותרגול AI', tooltipEn: 'Interview preparation with AI questions and practice' },
         { icon: ClipboardList, label: isRTL ? 'לוח המטלות' : 'Assignments Board', section: 'assignments' as DashboardSection, tooltipHe: 'לוח המטלות – הוכח את הכישורים שלך עם אתגרים אמיתיים', tooltipEn: 'Assignments board – prove your skills with real challenges' },
-        { icon: Lightbulb, label: isRTL ? 'לוח רעיונות' : 'Ideas Board', section: 'ideas' as DashboardSection, tooltipHe: 'הציעו פיצ׳רים חדשים, הצביעו וצרו את עתיד PLUG', tooltipEn: 'Suggest new features, vote and shape PLUG's future' },
+        { icon: Lightbulb, label: isRTL ? 'לוח רעיונות' : 'Ideas Board', section: 'ideas' as DashboardSection, tooltipHe: 'הציעו פיצ׳רים חדשים, הצביעו וצרו את עתיד PLUG', tooltipEn: 'Suggest new features, vote and shape PLUG\u2019s future' },
         // ── Discovery & Opportunities ──
         { icon: MessageSquare, label: isRTL ? 'הודעות' : 'Messages', section: 'messages', tooltipHe: 'הודעות פנימיות מקבלים ומגייסים', tooltipEn: 'Internal messages from recruiters and contacts' },
         // ── System ──
@@ -168,7 +168,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
         { icon: Newspaper, label: isRTL ? 'תוכן וקהילה' : 'Content & Community', section: 'content-hub' as DashboardSection, tooltipHe: 'דאשבורד תוכן, יצירת פוסטים, וובינרים וקהילות', tooltipEn: 'Content dashboard, posts, webinars & communities' },
         { icon: Target, label: isRTL ? 'לוח פרויקטים' : 'Hunters Billboard', section: 'missions' as DashboardSection, tooltipHe: 'שוק תחרותי לפרויקטי גיוס', tooltipEn: 'Competitive recruitment project marketplace' },
         { icon: ClipboardList, label: isRTL ? 'לוח המטלות' : 'Assignments', section: 'assignments' as DashboardSection, tooltipHe: 'לוח המטלות – פרסם מטלות ומצא טאלנט', tooltipEn: 'Assignment marketplace – post tasks and discover talent' },
-        { icon: Lightbulb, label: isRTL ? 'לוח רעיונות' : 'Ideas Board', section: 'ideas' as DashboardSection, tooltipHe: 'הציעו פיצ׳רים חדשים, הצביעו וצרו את עתיד PLUG', tooltipEn: 'Suggest new features, vote and shape PLUG's future' },
+        { icon: Lightbulb, label: isRTL ? 'לוח רעיונות' : 'Ideas Board', section: 'ideas' as DashboardSection, tooltipHe: 'הציעו פיצ׳רים חדשים, הצביעו וצרו את עתיד PLUG', tooltipEn: 'Suggest new features, vote and shape PLUG\u2019s future' },
         { icon: MessageSquare, label: 'Messages', section: 'messages', tooltipHe: 'הודעות פנימיות עם מועמדים ואנשי קשר', tooltipEn: 'Internal messages with candidates and contacts' },
         { icon: Heart, label: isRTL ? 'ההמלצות שלי' : 'My Vouches', section: 'vouches' as DashboardSection, tooltipHe: 'המלצות שקיבלת ונתת — מחזקות את הפרופיל', tooltipEn: 'Vouches received and given — strengthen your profile' },
         { icon: Users, label: isRTL ? 'הרשת שלי' : 'My Network', section: 'network' as DashboardSection, tooltipHe: 'קולגות, מגייסים וחברות — כל הקשרים שלך', tooltipEn: 'Colleagues, recruiters and companies — your connections' },
