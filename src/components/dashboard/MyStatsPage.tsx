@@ -199,7 +199,7 @@ export function MyStatsPage() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="w-full max-w-7xl mx-auto space-y-6 p-4 md:p-6" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="w-full max-w-7xl mx-auto space-y-6 p-4 md:p-6" dir={isRTL ? 'rtl' : 'ltr'} data-tour="my-stats-page">
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-foreground">

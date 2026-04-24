@@ -19,6 +19,8 @@ interface TourTooltipProps {
   icon?: React.ElementType;
   isElementFound?: boolean;
   customImage?: string;
+  /** Section label shown as a badge — tells users which area they're in */
+  sectionLabel?: string;
 }
 
 export function TourTooltip({
@@ -35,6 +37,7 @@ export function TourTooltip({
   icon: Icon,
   isElementFound = true,
   customImage,
+  sectionLabel,
 }: TourTooltipProps) {
   const { language } = useLanguage();
   const isHebrew = language === 'he';
@@ -169,6 +172,21 @@ export function TourTooltip({
               >
                 <X className="w-4 h-4" />
               </Button>
+
+              {/* Section label */}
+              {sectionLabel && (
+                <motion.div
+                  key={sectionLabel}
+                  className="flex justify-center mb-2"
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <span className="text-xs font-semibold text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-full">
+                    {sectionLabel}
+                  </span>
+                </motion.div>
+              )}
 
               {/* Progress dots */}
               <div className="flex justify-center gap-1.5 mb-4">
