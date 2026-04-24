@@ -7,7 +7,8 @@ import { TourTooltip } from './TourTooltip';
 import { TransitionScreen } from './TransitionScreen';
 import {
   Sparkles, Users, Briefcase, Building2, Target, MessageSquare,
-  Heart, Newspaper, Globe, User, Settings, BarChart3, Zap, FileEdit, LayoutGrid
+  Heart, Newspaper, Globe, User, Settings, BarChart3, Zap, FileEdit, LayoutGrid,
+  Bell, ClipboardList,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -122,6 +123,36 @@ const FREELANCE_HR_STEPS: TourStep[] = [
     descriptionEn: 'Give and receive recommendations! Vouches strengthen your reputation and increase client trust.',
     icon: Heart,
   },
+  // Feed
+  {
+    section: 'feed',
+    targetSelector: '[data-tour="feed-content"]',
+    titleHe: 'פיד הקהילה המקצועי',
+    titleEn: 'Professional Community Feed',
+    descriptionHe: 'פרסם משרות, תובנות וטיפים ישירות לפיד. מחפשי עבודה ואנשי מקצוע רואים את הפוסטים שלך — זו הדרך לבנות מוניטין ולמשוך מועמדים איכותיים.',
+    descriptionEn: 'Post jobs, insights, and tips directly to the feed. Job seekers and professionals see your posts — it\'s how you build reputation and attract quality candidates.',
+    icon: Newspaper,
+  },
+  // Assignments — HR posts tasks
+  {
+    section: 'overview',
+    targetSelector: '[data-tour="stats-row"]',
+    titleHe: 'לוח המטלות — הכר את המועמדים שלך לעומק',
+    titleEn: 'Assignments Board — Know Your Candidates Deeper',
+    descriptionHe: 'פרסם מטלות בית כדי לסנן מועמדים לפני ראיון. מחפשי עבודה מגישים פתרונות, ואתה מקבל ראיות אמיתיות לכישורים — לא רק קו"ח.',
+    descriptionEn: 'Post home assignments to screen candidates before an interview. Job seekers submit solutions, and you get real evidence of skills — not just a resume.',
+    icon: ClipboardList,
+  },
+  // Nudge tips
+  {
+    section: 'overview',
+    targetSelector: '[data-tour="plug-chat"]',
+    titleHe: 'PLUG ישלח לך טיפים בזמן שתשתמש',
+    titleEn: 'PLUG will send you tips as you use the app',
+    descriptionHe: 'מדי פעם יצוץ פופאפ עם פיצ\'ר שלא ניסית, עדכון חדש, או הטבה לקהילה. תוכל לסגור אותו בכל רגע.',
+    descriptionEn: 'Occasionally a popup will appear with a feature you haven\'t tried, a new update, or a community benefit. You can close it at any time.',
+    icon: Bell,
+  },
 ];
 
 // Steps for IN-HOUSE HR
@@ -224,6 +255,36 @@ const INHOUSE_HR_STEPS: TourStep[] = [
     descriptionHe: 'התאם את חווית השימוש: שפה, התראות, Webhooks, ופרטיות.',
     descriptionEn: 'Customize your experience: language, notifications, Webhooks, and privacy.',
     icon: Settings,
+  },
+  // Feed
+  {
+    section: 'feed',
+    targetSelector: '[data-tour="feed-content"]',
+    titleHe: 'פיד הקהילה המקצועי',
+    titleEn: 'Professional Community Feed',
+    descriptionHe: 'פרסם משרות, תובנות וטיפים ישירות לפיד. מחפשי עבודה רואים את הפוסטים שלך — זו הדרך לבנות מוניטין ולמשוך מועמדים איכותיים.',
+    descriptionEn: 'Post jobs, insights, and tips directly to the feed. Job seekers see your posts — build reputation and attract quality candidates.',
+    icon: Newspaper,
+  },
+  // Assignments
+  {
+    section: 'overview',
+    targetSelector: '[data-tour="stats-row"]',
+    titleHe: 'לוח המטלות — הכר את המועמדים לעומק',
+    titleEn: 'Assignments Board — Know Candidates Deeper',
+    descriptionHe: 'פרסם מטלות בית לסינון מועמדים לפני ראיון. מחפשי עבודה מגישים פתרונות — אתה רואה ראיות אמיתיות לכישורים, לא רק קו"ח.',
+    descriptionEn: 'Post home assignments to screen candidates before interviews. Job seekers submit solutions — you see real skill evidence, not just resumes.',
+    icon: ClipboardList,
+  },
+  // Nudge tips
+  {
+    section: 'overview',
+    targetSelector: '[data-tour="plug-chat"]',
+    titleHe: 'PLUG ישלח לך טיפים בזמן שתשתמש',
+    titleEn: 'PLUG will send you tips as you use the app',
+    descriptionHe: 'מדי פעם יצוץ פופאפ עם פיצ\'ר שלא ניסית, עדכון חדש, או הטבה לקהילה. תוכל לסגור אותו בכל רגע.',
+    descriptionEn: 'Occasionally a popup will appear with a feature you haven\'t tried, a new update, or a community benefit. Close it any time.',
+    icon: Bell,
   },
 ];
 

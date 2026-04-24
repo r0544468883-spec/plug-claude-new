@@ -10,7 +10,8 @@ import {
   Sparkles, Search, FileText,
   Zap, Share2, Brain, MessageSquare, Heart, FileEdit,
   Link, SlidersHorizontal, Target,
-  Mic, Newspaper, Globe, BarChart3, Chrome, DollarSign
+  Mic, Newspaper, Globe, BarChart3, Chrome, DollarSign,
+  ClipboardList, Users, Bell, CreditCard,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import onboardingNotesImage from '@/assets/onboarding-notes-new.png';
@@ -140,12 +141,52 @@ const TOUR_STEPS: TourStep[] = [
     descriptionEn: 'You get 15 daily fuel that renews every morning. Earn XP from tasks to level up and get more fuel. Invite friends = bonus fuel!',
     icon: DollarSign,
   },
-  // 12. PLUG Extension
+  // 12. Community Feed
+  {
+    section: 'feed',
+    targetSelector: '[data-tour="feed-content"]',
+    titleHe: 'פיד הקהילה המקצועי',
+    titleEn: 'Professional Community Feed',
+    descriptionHe: 'כאן מגייסים ואנשי מקצוע משתפים משרות, טיפים, ותובנות בזמן אמת. תוכל לפרסם, להגיב, ולהצטרף לדיונים — ולבנות נוכחות מקצועית.',
+    descriptionEn: 'Recruiters and professionals share jobs, tips, and insights in real time. Post, comment, and join discussions — build your professional presence.',
+    icon: Users,
+  },
+  // 13. Home Assignments
+  {
+    section: 'overview',
+    targetSelector: '[data-tour="onboarding-checklist"]',
+    titleHe: 'מבחני בית — הוכח את הכישורים שלך',
+    titleEn: 'Home Assignments — Prove Your Skills',
+    descriptionHe: 'לוח המטלות מאפשר לך לפתור אתגרים אמיתיים מחברות טכנולוגיה — ולהציג אותם בפרופיל שלך. כנס מהתפריט "לוח המטלות" כדי לגלות ולהגיש.',
+    descriptionEn: 'The Assignments board lets you solve real challenges from tech companies — and showcase them in your profile. Open "Assignments Board" from the menu to explore and submit.',
+    icon: ClipboardList,
+  },
+  // 14. Personal Card
+  {
+    section: 'profile-docs',
+    targetSelector: '[data-tour="resume-upload"]',
+    titleHe: 'הכרטיס האישי שלך',
+    titleEn: 'Your Personal Card',
+    descriptionHe: 'PLUG יוצר עבורך כרטיס אישי עם קישור ייחודי — שתף אותו עם מגייסים ישירות. לחץ "הפרופיל שלי" בתפריט ובחר "כרטיס אישי".',
+    descriptionEn: 'PLUG creates a personal card with a unique link — share it directly with recruiters. Click "My Profile" in the menu and choose "Personal Card".',
+    icon: CreditCard,
+  },
+  // 15. Nudge Tips — the popup system
+  {
+    section: 'overview',
+    targetSelector: '[data-tour="credit-hud"]',
+    titleHe: 'PLUG ישלח לך טיפים בזמן שתשתמש',
+    titleEn: 'PLUG will send you tips as you use the app',
+    descriptionHe: 'מדי פעם יצוץ פופאפ קטן עם פיצ\'ר שטרם ניסית, הצטרפות לקהילת הוואטסאפ שלנו, או הטבת קרדיטים. תוכל לסגור אותו בכל רגע.',
+    descriptionEn: 'Occasionally a small popup will appear with a feature you haven\'t tried, an invite to our WhatsApp community, or a credit bonus. You can close it at any time.',
+    icon: Bell,
+  },
+  // 16. PLUG Extension
   {
     section: 'overview',
     targetSelector: '[data-tour="plug-chat"]',
-    titleHe: 'טיפ: התקן את תוסף PLUG לכרום 🧩',
-    titleEn: 'Tip: Install the PLUG Chrome Extension 🧩',
+    titleHe: 'טיפ: התקן את תוסף PLUG לכרום',
+    titleEn: 'Tip: Install the PLUG Chrome Extension',
     descriptionHe: 'עם התוסף, PLUG עובד ישירות באתרי דרושים (LinkedIn, AllJobs ועוד). הוא ממלא טפסי הגשה אוטומטית, מנתח משרות בזמן אמת, ושומר הכל לדשבורד שלך.',
     descriptionEn: 'With the extension, PLUG works directly on job boards (LinkedIn, AllJobs, etc.). It auto-fills application forms, analyzes jobs in real time, and saves everything to your dashboard.',
     icon: Chrome,
