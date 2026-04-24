@@ -529,7 +529,7 @@ export function ScheduleCalendar() {
   const hasActiveFilters = filterType !== 'all' || filterPriority !== 'all' || showCompleted || searchQuery;
 
   return (
-    <div className="space-y-4" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="space-y-4" dir={isRTL ? 'rtl' : 'ltr'} data-tour="schedule-calendar">
 
       {/* ═══ COMPACT TOOLBAR ═══ */}
       <div className="flex items-center gap-2 flex-wrap">
