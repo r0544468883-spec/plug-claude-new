@@ -8,12 +8,36 @@ interface JobForMatching {
   job_field?: { id: string } | null;
   job_role?: { id: string } | null;
   experience_level?: { id: string } | null;
+  // Skill matching — job's required skills or tags
+  required_skills?: string[] | null;
+  tags?: string[] | null;
 }
 
 interface UserPreferences {
   preferred_fields?: string[] | null;
   preferred_roles?: string[] | null;
   preferred_experience_level_id?: string | null;
+  skills?: string[] | null;
+}
+
+/** Jaccard index: |A ∩ B| / |A ∪ B| — returns 0–1 */
+function jaccardIndex(a: string[], b: string[]): number {
+  if (a.length === 0 || b.length === 0) return 0;
+  const setA = new Set(a.map(s => s.toLowerCase().trim()));
+  const setB = new Set(b.map(s => s.toLowerCase().trim()));
+  let intersection = 0;
+  setA.forEach(s => { if (setB.has(s)) intersection++; });
+  const union = setA.size + setB.size - intersection;
+  return union === 0 ? 0 : intersection / union;
+}
+
+/** Returns list of skills present in both job and user profile */
+export function getSkillOverlap(job: JobForMatching, preferences: UserPreferences | null): string[] {
+  if (!preferences?.skills?.length) return [];
+  const jobSkills = [...(job.required_skills ?? []), ...(job.tags ?? [])];
+  if (!jobSkills.length) return [];
+  const userSet = new Set(preferences.skills.map(s => s.toLowerCase().trim()));
+  return jobSkills.filter(s => userSet.has(s.toLowerCase().trim()));
 }
 
 export function calculateMatchScore(
@@ -29,34 +53,40 @@ export function calculateMatchScore(
   const jobRoleId = job.role_id || job.job_role?.id;
   const jobExpLevelId = job.experience_level_id || job.experience_level?.id;
 
-  // Field match (40 points)
+  // Field match (35 points)
   if (preferences.preferred_fields && preferences.preferred_fields.length > 0) {
-    factors += 40;
-    if (jobFieldId && preferences.preferred_fields.includes(jobFieldId)) {
-      score += 40;
-    }
-  }
-
-  // Role match (35 points)
-  if (preferences.preferred_roles && preferences.preferred_roles.length > 0) {
     factors += 35;
-    if (jobRoleId && preferences.preferred_roles.includes(jobRoleId)) {
+    if (jobFieldId && preferences.preferred_fields.includes(jobFieldId)) {
       score += 35;
     }
   }
 
-  // Experience level match (25 points)
-  if (preferences.preferred_experience_level_id) {
-    factors += 25;
-    if (jobExpLevelId === preferences.preferred_experience_level_id) {
-      score += 25;
+  // Role match (30 points)
+  if (preferences.preferred_roles && preferences.preferred_roles.length > 0) {
+    factors += 30;
+    if (jobRoleId && preferences.preferred_roles.includes(jobRoleId)) {
+      score += 30;
     }
   }
 
-  // If user has no preferences set, return 0
+  // Experience level match (20 points)
+  if (preferences.preferred_experience_level_id) {
+    factors += 20;
+    if (jobExpLevelId === preferences.preferred_experience_level_id) {
+      score += 20;
+    }
+  }
+
+  // Skill overlap — Jaccard index (15 points)
+  const userSkills = preferences.skills ?? [];
+  const jobSkills = [...(job.required_skills ?? []), ...(job.tags ?? [])];
+  if (userSkills.length > 0 && jobSkills.length > 0) {
+    factors += 15;
+    score += Math.round(jaccardIndex(userSkills, jobSkills) * 15);
+  }
+
   if (factors === 0) return 0;
 
-  // Normalize to 100
   return Math.round((score / factors) * 100);
 }
 
@@ -68,13 +98,14 @@ export function useMatchScore(job: JobForMatching): number {
   }, [job, profile]);
 }
 
-export function useMatchScoreForJobs<T extends JobForMatching>(jobs: T[]): (T & { matchScore: number })[] {
+export function useMatchScoreForJobs<T extends JobForMatching>(jobs: T[]): (T & { matchScore: number; skillOverlap: string[] })[] {
   const { profile } = useAuth();
 
   return useMemo(() => {
     return jobs.map(job => ({
       ...job,
-      matchScore: calculateMatchScore(job, profile as UserPreferences)
+      matchScore: calculateMatchScore(job, profile as UserPreferences),
+      skillOverlap: getSkillOverlap(job, profile as UserPreferences),
     }));
   }, [jobs, profile]);
 }
