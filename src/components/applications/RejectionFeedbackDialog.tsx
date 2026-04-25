@@ -49,7 +49,7 @@ export function RejectionFeedbackDialog({ applicationId, open, onClose }: Reject
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="max-w-sm" dir={isHebrew ? 'rtl' : 'ltr'}>
+      <DialogContent className="max-w-md z-[200]" dir={isHebrew ? 'rtl' : 'ltr'}>
         <DialogHeader>
           <DialogTitle>{isHebrew ? 'מה הסיבה לדחייה?' : 'Why were you rejected?'}</DialogTitle>
           <DialogDescription className="text-muted-foreground text-sm">
