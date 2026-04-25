@@ -815,7 +815,7 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, con
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {showGreeting && (
-          <div className="flex justify-center py-8">
+          <div className="flex flex-col items-center py-6 gap-5">
             <div className="text-center max-w-sm">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-4">
                 <Sparkles className="w-8 h-8 text-primary-foreground" />
@@ -824,6 +824,33 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, con
               <p className="text-muted-foreground text-sm">
                 {greeting.subtitle}
               </p>
+            </div>
+
+            {/* Prompt Starters */}
+            <div className="w-full max-w-md grid grid-cols-2 gap-2 px-2">
+              {(isRTL ? [
+                'תנתח את קורות החיים שלי',
+                'מה הכישורים החסרים לי?',
+                'כתוב לי cover letter למשרה',
+                'איך להתכונן לראיון מחר?',
+                'מה השכר המקובל לתפקיד שלי?',
+                'תעזור לי לשפר את הפרופיל',
+              ] : [
+                'Analyze my resume',
+                'What skills am I missing?',
+                'Write me a cover letter',
+                'How to prep for an interview?',
+                'What salary should I expect?',
+                'Help me improve my profile',
+              ]).map((prompt) => (
+                <button
+                  key={prompt}
+                  onClick={() => setInput(prompt)}
+                  className="text-start text-xs px-3 py-2 rounded-xl border border-border bg-muted/40 hover:bg-muted hover:border-primary/40 text-muted-foreground hover:text-foreground transition-all cursor-pointer leading-snug"
+                >
+                  {prompt}
+                </button>
+              ))}
             </div>
           </div>
         )}
