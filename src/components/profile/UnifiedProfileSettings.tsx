@@ -12,6 +12,7 @@ import { RecruiterProfileEditor } from '@/components/profile/RecruiterProfileEdi
 import { PhotoUpload } from '@/components/profile/PhotoUpload';
 import { PortfolioLinks } from '@/components/settings/PortfolioLinks';
 import { ResumeUpload } from '@/components/documents/ResumeUpload';
+import { ResumeEnhancer } from '@/components/documents/ResumeEnhancer';
 import { VouchWidget } from '@/components/vouch/VouchWidget';
 import { PreferencesSettings } from '@/components/settings/PreferencesSettings';
 import { JobPreferencesSettings } from '@/components/settings/JobPreferencesSettings';
@@ -150,6 +151,7 @@ export function UnifiedProfileSettings({ initialTab, onNavigate }: UnifiedProfil
                   <ResumeUpload />
                 </CardContent>
               </Card>
+              <ResumeEnhancer />
             </>
           )}
 
