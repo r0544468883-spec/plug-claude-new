@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { RejectionFeedbackDialog } from './RejectionFeedbackDialog';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { he, enUS } from 'date-fns/locale';
@@ -198,6 +199,8 @@ export function ApplicationDetailsSheet({
   const isRecruiter = role === 'freelance_hr' || role === 'inhouse_hr';
 
   const [currentStage, setCurrentStage] = useState(application?.current_stage || 'applied');
+  const [showRejectionFeedback, setShowRejectionFeedback] = useState(false);
+  const savedApplicationId = useRef<string | null>(null);
   const [notes, setNotes] = useState(application?.notes || '');
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -334,6 +337,12 @@ export function ApplicationDetailsSheet({
       setHasChanges(false);
       onUpdate();
 
+      // Show rejection feedback dialog for candidates (not recruiters)
+      if (currentStage === 'rejected' && currentStage !== oldStage && !isRecruiter) {
+        savedApplicationId.current = application.id;
+        setShowRejectionFeedback(true);
+      }
+
       // Check for auto-send email templates on stage change
       if (currentStage !== oldStage && isRecruiter) {
         try {
@@ -449,6 +458,7 @@ export function ApplicationDetailsSheet({
   });
 
   return (
+    <>
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent 
         side={isRTL ? 'left' : 'right'} 
@@ -866,5 +876,14 @@ export function ApplicationDetailsSheet({
         )}
       </SheetContent>
     </Sheet>
+
+    {showRejectionFeedback && savedApplicationId.current && (
+      <RejectionFeedbackDialog
+        applicationId={savedApplicationId.current}
+        open={showRejectionFeedback}
+        onClose={() => setShowRejectionFeedback(false)}
+      />
+    )}
+    </>
   );
 }
