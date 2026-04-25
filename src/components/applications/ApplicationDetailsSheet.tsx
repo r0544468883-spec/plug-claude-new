@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { RejectionFeedbackDialog } from './RejectionFeedbackDialog';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { he, enUS } from 'date-fns/locale';
@@ -94,6 +93,7 @@ interface ApplicationDetailsSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
+  onRejected?: (applicationId: string) => void;
 }
 
 function RejectionBanner({ applicationId, isRTL, onRevert }: { applicationId: string; isRTL: boolean; onRevert: () => void }) {
@@ -191,6 +191,7 @@ export function ApplicationDetailsSheet({
   open,
   onOpenChange,
   onUpdate,
+  onRejected,
 }: ApplicationDetailsSheetProps) {
   const { language } = useLanguage();
   const { role, user } = useAuth();
@@ -199,7 +200,6 @@ export function ApplicationDetailsSheet({
   const isRecruiter = role === 'freelance_hr' || role === 'inhouse_hr';
 
   const [currentStage, setCurrentStage] = useState(application?.current_stage || 'applied');
-  const [showRejectionFeedback, setShowRejectionFeedback] = useState(false);
   const savedApplicationId = useRef<string | null>(null);
   const pendingRejectionFeedback = useRef(false);
   const [notes, setNotes] = useState(application?.notes || '');
@@ -338,7 +338,7 @@ export function ApplicationDetailsSheet({
       setHasChanges(false);
       onUpdate();
 
-      // Queue rejection feedback dialog for candidates — shown after VouchModal closes
+      // Queue rejection feedback — shown after VouchModal closes (via onRejected callback)
       if (currentStage === 'rejected' && currentStage !== oldStage && !isRecruiter) {
         savedApplicationId.current = application.id;
         pendingRejectionFeedback.current = true;
@@ -862,9 +862,9 @@ export function ApplicationDetailsSheet({
               setShowVouchModal(open);
               if (!open) {
                 setVouchTrigger(null);
-                if (pendingRejectionFeedback.current) {
+                if (pendingRejectionFeedback.current && savedApplicationId.current) {
                   pendingRejectionFeedback.current = false;
-                  setShowRejectionFeedback(true);
+                  onRejected?.(savedApplicationId.current);
                 }
               }
             }}
@@ -876,9 +876,9 @@ export function ApplicationDetailsSheet({
             onComplete={() => {
               setShowVouchModal(false);
               setVouchTrigger(null);
-              if (pendingRejectionFeedback.current) {
+              if (pendingRejectionFeedback.current && savedApplicationId.current) {
                 pendingRejectionFeedback.current = false;
-                setShowRejectionFeedback(true);
+                onRejected?.(savedApplicationId.current);
               }
             }}
           />
@@ -886,13 +886,6 @@ export function ApplicationDetailsSheet({
       </SheetContent>
     </Sheet>
 
-    {showRejectionFeedback && savedApplicationId.current && (
-      <RejectionFeedbackDialog
-        applicationId={savedApplicationId.current}
-        open={showRejectionFeedback}
-        onClose={() => setShowRejectionFeedback(false)}
-      />
-    )}
     </>
   );
 }

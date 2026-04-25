@@ -10,6 +10,7 @@ import { ExtensionJobHistory } from '@/components/extension/ExtensionJobHistory'
 import { MatchHistoryTab } from './MatchHistoryTab';
 import AddApplicationForm from './AddApplicationForm';
 import { ApplicationDetailsSheet } from './ApplicationDetailsSheet';
+import { RejectionFeedbackDialog } from './RejectionFeedbackDialog';
 import { InterviewFlowDialog } from './InterviewFlowDialog';
 // PlugBubble removed - using inline Plug banner instead
 import { EmptyApplicationsState } from './EmptyApplicationsState';
@@ -102,6 +103,7 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
   // Sheet state
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [rejectionAppId, setRejectionAppId] = useState<string | null>(null);
   
   // Company vouch prompt state
   const [showVouchModal, setShowVouchModal] = useState(false);
@@ -813,7 +815,16 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         onUpdate={fetchApplications}
+        onRejected={(appId) => setRejectionAppId(appId)}
       />
+
+      {rejectionAppId && (
+        <RejectionFeedbackDialog
+          applicationId={rejectionAppId}
+          open={!!rejectionAppId}
+          onClose={() => setRejectionAppId(null)}
+        />
+      )}
 
       {/* Plug Chat scroll target */}
       <div id="applications-plug-chat" />
