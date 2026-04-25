@@ -526,6 +526,21 @@ export default function Companies() {
     enabled: !!user?.id,
   });
 
+  // Auto-classify companies that have no industry/size — runs once per session
+  const classifyRan = useRef(false);
+  useEffect(() => {
+    if (classifyRan.current || !user?.id || !companies.length) return;
+    const unclassified = companies.filter((c) => !c.industry || !c.size);
+    if (unclassified.length === 0) return;
+
+    classifyRan.current = true;
+    supabase.functions.invoke('classify-companies').then(({ error }) => {
+      if (!error) {
+        queryClient.invalidateQueries({ queryKey: ['companies-directory'] });
+      }
+    });
+  }, [companies, user?.id, queryClient]);
+
   // AI auto-detect current employer → add to company_members
   const autoDetectRan = useRef(false);
   useEffect(() => {
