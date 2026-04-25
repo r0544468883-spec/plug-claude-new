@@ -14,6 +14,7 @@ import { PortfolioLinks } from '@/components/settings/PortfolioLinks';
 import { ResumeUpload } from '@/components/documents/ResumeUpload';
 import { VouchWidget } from '@/components/vouch/VouchWidget';
 import { PreferencesSettings } from '@/components/settings/PreferencesSettings';
+import { JobPreferencesSettings } from '@/components/settings/JobPreferencesSettings';
 import { PrivacySettings } from '@/components/settings/PrivacySettings';
 import { AccountSettings } from '@/components/settings/AccountSettings';
 import { IntegrationStatus } from '@/components/settings/IntegrationStatus';
@@ -181,6 +182,7 @@ export function UnifiedProfileSettings({ initialTab, onNavigate }: UnifiedProfil
         {/* ── Preferences Tab ── */}
         <TabsContent value="preferences" className="space-y-6 mt-6">
           <PreferencesSettings />
+          <JobPreferencesSettings />
           <PrivacySettings />
         </TabsContent>
 
