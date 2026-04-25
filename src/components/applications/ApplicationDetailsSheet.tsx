@@ -201,6 +201,7 @@ export function ApplicationDetailsSheet({
   const [currentStage, setCurrentStage] = useState(application?.current_stage || 'applied');
   const [showRejectionFeedback, setShowRejectionFeedback] = useState(false);
   const savedApplicationId = useRef<string | null>(null);
+  const pendingRejectionFeedback = useRef(false);
   const [notes, setNotes] = useState(application?.notes || '');
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -337,10 +338,10 @@ export function ApplicationDetailsSheet({
       setHasChanges(false);
       onUpdate();
 
-      // Show rejection feedback dialog for candidates (not recruiters)
+      // Queue rejection feedback dialog for candidates — shown after VouchModal closes
       if (currentStage === 'rejected' && currentStage !== oldStage && !isRecruiter) {
         savedApplicationId.current = application.id;
-        setShowRejectionFeedback(true);
+        pendingRejectionFeedback.current = true;
       }
 
       // Check for auto-send email templates on stage change
@@ -861,6 +862,10 @@ export function ApplicationDetailsSheet({
               setShowVouchModal(open);
               if (!open) {
                 setVouchTrigger(null);
+                if (pendingRejectionFeedback.current) {
+                  pendingRejectionFeedback.current = false;
+                  setShowRejectionFeedback(true);
+                }
               }
             }}
             applicationId={application.id}
@@ -871,6 +876,10 @@ export function ApplicationDetailsSheet({
             onComplete={() => {
               setShowVouchModal(false);
               setVouchTrigger(null);
+              if (pendingRejectionFeedback.current) {
+                pendingRejectionFeedback.current = false;
+                setShowRejectionFeedback(true);
+              }
             }}
           />
         )}
