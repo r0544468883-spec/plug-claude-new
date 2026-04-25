@@ -454,9 +454,17 @@ Always respond with valid JSON in this exact format, no markdown, no code blocks
   "salary_range": "string or null",
   "description": "string (2-3 sentences summary)",
   "requirements": "string (comma-separated key requirements)",
-  "years_of_experience": "number or null (estimated years required)"
+  "years_of_experience": "number or null (estimated years required)",
+  "required_skills": ["skill1", "skill2"],
+  "preferred_skills": ["skill1", "skill2"],
+  "culture_keywords": ["remote-friendly", "fast-paced", "startup"],
+  "remote_type": "remote | hybrid | onsite | null"
 }
-If you cannot extract a field, use null. Always return valid JSON.
+If you cannot extract a field, use null or empty array []. Always return valid JSON.
+required_skills: hard requirements explicitly stated (must-have technologies, languages, tools).
+preferred_skills: nice-to-have or bonus skills mentioned.
+culture_keywords: adjectives/phrases describing the work environment, values, or perks.
+remote_type: detect from keywords like "remote", "hybrid", "on-site", "in-office", "flexible".
 IMPORTANT: Extract the company name even from job board posts - look for "at [Company]", "Company: [Name]", or similar patterns.
 The content may be in Hebrew - extract all information even if in Hebrew characters.${platformHint}`,
         messages: [
@@ -534,6 +542,19 @@ The content may be in Hebrew - extract all information even if in Hebrew charact
       if (expLevel) experienceLevelId = expLevel.id;
     }
 
+    // Build normalized JD schema (jd-intel pattern)
+    const parsedJd = {
+      role: jobDetails.job_title || null,
+      seniority: detectedExpLevelSlug || null,
+      required_skills: Array.isArray(jobDetails.required_skills) ? jobDetails.required_skills : [],
+      preferred_skills: Array.isArray(jobDetails.preferred_skills) ? jobDetails.preferred_skills : [],
+      culture_keywords: Array.isArray(jobDetails.culture_keywords) ? jobDetails.culture_keywords : [],
+      remote_type: jobDetails.remote_type || null,
+      salary_range: jobDetails.salary_range || null,
+      years_of_experience: jobDetails.years_of_experience || null,
+    };
+    jobDetails.parsed_jd = parsedJd;
+
     // Add taxonomy info to response
     jobDetails.detected_field_slug = detectedFieldSlug;
     jobDetails.detected_experience_level_slug = detectedExpLevelSlug;
@@ -587,6 +608,7 @@ The content may be in Hebrew - extract all information even if in Hebrew charact
           role_id: roleId,
           experience_level_id: experienceLevelId,
           category: detectedFieldSlug,
+          parsed_jd: parsedJd,
         })
         .select('id')
         .single();
