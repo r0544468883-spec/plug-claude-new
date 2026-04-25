@@ -187,7 +187,8 @@ export function CompanyVouchModal({
         },
       });
 
-      if (creditError) throw creditError;
+      // Non-blocking — credits are best-effort
+      if (creditError) console.warn('award-credits failed:', creditError);
     },
     onSuccess: () => {
       toast.success(

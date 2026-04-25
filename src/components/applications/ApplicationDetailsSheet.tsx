@@ -336,13 +336,9 @@ export function ApplicationDetailsSheet({
       setHasChanges(false);
       onUpdate();
 
-      // Close sheet then show rejection feedback dialog for candidates
+      // Show rejection feedback dialog for candidates
       if (currentStage === 'rejected' && currentStage !== oldStage && !isRecruiter) {
-        const appId = application.id;
-        setTimeout(() => {
-          onOpenChange(false);
-          setTimeout(() => onRejected?.(appId), 200);
-        }, 600);
+        onRejected?.(application.id);
       }
 
       // Check for auto-send email templates on stage change
@@ -400,7 +396,7 @@ export function ApplicationDetailsSheet({
       // Check if we should show vouch modal for stage changes
       // Skip vouch for rejected+candidate (rejection dialog handles it)
       if (currentStage !== oldStage && company?.id) {
-        if (COMPLETION_STAGES.includes(currentStage) && !(currentStage === 'rejected' && !isRecruiter)) {
+        if (COMPLETION_STAGES.includes(currentStage)) {
           setVouchTrigger({ type: 'completion', stage: currentStage });
           setShowVouchModal(true);
         } else if (VOUCH_STAGES.includes(currentStage)) {
