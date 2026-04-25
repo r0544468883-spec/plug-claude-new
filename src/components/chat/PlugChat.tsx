@@ -127,12 +127,7 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, con
     enabled: !!user?.id,
   });
 
-  // Load latest session on mount
-  useEffect(() => {
-    if (user) {
-      loadLatestSession();
-    }
-  }, [user]);
+  // Start with empty chat (new session) — history accessible via sidebar
 
   // Handle initial message from Quick Actions / WelcomeCard - fill input instead of auto-send
   useEffect(() => {
