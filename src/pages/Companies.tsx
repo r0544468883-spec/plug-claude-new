@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -193,8 +193,8 @@ function CompanyCard({
   const NextIcon = isRTL ? ChevronLeft : ChevronRight;
   const logoUrl = getCompanyLogoUrl(company);
 
-  const careerUrl = company.website
-    ? (company.website.startsWith('http') ? company.website : 'https://' + company.website) + '/careers'
+  const websiteUrl = company.website
+    ? (company.website.startsWith('http') ? company.website : 'https://' + company.website)
     : null;
 
   return (
@@ -330,32 +330,38 @@ function CompanyCard({
         <div className="flex-1" />
 
         {/* LinkedIn */}
-        {company.linkedin_url && (
-          <a
-            href={company.linkedin_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="h-7 w-7 flex items-center justify-center rounded-md border border-border hover:border-[#0077b5] hover:text-[#0077b5] transition-colors"
-            title="LinkedIn"
-          >
-            <Linkedin className="h-3.5 w-3.5" />
-          </a>
-        )}
+        <a
+          href={company.linkedin_url ?? '#'}
+          target={company.linkedin_url ? '_blank' : undefined}
+          rel="noopener noreferrer"
+          onClick={(e) => { e.stopPropagation(); if (!company.linkedin_url) e.preventDefault(); }}
+          className={cn(
+            'h-7 w-7 flex items-center justify-center rounded-md border border-border transition-colors',
+            company.linkedin_url
+              ? 'hover:border-[#0077b5] hover:text-[#0077b5]'
+              : 'opacity-25 cursor-default'
+          )}
+          title={company.linkedin_url ? 'LinkedIn' : (isHe ? 'אין לינקדין' : 'No LinkedIn')}
+        >
+          <Linkedin className="h-3.5 w-3.5" />
+        </a>
 
-        {/* Career page */}
-        {careerUrl && (
-          <a
-            href={careerUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="h-7 w-7 flex items-center justify-center rounded-md border border-border hover:border-primary hover:text-primary transition-colors"
-            title={isHe ? 'דף קריירה' : 'Career page'}
-          >
-            <Globe className="h-3.5 w-3.5" />
-          </a>
-        )}
+        {/* Website */}
+        <a
+          href={websiteUrl ?? '#'}
+          target={websiteUrl ? '_blank' : undefined}
+          rel="noopener noreferrer"
+          onClick={(e) => { e.stopPropagation(); if (!websiteUrl) e.preventDefault(); }}
+          className={cn(
+            'h-7 w-7 flex items-center justify-center rounded-md border border-border transition-colors',
+            websiteUrl
+              ? 'hover:border-primary hover:text-primary'
+              : 'opacity-25 cursor-default'
+          )}
+          title={websiteUrl ? (isHe ? 'אתר החברה' : 'Website') : (isHe ? 'אין אתר' : 'No website')}
+        >
+          <Globe className="h-3.5 w-3.5" />
+        </a>
 
         {/* Join button */}
         <Button
@@ -505,6 +511,64 @@ export default function Companies() {
     enabled: myConnectionIds.size > 0,
   });
 
+  // User cv_data for AI auto-detection
+  const { data: userProfile } = useQuery({
+    queryKey: ['user-cv-data', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('cv_data')
+        .eq('user_id', user.id)
+        .single();
+      return data as any;
+    },
+    enabled: !!user?.id,
+  });
+
+  // AI auto-detect current employer → add to company_members
+  const autoDetectRan = useRef(false);
+  useEffect(() => {
+    if (autoDetectRan.current) return;
+    if (!user?.id || !companies.length || !userProfile || !allMembers) return;
+
+    const experience: any[] = userProfile?.cv_data?.experience || [];
+    const currentJob = experience.find(
+      (e: any) => !e.end_date || e.end_date === '' || /present|כיום|היום|current/i.test(e.end_date)
+    );
+    if (!currentJob?.company) return;
+
+    const normalizedCurrent = currentJob.company.toLowerCase().trim();
+    const match = companies.find(
+      (c) => c.name.toLowerCase().trim() === normalizedCurrent ||
+             normalizedCurrent.includes(c.name.toLowerCase().trim()) ||
+             c.name.toLowerCase().trim().includes(normalizedCurrent)
+    );
+    if (!match) return;
+
+    const alreadyMember = allMembers.some(
+      (m: any) => m.company_id === match.id && m.user_id === user.id
+    );
+    if (alreadyMember) return;
+
+    autoDetectRan.current = true;
+    (supabase as any).from('company_members').upsert({
+      company_id: match.id,
+      user_id: user.id,
+      role: 'employee',
+      title: currentJob.role || null,
+    }, { onConflict: 'company_id,user_id' }).then(({ error }: any) => {
+      if (!error) {
+        toast.success(
+          isHe
+            ? `זיהינו שאתה עובד ב-${match.name} — הוספנו אותך אוטומטית`
+            : `Detected you work at ${match.name} — added automatically`
+        );
+        queryClient.invalidateQueries({ queryKey: ['company-members-all'] });
+      }
+    });
+  }, [companies, userProfile, allMembers, user?.id, isHe, queryClient]);
+
   // ── Derived: connection count per company ─────────────────────────────────
 
   const connectionsByCompany = useMemo(() => {
@@ -526,10 +590,8 @@ export default function Companies() {
     [companies]
   );
 
-  const sizes = useMemo(
-    () => Array.from(new Set(companies.map((c) => c.size).filter(Boolean) as string[])),
-    [companies]
-  );
+  // Always show all size options (not just what's in DB)
+  const SIZE_ORDER = ['startup', 'small', 'medium', 'large', 'enterprise'];
 
   const filtered = useMemo(() => {
     let list = companies.filter((c) => {
@@ -644,40 +706,43 @@ export default function Companies() {
         </div>
 
         {/* Industry filter chips */}
-        {industries.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            <Button
-              size="sm" variant={industryFilter === '' ? 'default' : 'outline'}
-              className="h-7 text-xs" onClick={() => setIndustryFilter('')}
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          <Button
+            size="sm" variant={industryFilter === '' ? 'default' : 'outline'}
+            className="h-7 text-xs" onClick={() => setIndustryFilter('')}
+          >
+            {isHe ? 'כל התחומים' : 'All industries'}
+          </Button>
+          {industries.map((ind) => (
+            <Button key={ind} size="sm"
+              variant={industryFilter === ind ? 'default' : 'outline'}
+              className="h-7 text-xs"
+              onClick={() => setIndustryFilter(industryFilter === ind ? '' : ind)}
             >
-              {isHe ? 'כל התחומים' : 'All industries'}
+              {ind}
             </Button>
-            {industries.map((ind) => (
-              <Button key={ind} size="sm"
-                variant={industryFilter === ind ? 'default' : 'outline'}
-                className="h-7 text-xs"
-                onClick={() => setIndustryFilter(industryFilter === ind ? '' : ind)}
-              >
-                {ind}
-              </Button>
-            ))}
-          </div>
-        )}
+          ))}
+        </div>
 
-        {/* Size filter chips */}
-        {sizes.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {sizes.map((sz) => (
-              <Button key={sz} size="sm"
-                variant={sizeFilter === sz ? 'secondary' : 'ghost'}
-                className="h-7 text-xs border border-border"
-                onClick={() => setSizeFilter(sizeFilter === sz ? '' : sz)}
-              >
-                {SIZE_LABELS[sz]?.[isHe ? 'he' : 'en'] ?? sz}
-              </Button>
-            ))}
-          </div>
-        )}
+        {/* Size filter chips — always visible */}
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          <Button
+            size="sm" variant={sizeFilter === '' ? 'secondary' : 'ghost'}
+            className="h-7 text-xs border border-border"
+            onClick={() => setSizeFilter('')}
+          >
+            {isHe ? 'כל הגדלים' : 'All sizes'}
+          </Button>
+          {SIZE_ORDER.map((sz) => (
+            <Button key={sz} size="sm"
+              variant={sizeFilter === sz ? 'secondary' : 'ghost'}
+              className="h-7 text-xs border border-border"
+              onClick={() => setSizeFilter(sizeFilter === sz ? '' : sz)}
+            >
+              {SIZE_LABELS[sz]?.[isHe ? 'he' : 'en'] ?? sz}
+            </Button>
+          ))}
+        </div>
 
         {/* Toggle filters */}
         <div className="flex flex-wrap gap-2 mb-5">
