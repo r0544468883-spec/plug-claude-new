@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
-export type DashboardSection = 'overview' | 'profile-docs' | 'profile-settings' | 'applications' | 'candidates' | 'jobs' | 'job-search' | 'chat' | 'settings' | 'messages' | 'post-job' | 'saved-jobs' | 'cv-builder' | 'interview-prep' | 'feed' | 'create-feed-post' | 'create-webinar' | 'communities' | 'create-community' | 'community-view' | 'content-dashboard' | 'negotiation-sandbox' | 'content-hub' | 'b2b-suite' | 'recruiter-profile' | 'clients' | 'client-profile' | 'missions' | 'create-mission' | 'my-missions' | 'schedule' | 'hr-tools' | 'credits' | 'referrals' | 'analyses' | 'favorite-companies' | 'assignments' | 'candidate-search' | 'analytics' | 'my-stats' | 'vouches' | 'network' | 'job-swipe' | 'my-matches' | 'my-secrets' | 'ideas' | 'my-company';
+export type DashboardSection = 'overview' | 'profile-docs' | 'profile-settings' | 'applications' | 'candidates' | 'jobs' | 'job-search' | 'chat' | 'settings' | 'messages' | 'post-job' | 'saved-jobs' | 'cv-builder' | 'interview-prep' | 'feed' | 'create-feed-post' | 'create-webinar' | 'communities' | 'create-community' | 'community-view' | 'content-dashboard' | 'negotiation-sandbox' | 'content-hub' | 'b2b-suite' | 'recruiter-profile' | 'clients' | 'client-profile' | 'missions' | 'create-mission' | 'my-missions' | 'schedule' | 'hr-tools' | 'credits' | 'referrals' | 'analyses' | 'favorite-companies' | 'assignments' | 'candidate-search' | 'analytics' | 'my-stats' | 'vouches' | 'network' | 'job-swipe' | 'my-matches' | 'my-secrets' | 'ideas' | 'my-company' | 'companies';
 
 interface NavItemConfig {
   icon: typeof LayoutDashboard;
@@ -113,6 +113,11 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
       setSidebarOpen(false);
       return;
     }
+    if (section === 'companies') {
+      navigate('/companies');
+      setSidebarOpen(false);
+      return;
+    }
     if (section === 'my-company') {
       // Navigate to company dashboard — fetch active_company_id first
       supabase.from('profiles').select('active_company_id').eq('user_id', user?.id || '').single().then(({ data }) => {
@@ -152,6 +157,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
         { icon: Heart, label: isRTL ? 'ההמלצות שלי' : 'My Vouches', section: 'vouches' as DashboardSection, tooltipHe: 'המלצות שקיבלת ונתת — מחזקות את הפרופיל', tooltipEn: 'Vouches received and given — strengthen your profile' },
         { icon: Users, label: isRTL ? 'הרשת שלי' : 'My Network', section: 'network' as DashboardSection, tooltipHe: 'קולגות, מגייסים וחברות — כל הקשרים שלך', tooltipEn: 'Colleagues, recruiters and companies — your connections' },
         { icon: Sparkles, label: isRTL ? 'הסודות שלי' : 'My Secrets', section: 'my-secrets' as DashboardSection, tooltipHe: 'תובנות חברות מלינקדאין — מה החברה עושה, אנשי קשר והתאמה', tooltipEn: 'LinkedIn company insights — what they do, contacts & fit' },
+        { icon: Building2, label: isRTL ? 'ספריית חברות' : 'Companies', section: 'companies' as DashboardSection, tooltipHe: 'גלה חברות וקרא ביקורות אנונימיות מהקהילה', tooltipEn: 'Discover companies & read anonymous community reviews' },
         // ── Preparation & Profile ──
         { icon: User, label: isRTL ? 'הפרופיל שלי' : 'My Profile', section: 'profile-settings', tooltipHe: 'פרופיל, הגדרות, אינטגרציות וחשבון', tooltipEn: 'Profile, settings, integrations & account' },
         { icon: FileEdit, label: isRTL ? 'בניית קורות חיים' : 'CV Builder', section: 'cv-builder', tooltipHe: 'בניית קורות חיים מקצועיים עם תבניות ו-AI', tooltipEn: 'Build professional CVs with templates and AI' },

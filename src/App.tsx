@@ -32,6 +32,7 @@ import MySecrets from "./pages/MySecrets";
 import Ideas from "./pages/Ideas";
 import CompanyProfile from "./pages/CompanyProfile";
 import CompanyDashboard from "./pages/CompanyDashboard";
+import Companies from "./pages/Companies";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +77,7 @@ const App = () => (
                   <Route path="/my-matches" element={<MyMatches />} />
                   <Route path="/my-secrets" element={<MySecrets />} />
                   <Route path="/ideas" element={<Ideas />} />
+                  <Route path="/companies" element={<Companies />} />
                   <Route path="/company/:companyId" element={<CompanyProfile />} />
                   <Route path="/company/:companyId/dashboard" element={<CompanyDashboard />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
