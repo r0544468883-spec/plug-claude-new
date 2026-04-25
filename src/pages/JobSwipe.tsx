@@ -20,6 +20,7 @@ export default function JobSwipe() {
     batchId,
     jobs,
     remainingCards,
+    hiddenCount,
     hasFreeBatchThisWeek,
     generateBatch,
     isGenerating,
@@ -83,6 +84,17 @@ export default function JobSwipe() {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6">
+        {/* Hidden jobs notice */}
+        {hiddenCount > 0 && (
+          <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
+            <span>🚫</span>
+            <span>
+              {isHebrew
+                ? `${hiddenCount} משרות הוסתרו לפי הגדרות הסינון שלך`
+                : `${hiddenCount} jobs hidden by your filter settings`}
+            </span>
+          </div>
+        )}
         {/* Loading */}
         {isGenerating && (
           <div className="flex flex-col items-center justify-center py-20 gap-4">

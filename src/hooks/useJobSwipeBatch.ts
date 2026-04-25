@@ -101,7 +101,42 @@ export function useJobSwipeBatch() {
     },
   });
 
-  const jobs = batchData?.jobs || [];
+  // Load job filter preferences from profile
+  const { data: filterPrefs } = useQuery({
+    queryKey: ['job-filter-prefs', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('blocked_companies, max_job_age_days')
+        .eq('user_id', user.id)
+        .single();
+      return data as any;
+    },
+    enabled: !!user?.id,
+  });
+
+  const blockedCompanies: string[] = (filterPrefs?.blocked_companies || []).map((c: string) => c.toLowerCase());
+  const maxAgeDays: number = filterPrefs?.max_job_age_days ?? 90;
+
+  const allJobs = batchData?.jobs || [];
+
+  // Apply filters
+  const jobs = allJobs.filter((j) => {
+    // Blocked companies
+    if (blockedCompanies.length > 0 && j.company_name) {
+      if (blockedCompanies.includes(j.company_name.toLowerCase())) return false;
+    }
+    // Age filter
+    if (maxAgeDays > 0 && j.created_at) {
+      const ageMs = Date.now() - new Date(j.created_at).getTime();
+      const ageDays = ageMs / (1000 * 60 * 60 * 24);
+      if (ageDays > maxAgeDays) return false;
+    }
+    return true;
+  });
+
+  const hiddenCount = allJobs.length - jobs.length;
   const remainingCards = jobs.filter(j => !j.acted);
   const hasFreeBatchThisWeek = batchData?.is_cached === true;
 
@@ -109,6 +144,7 @@ export function useJobSwipeBatch() {
     batchId: batchData?.batch_id ?? null,
     jobs,
     remainingCards,
+    hiddenCount,
     isLoading: false,
     error: generateBatch.error,
     hasFreeBatchThisWeek,

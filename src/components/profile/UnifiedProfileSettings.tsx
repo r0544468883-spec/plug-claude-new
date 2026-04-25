@@ -16,6 +16,7 @@ import { ResumeEnhancer } from '@/components/documents/ResumeEnhancer';
 import { VouchWidget } from '@/components/vouch/VouchWidget';
 import { PreferencesSettings } from '@/components/settings/PreferencesSettings';
 import { JobPreferencesSettings } from '@/components/settings/JobPreferencesSettings';
+import { JobFilterSettings } from '@/components/settings/JobFilterSettings';
 import { PrivacySettings } from '@/components/settings/PrivacySettings';
 import { AccountSettings } from '@/components/settings/AccountSettings';
 import { IntegrationStatus } from '@/components/settings/IntegrationStatus';
@@ -185,6 +186,7 @@ export function UnifiedProfileSettings({ initialTab, onNavigate }: UnifiedProfil
         <TabsContent value="preferences" className="space-y-6 mt-6">
           <PreferencesSettings />
           <JobPreferencesSettings />
+          <JobFilterSettings />
           <PrivacySettings />
         </TabsContent>
 

@@ -59,6 +59,15 @@ export default function MyMatches() {
     if (!user) return;
     setLoading(true);
 
+    // Load filter preferences
+    const { data: filterPrefs } = await supabase
+      .from('profiles')
+      .select('blocked_companies, max_job_age_days')
+      .eq('user_id', user.id)
+      .single();
+    const blockedLower: string[] = ((filterPrefs as any)?.blocked_companies || []).map((c: string) => c.toLowerCase());
+    const maxAgeDays: number = (filterPrefs as any)?.max_job_age_days ?? 90;
+
     // Fetch all batches
     const { data: batchData } = await (supabase as any)
       .from('job_match_batches')
@@ -83,7 +92,15 @@ export default function MyMatches() {
         .in('id', Array.from(allJobIds));
 
       const detailMap: Record<string, JobDetail> = {};
-      (jobs || []).forEach((j: any) => { detailMap[j.id] = j; });
+      (jobs || []).forEach((j: any) => {
+        // Apply filters
+        if (blockedLower.length > 0 && j.company_name && blockedLower.includes(j.company_name.toLowerCase())) return;
+        if (maxAgeDays > 0 && j.created_at) {
+          const ageDays = (Date.now() - new Date(j.created_at).getTime()) / (1000 * 60 * 60 * 24);
+          if (ageDays > maxAgeDays) return;
+        }
+        detailMap[j.id] = j;
+      });
       setJobDetails(detailMap);
 
       // Fetch all actions for this user

@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { Sparkles, Loader2, Copy, Check, Briefcase, Wand2, Target, AlertCircle } from 'lucide-react';
+import { Sparkles, Loader2, Copy, Check, Briefcase, Wand2, Target, AlertCircle, BookOpen, ChevronRight } from 'lucide-react';
 
 interface BulletPoint {
   text: string;
@@ -31,6 +31,12 @@ export function ResumeEnhancer() {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   // Tailor mode state
+  const [promptResult, setPromptResult] = useState('');
+  const [promptLoading, setPromptLoading] = useState(false);
+  const [activePrompt, setActivePrompt] = useState<string | null>(null);
+  const [promptInput, setPromptInput] = useState('');
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
+
   const [jdText, setJdText] = useState('');
   const [currentResume, setCurrentResume] = useState('');
   const [tailorLoading, setTailorLoading] = useState(false);
@@ -244,6 +250,78 @@ Rules:
     low: isHebrew ? 'בסיסי' : 'Basic'
   };
 
+  // ── Prompt Library ──────────────────────────────────────────────────────────
+  const PROMPT_CATEGORIES = [
+    {
+      category: isHebrew ? 'כתיבה וניסוח' : 'Writing & Phrasing',
+      prompts: [
+        { id: 'rewrite_bullet', labelHe: 'שכתב bullet point', labelEn: 'Rewrite a bullet point', placeholder: isHebrew ? 'הדבק את ה-bullet הנוכחי...' : 'Paste your current bullet...', promptFn: (v: string) => `Rewrite this resume bullet point to be more impactful, quantified, and ATS-friendly. Start with a strong action verb:\n\n"${v}"\n\nProvide 3 improved versions.` },
+        { id: 'summary', labelHe: 'צור Professional Summary', labelEn: 'Write Professional Summary', placeholder: isHebrew ? 'תאר את הניסיון שלך...' : 'Describe your experience...', promptFn: (v: string) => `Write a compelling 3-sentence professional summary for a resume based on this background:\n\n${v}\n\nMake it ATS-optimized, results-focused, and engaging.` },
+        { id: 'action_verbs', labelHe: 'הצע פעלים חזקים לתפקיד', labelEn: 'Suggest strong action verbs', placeholder: isHebrew ? 'שם התפקיד...' : 'Job title...', promptFn: (v: string) => `List 20 powerful action verbs for a ${v} resume, grouped by category (Leadership, Technical, Analytical, Communication). Include a brief example sentence for each.` },
+        { id: 'quantify', labelHe: 'הוסף מספרים והישגים', labelEn: 'Add metrics & achievements', placeholder: isHebrew ? 'תאר את הפעילות שלך...' : 'Describe your activity...', promptFn: (v: string) => `Suggest ways to quantify and add measurable impact to this resume experience:\n\n${v}\n\nProvide 5 specific suggestions with example phrasing.` },
+      ]
+    },
+    {
+      category: isHebrew ? 'ATS ואופטימיזציה' : 'ATS & Optimization',
+      prompts: [
+        { id: 'ats_score', labelHe: 'נתח ATS של הטקסט', labelEn: 'Analyze ATS compatibility', placeholder: isHebrew ? 'הדבק טקסט מקורות החיים...' : 'Paste resume text...', promptFn: (v: string) => `Analyze this resume text for ATS compatibility:\n\n${v}\n\nProvide: 1) ATS score 1-10, 2) Missing keywords, 3) Formatting issues, 4) 5 specific improvements.` },
+        { id: 'keywords', labelHe: 'חלץ מילות מפתח ממשרה', labelEn: 'Extract keywords from JD', placeholder: isHebrew ? 'הדבק תיאור משרה...' : 'Paste job description...', promptFn: (v: string) => `Extract the top 20 ATS keywords from this job description, ranked by importance:\n\n${v}\n\nGroup by: Required skills, Preferred skills, Industry terms, Action verbs.` },
+        { id: 'gaps', labelHe: 'מצא פערים בין CV למשרה', labelEn: 'Find CV-JD skill gaps', placeholder: isHebrew ? 'CV [---] תיאור משרה (הפרד ב-[---])' : 'CV [---] Job description (separate with [---])', promptFn: (v: string) => { const [cv, jd] = v.split('[---]'); return `Compare this CV with the job description and identify skill gaps:\n\nCV:\n${cv}\n\nJob Description:\n${jd}\n\nList: 1) Matching skills, 2) Missing skills, 3) How to address each gap.`; } },
+        { id: 'format', labelHe: 'שפר פורמט לATS', labelEn: 'Improve format for ATS', placeholder: isHebrew ? 'הדבק קטע מקורות החיים...' : 'Paste a section...', promptFn: (v: string) => `Reformat this resume section to be fully ATS-compatible:\n\n${v}\n\nFix: formatting, dates, section headers, bullet structure. Show before/after.` },
+      ]
+    },
+    {
+      category: isHebrew ? 'חוויית עבודה' : 'Work Experience',
+      prompts: [
+        { id: 'expand', labelHe: 'הרחב תיאור תפקיד', labelEn: 'Expand job description', placeholder: isHebrew ? 'תפקיד + חברה + תחומי אחריות בסיסיים...' : 'Role + company + basic responsibilities...', promptFn: (v: string) => `Expand this job experience into 5 strong resume bullet points:\n\n${v}\n\nEach bullet should start with an action verb, include impact/results, and be ATS-friendly.` },
+        { id: 'gap', labelHe: 'הסבר פער בקורות חיים', labelEn: 'Explain employment gap', placeholder: isHebrew ? 'פרטי הפסקה...' : 'Gap details...', promptFn: (v: string) => `Write a professional way to address this employment gap on a resume or in an interview:\n\n${v}\n\nProvide: 1) Resume phrasing, 2) Interview answer, 3) Skills gained during this period.` },
+        { id: 'freelance', labelHe: 'הצג פרילנס/עצמאי', labelEn: 'Present freelance work', placeholder: isHebrew ? 'סוג עבודת הפרילנס...' : 'Type of freelance work...', promptFn: (v: string) => `Write a professional resume entry for freelance/self-employed work:\n\n${v}\n\nFormat it to look strong and legitimate on a resume with 4 bullet points.` },
+      ]
+    },
+    {
+      category: isHebrew ? 'כישורים ופרופיל' : 'Skills & Profile',
+      prompts: [
+        { id: 'skills_section', labelHe: 'בנה סקשן כישורים', labelEn: 'Build skills section', placeholder: isHebrew ? 'תחום + רמת ניסיון...' : 'Field + experience level...', promptFn: (v: string) => `Create a comprehensive skills section for a ${v} resume. Group by: Technical Skills, Soft Skills, Tools & Platforms, Languages. Include proficiency levels.` },
+        { id: 'linkedin_headline', labelHe: 'כתוב LinkedIn Headline', labelEn: 'Write LinkedIn Headline', placeholder: isHebrew ? 'תפקיד + התמחות...' : 'Role + specialization...', promptFn: (v: string) => `Write 5 powerful LinkedIn headlines for: ${v}\n\nEach under 220 characters. Make them keyword-rich, unique, and compelling.` },
+        { id: 'cover_letter', labelHe: 'כתוב Cover Letter', labelEn: 'Write Cover Letter', placeholder: isHebrew ? 'תפקיד + חברה + נקודות חוזק...' : 'Role + company + strengths...', promptFn: (v: string) => `Write a concise, compelling cover letter for:\n\n${v}\n\nFormat: Strong opening, 2 paragraphs of value, confident closing. Max 300 words.` },
+        { id: 'achievements', labelHe: 'מה ההישגים שלי?', labelEn: 'Identify my achievements', placeholder: isHebrew ? 'תאר את הפעילות היומית שלך...' : 'Describe your daily activities...', promptFn: (v: string) => `Identify resume-worthy achievements hidden in this job description:\n\n${v}\n\nTransform routine tasks into 5 impressive, quantified achievements.` },
+      ]
+    },
+    {
+      category: isHebrew ? 'ראיונות ומשא ומתן' : 'Interview & Negotiation',
+      prompts: [
+        { id: 'salary', labelHe: 'נסח דרישת שכר', labelEn: 'Frame salary expectation', placeholder: isHebrew ? 'תפקיד + טווח שכר רצוי...' : 'Role + desired range...', promptFn: (v: string) => `Write professional ways to communicate salary expectations for: ${v}\n\nProvide 3 phrasings for: email, interview, negotiation counter-offer.` },
+        { id: 'weakness', labelHe: 'ענה על "מה החולשה שלך?"', labelEn: 'Answer "What\'s your weakness?"', placeholder: isHebrew ? 'חולשה אמיתית שלך...' : 'A real weakness you have...', promptFn: (v: string) => `Write a professional, authentic interview answer for "What is your greatest weakness?" based on: ${v}\n\nShow self-awareness, growth mindset, and how you're improving it.` },
+      ]
+    },
+  ];
+
+  const runPrompt = async (promptText: string) => {
+    if (!promptText.trim()) return;
+    setPromptLoading(true);
+    setPromptResult('');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+      const response = await supabase.functions.invoke('plug-chat', {
+        body: { messages: [{ role: 'user', content: promptText }] },
+      });
+      if (response.error) throw response.error;
+      const result = response.data;
+      if (typeof result === 'string') {
+        setPromptResult(result);
+      } else if (result?.content) {
+        setPromptResult(typeof result.content === 'string' ? result.content : JSON.stringify(result.content, null, 2));
+      } else {
+        setPromptResult(JSON.stringify(result, null, 2));
+      }
+    } catch {
+      toast.error(isHebrew ? 'שגיאה בהרצת הפרומפט' : 'Failed to run prompt');
+    } finally {
+      setPromptLoading(false);
+    }
+  };
+
   return (
     <Card className="bg-card border-border">
       <CardHeader>
@@ -263,11 +341,15 @@ Rules:
           <TabsList className="w-full mb-4">
             <TabsTrigger value="bullets" className="flex-1 gap-1.5">
               <Sparkles className="w-3.5 h-3.5" />
-              {isHebrew ? 'יצירת Bullets' : 'Generate Bullets'}
+              {isHebrew ? 'Bullets' : 'Bullets'}
             </TabsTrigger>
             <TabsTrigger value="tailor" className="flex-1 gap-1.5">
               <Target className="w-3.5 h-3.5" />
-              {isHebrew ? 'התאמה למשרה' : 'Tailor for Job'}
+              {isHebrew ? 'התאמה' : 'Tailor'}
+            </TabsTrigger>
+            <TabsTrigger value="prompts" className="flex-1 gap-1.5">
+              <BookOpen className="w-3.5 h-3.5" />
+              {isHebrew ? 'ספריית פרומפטים' : 'Prompts'}
             </TabsTrigger>
           </TabsList>
 
@@ -438,6 +520,87 @@ Rules:
                 )}
               </div>
             )}
+          </TabsContent>
+
+          {/* Tab 3: Prompts Library */}
+          <TabsContent value="prompts" className="space-y-4">
+            <div className="space-y-4">
+              {PROMPT_CATEGORIES.map((cat) => (
+                <div key={cat.category}>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{cat.category}</p>
+                  <div className="grid gap-1.5">
+                    {cat.prompts.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => {
+                          setActivePrompt(activePrompt === p.id ? null : p.id);
+                          setPromptInput('');
+                          setPromptResult('');
+                        }}
+                        className={`flex items-center justify-between w-full text-start px-3 py-2 rounded-lg border text-sm transition-colors ${
+                          activePrompt === p.id
+                            ? 'border-primary bg-primary/5 text-primary'
+                            : 'border-border hover:border-primary/40 hover:bg-muted/40'
+                        }`}
+                      >
+                        <span>{isHebrew ? p.labelHe : p.labelEn}</span>
+                        <ChevronRight className={`h-3.5 w-3.5 flex-shrink-0 transition-transform ${activePrompt === p.id ? 'rotate-90' : ''}`} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Active prompt input */}
+            {activePrompt && (() => {
+              const allPrompts = PROMPT_CATEGORIES.flatMap(c => c.prompts);
+              const p = allPrompts.find(x => x.id === activePrompt);
+              if (!p) return null;
+              return (
+                <div className="border border-primary/30 rounded-lg p-4 space-y-3 bg-primary/5">
+                  <p className="text-sm font-medium">{isHebrew ? p.labelHe : p.labelEn}</p>
+                  <Textarea
+                    value={promptInput}
+                    onChange={(e) => setPromptInput(e.target.value)}
+                    placeholder={p.placeholder}
+                    rows={3}
+                    className="resize-none"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => runPrompt(p.promptFn(promptInput))}
+                    disabled={!promptInput.trim() || promptLoading}
+                    className="gap-2"
+                  >
+                    {promptLoading
+                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      : <Sparkles className="h-3.5 w-3.5" />}
+                    {isHebrew ? 'הרץ' : 'Run'}
+                  </Button>
+
+                  {promptResult && (
+                    <div className="relative bg-background rounded-lg border p-3 mt-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="absolute top-2 end-2 h-7 w-7 p-0"
+                        onClick={() => {
+                          navigator.clipboard.writeText(promptResult);
+                          setCopiedPrompt(true);
+                          setTimeout(() => setCopiedPrompt(false), 2000);
+                        }}
+                      >
+                        {copiedPrompt ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                      </Button>
+                      <ScrollArea className="max-h-64">
+                        <pre className="text-xs whitespace-pre-wrap leading-relaxed pe-8">{promptResult}</pre>
+                      </ScrollArea>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </TabsContent>
         </Tabs>
       </CardContent>
