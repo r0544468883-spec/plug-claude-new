@@ -360,7 +360,8 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
     const INTERVIEW_FLOW_STAGES = ['interview', 'screening', 'technical'];
     // Stages that trigger vouch prompts (interview/technical now use interview flow instead)
     const VOUCH_STAGES = ['offer'];
-    const COMPLETION_STAGES = ['hired', 'rejected', 'withdrawn'];
+    // 'rejected' excluded — handled by RejectionFeedbackDialog
+    const COMPLETION_STAGES = ['hired', 'withdrawn'];
 
     try {
       const updateData: Record<string, string> = {

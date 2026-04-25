@@ -29,7 +29,8 @@ interface VouchPrompt {
 }
 
 const VOUCH_PROMPT_STAGES = ['interview', 'technical', 'offer'];
-const COMPLETION_STAGES = ['hired', 'rejected', 'withdrawn'];
+// 'rejected' excluded — handled by RejectionFeedbackDialog instead
+const COMPLETION_STAGES = ['hired', 'withdrawn'];
 const TIME_BASED_DAYS = 21;
 
 export function useCompanyVouchPrompts(applications: Application[]) {
