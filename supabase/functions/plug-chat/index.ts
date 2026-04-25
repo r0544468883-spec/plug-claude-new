@@ -49,7 +49,7 @@ serve(async (req) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const [{ data: extensionApps }, { data: agentControl }] = await Promise.all([
+    const [{ data: extensionApps }, { data: agentControl }, { data: profileData }] = await Promise.all([
       supabaseClient
         .from('applications')
         .select('job_url, current_stage, match_score, created_at, notes')
@@ -61,6 +61,11 @@ serve(async (req) => {
       supabaseClient
         .from('extension_agent_control')
         .select('status, criteria, stats, last_updated')
+        .eq('user_id', authenticatedUserId)
+        .maybeSingle(),
+      supabaseClient
+        .from('profiles')
+        .select('career_context')
         .eq('user_id', authenticatedUserId)
         .maybeSingle(),
     ]);
@@ -210,6 +215,15 @@ ${index + 1}. ${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { ho
 - Total Vouches: ${context.vouches.total}
 - Types: ${Object.entries(context.vouches.types).map(([type, count]) => `${type}: ${count}`).join(', ')}
 ${context.vouches.skills?.length > 0 ? `- Skills mentioned: ${context.vouches.skills.join(', ')}` : ''}`;
+    }
+
+    // Career Data Foundation — inject user's personal career context
+    const careerContext = (profileData as any)?.career_context;
+    if (careerContext && careerContext.trim()) {
+      systemPrompt += `\n\n🎯 Career Data Foundation — מה המשתמש מחפש (רקע אישי שסיפק):
+${careerContext.trim()}
+
+השתמש בנתונים אלה כהקשר ראשי לכל תשובה. התאם המלצות, ניתוח משרות, וכתיבת קורות חיים לפי המידע הזה.`;
     }
 
     // Extension agent context

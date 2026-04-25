@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Briefcase, Loader2, Save, X, Target, GraduationCap, Layers, Wrench, MapPin } from 'lucide-react';
+import { Briefcase, Loader2, Save, X, Target, GraduationCap, Layers, Wrench, MapPin, Sparkles } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import {
   JOB_FIELDS,
   EXPERIENCE_LEVELS,
@@ -33,6 +34,7 @@ export function JobPreferencesSettings() {
   const [preferredExperienceLevel, setPreferredExperienceLevel] = useState<string>('');
   const [skills, setSkills] = useState<string[]>([]);
   const [targetLocations, setTargetLocations] = useState<string[]>([]);
+  const [careerContext, setCareerContext] = useState('');
 
   // Temporary state for selection
   const [selectedField, setSelectedField] = useState<string>('');
@@ -54,6 +56,7 @@ export function JobPreferencesSettings() {
       setExperienceYears((profile as any)?.experience_years || '');
       setSkills((profile as any)?.skills || []);
       setTargetLocations((profile as any)?.target_locations || []);
+      setCareerContext((profile as any)?.career_context || '');
       
       // Get experience level slug from ID
       const expLevelId = (profile as any)?.preferred_experience_level_id;
@@ -148,6 +151,7 @@ export function JobPreferencesSettings() {
           preferred_experience_level_id: experienceLevelId,
           skills,
           target_locations: targetLocations,
+          career_context: careerContext.trim() || null,
         } as any)
         .eq('user_id', user.id);
 
@@ -384,6 +388,31 @@ export function JobPreferencesSettings() {
               {isHebrew ? 'הוסף' : 'Add'}
             </Button>
           </div>
+        </div>
+
+        {/* Career Data Foundation */}
+        <div className="space-y-3">
+          <Label className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            {isHebrew ? 'הקשר קריירה לבינה המלאכותית' : 'AI Career Context'}
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            {isHebrew
+              ? 'ספר ל-PLUG AI על עצמך — מה אתה מחפש, חברות שמעניינות אותך, ציפיות שכר, דברים שחשוב לך בעבודה. PLUG ישתמש בזה בכל שיחה כדי לתת תשובות מדויקות יותר.'
+              : 'Tell PLUG AI about yourself — what you\'re looking for, companies that interest you, salary expectations, work preferences. PLUG uses this in every conversation for more accurate answers.'}
+          </p>
+          <Textarea
+            value={careerContext}
+            onChange={e => setCareerContext(e.target.value)}
+            placeholder={
+              isHebrew
+                ? 'לדוגמה: אני מחפש תפקיד Senior React Developer בחברת מוצר, עדיפות לחברות בתחום הפינטק. ציפיות שכר: 35-45K ₪. מעדיף היברידי / ריפמוט. לא מעוניין בסוכנויות גיוס.'
+                : 'E.g. I\'m looking for a Senior React role at a product company, preferably fintech. Salary: $120-150K. Prefer remote or hybrid. Not interested in agencies.'
+            }
+            className="min-h-[120px] resize-y text-sm"
+            maxLength={2000}
+          />
+          <p className="text-xs text-muted-foreground text-end">{careerContext.length}/2000</p>
         </div>
 
         <Button
