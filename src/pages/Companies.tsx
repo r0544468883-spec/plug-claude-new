@@ -203,7 +203,7 @@ export default function Companies() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((company) => {
               const rating = ratingsMap[company.id];
-              const logoUrl = getCompanyLogoUrl(company.logo_url, company.name);
+              const logoUrl = getCompanyLogoUrl(company);
 
               return (
                 <button
