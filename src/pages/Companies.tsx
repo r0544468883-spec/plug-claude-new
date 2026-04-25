@@ -526,18 +526,17 @@ export default function Companies() {
     enabled: !!user?.id,
   });
 
-  // Auto-classify companies that have no industry/size — runs once per session
-  const classifyRan = useRef(false);
+  // Auto-classify companies without industry/size — re-runs when unclassified count changes
+  const lastUnclassifiedCount = useRef(-1);
   useEffect(() => {
-    if (classifyRan.current || !user?.id || !companies.length) return;
+    if (!user?.id || !companies.length) return;
     const unclassified = companies.filter((c) => !c.industry || !c.size);
     if (unclassified.length === 0) return;
+    if (unclassified.length === lastUnclassifiedCount.current) return; // no change
+    lastUnclassifiedCount.current = unclassified.length;
 
-    classifyRan.current = true;
     supabase.functions.invoke('classify-companies').then(({ error }) => {
-      if (!error) {
-        queryClient.invalidateQueries({ queryKey: ['companies-directory'] });
-      }
+      if (!error) queryClient.invalidateQueries({ queryKey: ['companies-directory'] });
     });
   }, [companies, user?.id, queryClient]);
 

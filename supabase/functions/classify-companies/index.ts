@@ -113,16 +113,17 @@ ${companies.map((c: any, i: number) => `${i + 1}. ID: ${c.id} | ${c.name}${c.des
 
     const classifications: { id: string; industry: string; size: string }[] = JSON.parse(jsonMatch[0]);
 
-    // Update each company
+    // Update each company — allow any industry string Claude suggests (not limited to hardcoded list)
     let classified = 0;
     for (const cls of classifications) {
       if (!cls.id || !cls.industry || !cls.size) continue;
-      const validIndustry = INDUSTRIES.includes(cls.industry) ? cls.industry : null;
+      // Sanitize: trim, max 50 chars, no HTML
+      const cleanIndustry = cls.industry.replace(/<[^>]*>/g, '').trim().slice(0, 50) || null;
       const validSize = SIZES.includes(cls.size) ? cls.size : null;
-      if (!validIndustry && !validSize) continue;
+      if (!cleanIndustry && !validSize) continue;
 
       const updateData: Record<string, string> = {};
-      if (validIndustry) updateData.industry = validIndustry;
+      if (cleanIndustry) updateData.industry = cleanIndustry;
       if (validSize) updateData.size = validSize;
 
       const { error: updateError } = await adminClient
