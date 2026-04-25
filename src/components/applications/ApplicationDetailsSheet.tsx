@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { he, enUS } from 'date-fns/locale';
@@ -200,8 +200,6 @@ export function ApplicationDetailsSheet({
   const isRecruiter = role === 'freelance_hr' || role === 'inhouse_hr';
 
   const [currentStage, setCurrentStage] = useState(application?.current_stage || 'applied');
-  const savedApplicationId = useRef<string | null>(null);
-  const pendingRejectionFeedback = useRef(false);
   const [notes, setNotes] = useState(application?.notes || '');
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -338,10 +336,9 @@ export function ApplicationDetailsSheet({
       setHasChanges(false);
       onUpdate();
 
-      // Queue rejection feedback — shown after VouchModal closes (via onRejected callback)
+      // Show rejection feedback dialog for candidates after a short delay
       if (currentStage === 'rejected' && currentStage !== oldStage && !isRecruiter) {
-        savedApplicationId.current = application.id;
-        pendingRejectionFeedback.current = true;
+        setTimeout(() => onRejected?.(application.id), 800);
       }
 
       // Check for auto-send email templates on stage change
@@ -860,13 +857,7 @@ export function ApplicationDetailsSheet({
             open={showVouchModal}
             onOpenChange={(open) => {
               setShowVouchModal(open);
-              if (!open) {
-                setVouchTrigger(null);
-                if (pendingRejectionFeedback.current && savedApplicationId.current) {
-                  pendingRejectionFeedback.current = false;
-                  onRejected?.(savedApplicationId.current);
-                }
-              }
+              if (!open) setVouchTrigger(null);
             }}
             applicationId={application.id}
             companyId={company.id}
@@ -876,10 +867,6 @@ export function ApplicationDetailsSheet({
             onComplete={() => {
               setShowVouchModal(false);
               setVouchTrigger(null);
-              if (pendingRejectionFeedback.current && savedApplicationId.current) {
-                pendingRejectionFeedback.current = false;
-                onRejected?.(savedApplicationId.current);
-              }
             }}
           />
         )}
