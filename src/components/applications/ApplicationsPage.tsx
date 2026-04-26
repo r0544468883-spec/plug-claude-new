@@ -30,6 +30,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Briefcase, Loader2, Sparkles, FileSpreadsheet, Bookmark, ExternalLink, Heart, Building2, Plus, BarChart3, History, LayoutGrid, List } from 'lucide-react';
 import { KanbanView } from './KanbanView';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface Application {
   id: string;
