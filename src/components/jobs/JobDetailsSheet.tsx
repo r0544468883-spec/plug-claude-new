@@ -15,6 +15,7 @@ import { EditJobFieldForm } from './EditJobFieldForm';
 import { formatSalaryRange, getILSFootnote } from '@/lib/salary-utils';
 import { CompanyReviews } from '@/components/reviews/CompanyReviews';
 import { SkillGapAnalysis } from '@/components/skills/SkillGapAnalysis';
+import { ResumeTailoringPanel } from './ResumeTailoringPanel';
 
 
 interface Job {
@@ -277,6 +278,19 @@ export function JobDetailsSheet({ job, open, onOpenChange, onApply, onRefresh, i
                   {isHebrew ? 'צפה במקור המשרה' : 'View original posting'}
                 </a>
               </div>
+            )}
+
+            {/* Resume Tailoring — for logged-in job seekers */}
+            {user && (job.requirements || job.description) && (
+              <>
+                <Separator className="my-6" />
+                <ResumeTailoringPanel
+                  jobTitle={job.title}
+                  jobDescription={job.description}
+                  jobRequirements={job.requirements}
+                  companyName={job.company?.name}
+                />
+              </>
             )}
 
             {/* Skill Gap Analysis - for logged-in job seekers */}
