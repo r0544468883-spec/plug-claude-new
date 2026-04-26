@@ -73,16 +73,19 @@ export function JobSearchPage() {
     if (user) sessionStorage.setItem(`plug_job_filters_${user.id}`, JSON.stringify(filters));
   }, [filters, user]);
 
-  // Fetch user profile for Match Me
+  // Fetch user profile for Match Me + job filters
   const { data: userProfile } = useQuery({
     queryKey: ['user-profile-for-match', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
-      const { data } = await supabase.from('profiles').select('preferred_fields, preferred_roles, cv_data').eq('user_id', user.id).single();
+      const { data } = await supabase.from('profiles').select('preferred_fields, preferred_roles, cv_data, blocked_companies, max_job_age_days').eq('user_id', user.id).single();
       return data;
     },
     enabled: !!user?.id,
   });
+
+  const blockedCompanies: string[] = ((userProfile as any)?.blocked_companies || []).map((c: string) => c.toLowerCase());
+  const maxAgeDays: number = (userProfile as any)?.max_job_age_days ?? 90;
 
   // Fetch jobs
   const { data: jobs = [], isLoading, error: jobsError, refetch } = useQuery({
@@ -173,9 +176,21 @@ export function JobSearchPage() {
     });
   }, [jobs, matchMeActive, userProfile, isHebrew]);
 
-  // Filter dismissed + sort
+  // Filter dismissed + blocked companies + age + sort
   const allDisplayedJobs = useMemo(() => {
-    let result = (matchMeActive ? matchedJobs : jobs).filter(j => !dismissedIds.has((j as any).id));
+    let result = (matchMeActive ? matchedJobs : jobs).filter(j => {
+      if (dismissedIds.has((j as any).id)) return false;
+      // Blocked companies filter
+      if (blockedCompanies.length > 0 && (j as any).company?.name) {
+        if (blockedCompanies.includes((j as any).company.name.toLowerCase())) return false;
+      }
+      // Age filter
+      if (maxAgeDays > 0 && (j as any).created_at) {
+        const ageDays = (Date.now() - new Date((j as any).created_at).getTime()) / (1000 * 60 * 60 * 24);
+        if (ageDays > maxAgeDays) return false;
+      }
+      return true;
+    });
 
     if (sortBy === 'salary') {
       result = [...result].sort((a, b) => ((b as any).salary_max || 0) - ((a as any).salary_max || 0));
@@ -185,10 +200,11 @@ export function JobSearchPage() {
     // 'newest' is default from query order
 
     return result;
-  }, [matchMeActive, matchedJobs, jobs, dismissedIds, sortBy]);
+  }, [matchMeActive, matchedJobs, jobs, dismissedIds, sortBy, blockedCompanies, maxAgeDays]);
 
   const displayedJobs = allDisplayedJobs.slice(0, visibleCount);
   const hasMore = visibleCount < allDisplayedJobs.length;
+  const hiddenByFilter = (jobs.length) - allDisplayedJobs.length;
 
   // Reset visible count when filters change
   useEffect(() => { setVisibleCount(20); }, [filters, matchMeActive]);
@@ -274,6 +290,11 @@ export function JobSearchPage() {
           <Badge variant="secondary" className="text-xs font-normal">
             {allDisplayedJobs.length}
           </Badge>
+          {hiddenByFilter > 0 && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              🚫 {isHebrew ? `${hiddenByFilter} הוסתרו לפי הגדרות הסינון` : `${hiddenByFilter} hidden by filters`}
+            </span>
+          )}
         </h1>
 
         {/* New Search — opens full filters in right-side sheet */}

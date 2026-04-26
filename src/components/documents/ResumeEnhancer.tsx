@@ -132,9 +132,14 @@ The "impact" field should be "high" for strongly quantified achievements, "mediu
         throw new Error('Could not parse AI response');
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating bullet points:', error);
-      toast.error(isHebrew ? 'שגיאה ביצירת נקודות' : 'Failed to generate bullet points');
+      const msg = error?.message || JSON.stringify(error) || '';
+      if (msg.includes('credit') || msg.includes('quota') || msg.includes('balance')) {
+        toast.error(isHebrew ? 'אין מספיק קרדיטים AI — רכוש קרדיטים ב"חשבון"' : 'No AI credits — purchase credits in Account');
+      } else {
+        toast.error(isHebrew ? 'שגיאה ביצירת נקודות' : 'Failed to generate bullet points');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -315,8 +320,13 @@ Rules:
       } else {
         setPromptResult(JSON.stringify(result, null, 2));
       }
-    } catch {
-      toast.error(isHebrew ? 'שגיאה בהרצת הפרומפט' : 'Failed to run prompt');
+    } catch (err: any) {
+      const msg = err?.message || JSON.stringify(err) || '';
+      if (msg.includes('credit') || msg.includes('quota') || msg.includes('balance')) {
+        toast.error(isHebrew ? 'אין מספיק קרדיטים AI — רכוש קרדיטים ב"חשבון"' : 'No AI credits — purchase credits in Account');
+      } else {
+        toast.error(isHebrew ? 'שגיאה בהרצת הפרומפט' : 'Failed to run prompt');
+      }
     } finally {
       setPromptLoading(false);
     }
@@ -530,77 +540,73 @@ Rules:
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{cat.category}</p>
                   <div className="grid gap-1.5">
                     {cat.prompts.map((p) => (
-                      <button
-                        key={p.id}
-                        onClick={() => {
-                          setActivePrompt(activePrompt === p.id ? null : p.id);
-                          setPromptInput('');
-                          setPromptResult('');
-                        }}
-                        className={`flex items-center justify-between w-full text-start px-3 py-2 rounded-lg border text-sm transition-colors ${
-                          activePrompt === p.id
-                            ? 'border-primary bg-primary/5 text-primary'
-                            : 'border-border hover:border-primary/40 hover:bg-muted/40'
-                        }`}
-                      >
-                        <span>{isHebrew ? p.labelHe : p.labelEn}</span>
-                        <ChevronRight className={`h-3.5 w-3.5 flex-shrink-0 transition-transform ${activePrompt === p.id ? 'rotate-90' : ''}`} />
-                      </button>
+                      <div key={p.id}>
+                        <button
+                          onClick={() => {
+                            setActivePrompt(activePrompt === p.id ? null : p.id);
+                            setPromptInput('');
+                            setPromptResult('');
+                          }}
+                          className={`flex items-center justify-between w-full text-start px-3 py-2 rounded-lg border text-sm transition-colors ${
+                            activePrompt === p.id
+                              ? 'border-primary bg-primary/5 text-primary rounded-b-none border-b-0'
+                              : 'border-border hover:border-primary/40 hover:bg-muted/40'
+                          }`}
+                        >
+                          <span>{isHebrew ? p.labelHe : p.labelEn}</span>
+                          <ChevronRight className={`h-3.5 w-3.5 flex-shrink-0 transition-transform ${activePrompt === p.id ? 'rotate-90' : ''}`} />
+                        </button>
+
+                        {/* Inline expansion — visible right below the clicked button */}
+                        {activePrompt === p.id && (
+                          <div className="border border-primary/30 border-t-0 rounded-b-lg p-3 space-y-3 bg-primary/5">
+                            <Textarea
+                              value={promptInput}
+                              onChange={(e) => setPromptInput(e.target.value)}
+                              placeholder={p.placeholder}
+                              rows={3}
+                              className="resize-none bg-background"
+                              autoFocus
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => runPrompt(p.promptFn(promptInput))}
+                              disabled={!promptInput.trim() || promptLoading}
+                              className="gap-2"
+                            >
+                              {promptLoading
+                                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                : <Sparkles className="h-3.5 w-3.5" />}
+                              {isHebrew ? 'הרץ' : 'Run'}
+                            </Button>
+
+                            {promptResult && (
+                              <div className="relative bg-background rounded-lg border p-3">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="absolute top-2 end-2 h-7 w-7 p-0"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(promptResult);
+                                    setCopiedPrompt(true);
+                                    setTimeout(() => setCopiedPrompt(false), 2000);
+                                  }}
+                                >
+                                  {copiedPrompt ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                                </Button>
+                                <ScrollArea className="max-h-64">
+                                  <pre className="text-xs whitespace-pre-wrap leading-relaxed pe-8">{promptResult}</pre>
+                                </ScrollArea>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </div>
               ))}
             </div>
-
-            {/* Active prompt input */}
-            {activePrompt && (() => {
-              const allPrompts = PROMPT_CATEGORIES.flatMap(c => c.prompts);
-              const p = allPrompts.find(x => x.id === activePrompt);
-              if (!p) return null;
-              return (
-                <div className="border border-primary/30 rounded-lg p-4 space-y-3 bg-primary/5">
-                  <p className="text-sm font-medium">{isHebrew ? p.labelHe : p.labelEn}</p>
-                  <Textarea
-                    value={promptInput}
-                    onChange={(e) => setPromptInput(e.target.value)}
-                    placeholder={p.placeholder}
-                    rows={3}
-                    className="resize-none"
-                  />
-                  <Button
-                    size="sm"
-                    onClick={() => runPrompt(p.promptFn(promptInput))}
-                    disabled={!promptInput.trim() || promptLoading}
-                    className="gap-2"
-                  >
-                    {promptLoading
-                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      : <Sparkles className="h-3.5 w-3.5" />}
-                    {isHebrew ? 'הרץ' : 'Run'}
-                  </Button>
-
-                  {promptResult && (
-                    <div className="relative bg-background rounded-lg border p-3 mt-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="absolute top-2 end-2 h-7 w-7 p-0"
-                        onClick={() => {
-                          navigator.clipboard.writeText(promptResult);
-                          setCopiedPrompt(true);
-                          setTimeout(() => setCopiedPrompt(false), 2000);
-                        }}
-                      >
-                        {copiedPrompt ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-                      </Button>
-                      <ScrollArea className="max-h-64">
-                        <pre className="text-xs whitespace-pre-wrap leading-relaxed pe-8">{promptResult}</pre>
-                      </ScrollArea>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
           </TabsContent>
         </Tabs>
       </CardContent>

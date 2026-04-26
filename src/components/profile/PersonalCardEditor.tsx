@@ -123,6 +123,7 @@ export function PersonalCardEditor() {
 
   // Track saved data to detect unsaved changes
   const [savedData, setSavedData] = useState(formData);
+  const [noticePeriod, setNoticePeriod] = useState('');
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setFormData(prev => ({ ...prev, [field]: e.target.value }));
@@ -132,6 +133,24 @@ export function PersonalCardEditor() {
 
   const setCheck = (field: string) => (v: boolean | 'indeterminate') =>
     setFormData(prev => ({ ...prev, [field]: !!v }));
+
+  const handleNoticePeriodChange = (val: string) => {
+    setNoticePeriod(val);
+    if (val === 'immediate') {
+      const d = new Date();
+      setFormData(prev => ({ ...prev, available_start_date: d.toISOString().split('T')[0] }));
+    } else if (val === '2weeks') {
+      const d = new Date(); d.setDate(d.getDate() + 14);
+      setFormData(prev => ({ ...prev, available_start_date: d.toISOString().split('T')[0] }));
+    } else if (val === '1month') {
+      const d = new Date(); d.setDate(d.getDate() + 30);
+      setFormData(prev => ({ ...prev, available_start_date: d.toISOString().split('T')[0] }));
+    } else if (val === '3months') {
+      const d = new Date(); d.setDate(d.getDate() + 90);
+      setFormData(prev => ({ ...prev, available_start_date: d.toISOString().split('T')[0] }));
+    }
+    // 'specific' — date stays as-is, user picks via date input
+  };
 
   useEffect(() => {
     if (profile) {
@@ -170,6 +189,20 @@ export function PersonalCardEditor() {
       };
       setFormData(data);
       setSavedData(data);
+
+      // Derive notice period from stored date
+      if (p.available_start_date) {
+        const diffDays = Math.round(
+          (new Date(p.available_start_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        );
+        if (diffDays <= 3) setNoticePeriod('immediate');
+        else if (diffDays <= 18) setNoticePeriod('2weeks');
+        else if (diffDays <= 35) setNoticePeriod('1month');
+        else if (diffDays <= 100) setNoticePeriod('3months');
+        else setNoticePeriod('specific');
+      } else {
+        setNoticePeriod('');
+      }
     }
   }, [profile]);
 
@@ -201,9 +234,10 @@ export function PersonalCardEditor() {
       filled: [formData.full_name, formData.phone, formData.city, formData.avatar_url].filter(Boolean).length,
       total: 4,
     };
+    const hasResume = !!(profile as any)?.cv_data && Object.keys((profile as any)?.cv_data || {}).length > 0;
     const docs = {
-      filled: [formData.cover_letter].filter(Boolean).length,
-      total: 1,
+      filled: [hasResume ? 'yes' : '', formData.cover_letter].filter(Boolean).length,
+      total: 2,
     };
     const links = {
       filled: [formData.linkedin_url, formData.github_url, formData.portfolio_url].filter(Boolean).length,
@@ -575,8 +609,22 @@ export function PersonalCardEditor() {
                 <AccordionContent className="space-y-4 pt-2">
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="available_start_date">{isHebrew ? 'תאריך התחלה אפשרי' : 'Available Start Date'}</Label>
-                      <Input id="available_start_date" type="date" value={formData.available_start_date} onChange={set('available_start_date')} dir="ltr" />
+                      <Label>{isHebrew ? 'זמינות לתחילת עבודה' : 'Work Availability'}</Label>
+                      <Select value={noticePeriod} onValueChange={handleNoticePeriodChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={isHebrew ? 'בחר/י' : 'Select'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="immediate">{isHebrew ? 'מיידי' : 'Immediately'}</SelectItem>
+                          <SelectItem value="2weeks">{isHebrew ? 'שבועיים התראה מראש' : '2 Weeks Notice'}</SelectItem>
+                          <SelectItem value="1month">{isHebrew ? 'חודש התראה מראש' : '1 Month Notice'}</SelectItem>
+                          <SelectItem value="3months">{isHebrew ? '3 חודשים התראה מראש' : '3 Months Notice'}</SelectItem>
+                          <SelectItem value="specific">{isHebrew ? 'תאריך ספציפי' : 'Specific Date'}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {noticePeriod === 'specific' && (
+                        <Input type="date" value={formData.available_start_date} onChange={set('available_start_date')} dir="ltr" className="mt-1" />
+                      )}
                       <HelperText field="available_start_date" isHebrew={isHebrew} />
                     </div>
                     <div className="space-y-2">
