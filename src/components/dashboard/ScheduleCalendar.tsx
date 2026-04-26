@@ -166,7 +166,7 @@ export function ScheduleCalendar() {
     } catch { return null; }
   }, [filterStorageKey]);
 
-  const [viewMode, setViewMode] = useState<ViewMode>(savedFilters?.viewMode || 'day');
+  const [viewMode, setViewMode] = useState<ViewMode>('day');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [filterType, setFilterType] = useState<TaskType | 'all'>(savedFilters?.filterType || 'all');
