@@ -27,8 +27,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Briefcase, Loader2, Sparkles, FileSpreadsheet, Bookmark, ExternalLink, Heart, Building2, Plus, BarChart3, History, LayoutGrid, List } from 'lucide-react';
+import { Briefcase, Loader2, Sparkles, FileSpreadsheet, Bookmark, ExternalLink, Heart, Building2, Plus, BarChart3, History, LayoutGrid, List, Users } from 'lucide-react';
 import { KanbanView } from './KanbanView';
+import { RecruiterTracker } from './RecruiterTracker';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -649,6 +650,10 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
             <History className="w-4 h-4 me-1.5" />
             {isRTL ? 'היסטוריית התאמות' : 'Match History'}
           </TabsTrigger>
+          <TabsTrigger value="recruiters" className="rounded-md">
+            <Users className="w-4 h-4 me-1.5" />
+            {isRTL ? 'ריקרוטרים' : 'Recruiters'}
+          </TabsTrigger>
           {user && (
             <TabsTrigger value="extension" className="rounded-md">
               <Sparkles className="w-4 h-4 me-1.5" />
@@ -826,6 +831,11 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
         {/* ── Match History Tab ── */}
         <TabsContent value="matches" className="mt-4">
           <MatchHistoryTab />
+        </TabsContent>
+
+        {/* ── Recruiter Tracker Tab ── */}
+        <TabsContent value="recruiters" className="mt-4">
+          <RecruiterTracker />
         </TabsContent>
 
         {/* ── Extension Activity Tab ── */}
