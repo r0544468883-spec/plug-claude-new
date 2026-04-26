@@ -40,8 +40,9 @@ export function KanbanView({ applications, onStageChange, onViewDetails }: Kanba
 
   const getColApps = (groups: string[]) =>
     applications.filter(app => {
-      const stage = STAGE_MAP[app.current_stage];
-      return stage && groups.includes(stage.group);
+      const stageKey = app.current_stage || 'applied';
+      const stage = STAGE_MAP[stageKey] || STAGE_MAP['applied'];
+      return groups.includes(stage.group);
     });
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
