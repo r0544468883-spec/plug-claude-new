@@ -127,17 +127,12 @@ export function RecruiterTracker() {
     enabled: allLinkedJobIds.length > 0,
   });
 
-  // PLUG user search
+  // PLUG user search — uses RPC to bypass profile_visibility RLS
   const { data: userResults = [] } = useQuery({
     queryKey: ['plug-users-search', userSearch],
     queryFn: async () => {
       if (!userSearch.trim() || !user) return [];
-      const { data } = await supabase
-        .from('profiles_secure')
-        .select('user_id, full_name, avatar_url, personal_tagline')
-        .ilike('full_name', `%${userSearch}%`)
-        .neq('user_id', user.id)
-        .limit(8);
+      const { data } = await (supabase as any).rpc('search_plug_users', { query: userSearch.trim() });
       return (data || []) as PlugUser[];
     },
     enabled: userSearch.trim().length > 1,
