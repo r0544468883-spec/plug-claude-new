@@ -111,7 +111,7 @@ const VerticalApplicationCard = ({
           {/* Company Logo / Match Score */}
           <div className="flex-shrink-0">
             {application.match_score ? (
-              <MatchScoreCircle score={application.match_score} size="md" />
+              <MatchScoreCircle score={application.match_score} size="md" job={application.job} />
             ) : (
               <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center">
                 <Building2 className="h-6 w-6 text-muted-foreground" />
