@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, ArrowLeft, ArrowRight, ExternalLink, Check, Bookmark, X, Loader2, Building2, Calendar, Link2 } from 'lucide-react';
+import { Sparkles, ArrowLeft, ArrowRight, ExternalLink, Check, Bookmark, X, Loader2, Building2, Calendar, Link2, List, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
@@ -38,6 +38,18 @@ interface SwipeAction {
   created_at: string;
 }
 
+type ViewMode = 'list' | 'location';
+
+function extractCity(location: string | null | undefined): string {
+  if (!location) return '?';
+  const s = location.trim();
+  // Remote variations
+  if (/remote|מרחוק|ריילי|from home/.test(s.toLowerCase())) return 'Remote 🌐';
+  // Take the first comma-segment or the whole string (up to 30 chars)
+  const city = s.split(/[,\/]/)[0].trim();
+  return city.length > 0 ? city : s.substring(0, 25);
+}
+
 export default function MyMatches() {
   const { language } = useLanguage();
   const isHebrew = language === 'he';
@@ -47,6 +59,8 @@ export default function MyMatches() {
   const [jobDetails, setJobDetails] = useState<Record<string, JobDetail>>({});
   const [actions, setActions] = useState<Record<string, SwipeAction>>({});
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [collapsedCities, setCollapsedCities] = useState<Set<string>>(new Set());
 
   const BackIcon = isHebrew ? ArrowRight : ArrowLeft;
 
@@ -230,7 +244,23 @@ export default function MyMatches() {
               {isHebrew ? 'היסטוריית התאמות' : 'Match History'}
             </h1>
           </div>
-          <div className="w-10" />
+          {/* View toggle */}
+          <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('list')}
+              className={cn('p-1.5 rounded-md transition-colors', viewMode === 'list' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground')}
+              title={isHebrew ? 'תצוגת רשימה' : 'List view'}
+            >
+              <List className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setViewMode('location')}
+              className={cn('p-1.5 rounded-md transition-colors', viewMode === 'location' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground')}
+              title={isHebrew ? 'תצוגה לפי מיקום' : 'Location view'}
+            >
+              <MapPin className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -258,7 +288,110 @@ export default function MyMatches() {
           </Card>
         )}
 
-        {!loading && batches.map((batch, batchIndex) => {
+        {/* Location view — group all jobs across batches by city */}
+        {!loading && viewMode === 'location' && (() => {
+          // Flatten all jobs across all batches, deduplicate by job_id
+          const seen = new Set<string>();
+          const allJobs: Array<{ bj: BatchJob; batch: MatchBatch }> = [];
+          batches.forEach(batch => {
+            (batch.jobs || []).forEach(bj => {
+              if (!seen.has(bj.job_id) && jobDetails[bj.job_id]) {
+                seen.add(bj.job_id);
+                allJobs.push({ bj, batch });
+              }
+            });
+          });
+
+          // Group by city
+          const cityMap = new Map<string, typeof allJobs>();
+          allJobs.forEach(item => {
+            const city = extractCity(jobDetails[item.bj.job_id]?.location);
+            if (!cityMap.has(city)) cityMap.set(city, []);
+            cityMap.get(city)!.push(item);
+          });
+
+          // Sort cities: Remote last, rest alphabetically, largest first
+          const sortedCities = Array.from(cityMap.entries()).sort(([a, as_], [b, bs_]) => {
+            if (a.startsWith('Remote')) return 1;
+            if (b.startsWith('Remote')) return -1;
+            return bs_.length - as_.length;
+          });
+
+          if (sortedCities.length === 0) return null;
+
+          return (
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                {isHebrew
+                  ? `${allJobs.length} משרות ב-${sortedCities.length} מיקומים`
+                  : `${allJobs.length} jobs across ${sortedCities.length} locations`}
+              </p>
+              {sortedCities.map(([city, items]) => {
+                const isCollapsed = collapsedCities.has(city);
+                return (
+                  <Card key={city} className="overflow-hidden">
+                    <button
+                      className="w-full flex items-center justify-between px-4 py-3 bg-muted/50 border-b hover:bg-muted/70 transition-colors"
+                      onClick={() => setCollapsedCities(prev => {
+                        const next = new Set(prev);
+                        if (next.has(city)) next.delete(city); else next.add(city);
+                        return next;
+                      })}
+                    >
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-3.5 h-3.5 text-primary" />
+                        <span className="font-semibold text-sm">{city}</span>
+                        <Badge variant="secondary" className="text-[10px]">{items.length}</Badge>
+                      </div>
+                      {isCollapsed
+                        ? <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                        : <ChevronUp className="w-4 h-4 text-muted-foreground" />}
+                    </button>
+                    {!isCollapsed && (
+                      <CardContent className="p-0">
+                        {items.map(({ bj, batch }, i) => {
+                          const job = jobDetails[bj.job_id];
+                          const action = actions[bj.job_id];
+                          return (
+                            <div key={bj.job_id} className={cn('px-4 py-3 space-y-1.5', i < items.length - 1 && 'border-b border-border/50')}>
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm font-semibold flex-1 min-w-0 truncate">{job?.title || bj.job_id}</p>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className={cn('px-2 py-0.5 rounded-full text-xs font-bold',
+                                    bj.score >= 80 ? 'bg-emerald-500/10 text-emerald-600' :
+                                    bj.score >= 70 ? 'bg-blue-500/10 text-blue-600' :
+                                    'bg-amber-500/10 text-amber-600'
+                                  )}>{bj.score}%</span>
+                                  {getActionBadge(bj.job_id, job)}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Building2 className="w-3 h-3" />
+                                  {job?.company_name || '—'}
+                                </span>
+                                {job?.source_url && (
+                                  <a href={job.source_url} target="_blank" rel="noopener noreferrer"
+                                    className="text-primary hover:underline flex items-center gap-1">
+                                    <ExternalLink className="w-3 h-3" />
+                                    {isHebrew ? 'פתח' : 'Open'}
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </CardContent>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          );
+        })()}
+
+        {/* List view — original batch-based display */}
+        {!loading && viewMode === 'list' && batches.map((batch, batchIndex) => {
           const batchJobs = batch.jobs || [];
           const appliedCount = batchJobs.filter(j => actions[j.job_id]?.action === 'apply').length;
           const savedCount = batchJobs.filter(j => actions[j.job_id]?.action === 'save').length;

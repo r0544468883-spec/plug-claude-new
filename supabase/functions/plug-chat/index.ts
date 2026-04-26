@@ -244,9 +244,71 @@ ${careerContext.trim()}
       }
     }
 
-    // context appended above - no legacy duplicates needed
+    // ── Multi-Agent Intent Routing ────────────────────────────────────────────
+    // Detect specialized intent from the last user message and inject a
+    // focused sub-agent persona so Claude acts as the right specialist.
+    const lastUserMsg = (messages as Array<{ role: string; content: string }>)
+      .filter(m => m.role === 'user')
+      .slice(-1)[0]?.content?.toLowerCase() ?? '';
 
+    type Intent = 'resume_tailor' | 'interview_prep' | 'salary_negotiation' | 'outreach' | 'general';
 
+    function detectIntent(msg: string): Intent {
+      if (/קורות חיים|ats|resume|tailor|bullet|סיכום מקצועי|cv|מילות מפתח/.test(msg)) return 'resume_tailor';
+      if (/ראיון|interview|star|שאלות ראיון|behavioral|situational|הכנה לראיון/.test(msg)) return 'interview_prep';
+      if (/שכר|salary|negotiat|compensation|תשלום|משכורת|העלאה|counter|offer/.test(msg)) return 'salary_negotiation';
+      if (/הודעה|message|linkedin|recruiter|מגייס|follow.?up|reach out|פנייה|אימייל/.test(msg)) return 'outreach';
+      return 'general';
+    }
+
+    const intent = context?.mode === 'negotiation_sandbox' ? 'general' : detectIntent(lastUserMsg);
+
+    const SUB_AGENT_PROMPTS: Record<Exclude<Intent, 'general'>, string> = {
+      resume_tailor: `
+## 📄 מצב פעיל: Resume Tailor Agent
+אתה עכשיו ה-Resume Tailor של PLUG — מומחה ATS ושכתוב קורות חיים.
+כללים עבור תגובה זו:
+- נתח כל JD לפי: דרישות חובה / יתרון / keywords ATS
+- כתוב bullets שמתחילים בפועל חזק ומכילים מדד מספרי (%, $, X users)
+- ציין ציון ATS (0-100) אם רלוונטי
+- הצג: matched keywords ✅, missing keywords ❌, suggestions 💡
+- Format: markdown עם sections ברורים`,
+
+      interview_prep: `
+## 🎯 מצב פעיל: Interview Prep Agent
+אתה עכשיו ה-Interview Coach של PLUG — מומחה הכנה לראיונות.
+כללים עבור תגובה זו:
+- שאל תפקיד + חברה אם לא ידוע
+- צור שאלות מסוג: behavioral (STAR), situational, technical, culture-fit
+- עבור כל שאלה — הצג: "מה הם בודקים" + "תשובה מדגמית בפורמט STAR"
+- הוסף: Situation → Task → Action → Result + impact
+- Tips לשפת גוף ונוכחות אם רלוונטי`,
+
+      salary_negotiation: `
+## 💰 מצב פעיל: Salary Negotiation Agent
+אתה עכשיו ה-Negotiation Coach של PLUG — מומחה משא ומתן שכר.
+כללים עבור תגובה זו:
+- השב לפי נתוני שוק ישראל עדכניים (Frontend 2yr=22K, 5yr=34K; Backend 2yr=24K, 5yr=38K; PM 3yr=30K)
+- הצג 3 אסטרטגיות: anchor גבוה / win-win framing / silent pause technique
+- כתוב script מוכן לשיחה: email + phone + counter-offer
+- הזהר ממלכודות נפוצות: לקבל offer ראשון, לא לבקש הטבות, deadline pressure`,
+
+      outreach: `
+## ✉️ מצב פעיל: Outreach Agent
+אתה עכשיו ה-Outreach Specialist של PLUG — מומחה פנייה למגייסים ו-networking.
+כללים עבור תגובה זו:
+- כתוב הודעות קצרות (under 150 words) עם subject line מושך
+- פורמט: hook personalisé → value prop → CTA ברור
+- הצע וריאציות: LinkedIn DM / email / follow-up
+- טיפ: אל תבקש "קפה" — בקש "15 דקות" עם agenda ספציפי
+- כלול: {{first_name}}, {{company}}, {{role}} placeholders`,
+    };
+
+    if (intent !== 'general' && SUB_AGENT_PROMPTS[intent]) {
+      systemPrompt += SUB_AGENT_PROMPTS[intent];
+      console.log(`[plug-chat] Routed to sub-agent: ${intent}`);
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     console.log("Plug context loaded:", {
       hasResume: !!context?.resumeSummary,

@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Bot, Play, Square, Pause, Zap, CheckCircle, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { Bot, Play, Square, Pause, Zap, CheckCircle, Clock, ChevronDown, ChevronUp, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
 type AgentStatus = 'running' | 'idle' | 'paused';
 
@@ -16,12 +17,19 @@ interface AgentStats {
   completedAt?: number;
 }
 
+interface PendingApproval {
+  taskId: string;
+  job: { id: string; title: string; company: string; score?: number };
+  requestedAt: string;
+}
+
 interface AgentControlRow {
   status: AgentStatus;
   command: string;
   criteria: { minMatchScore?: number; maxApplicationsPerSession?: number };
   stats: AgentStats;
   last_updated: string;
+  pending_approval?: PendingApproval | null;
 }
 
 export function ExtensionAgentPanel() {
@@ -36,6 +44,7 @@ export function ExtensionAgentPanel() {
   const [expanded, setExpanded] = useState(false);
   const [manualApplyToAll, setManualApplyToAll] = useState(true);
   const [manualMinScore, setManualMinScore] = useState(70);
+  const [approvalLoading, setApprovalLoading] = useState(false);
 
   // Load current agent control row
   useEffect(() => {
@@ -105,6 +114,24 @@ export function ExtensionAgentPanel() {
       }, { onConflict: 'user_id' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const sendApprovalDecision = async (decision: 'approved' | 'rejected') => {
+    if (!user?.id || !agentRow?.pending_approval) return;
+    const { taskId, job } = agentRow.pending_approval;
+    setApprovalLoading(true);
+    try {
+      await supabase.from('extension_agent_control').update({
+        approval_decision: { decision, taskId, jobId: job.id, decidedAt: new Date().toISOString() },
+      }).eq('user_id', user.id);
+      toast.success(isRTL
+        ? (decision === 'approved' ? '✅ אישרת — Agent מגיש!' : '⏭ דילגת על המשרה')
+        : (decision === 'approved' ? '✅ Approved — Agent will apply!' : '⏭ Skipped'));
+    } catch {
+      toast.error(isRTL ? 'שגיאה בשליחת ההחלטה' : 'Failed to send decision');
+    } finally {
+      setApprovalLoading(false);
     }
   };
 
@@ -247,6 +274,55 @@ export function ExtensionAgentPanel() {
               </div>
             )}
           </div>
+
+          {/* HITL Approval Card — shown when agent needs human approval */}
+          {agentRow?.pending_approval && (
+            <div className="rounded-xl border-2 border-violet-400/60 bg-violet-500/10 p-3 space-y-2 animate-pulse-once">
+              <div className="flex items-start gap-2">
+                <span className="text-lg leading-none flex-shrink-0">🤖</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-white">
+                    {isRTL ? 'Agent מבקש אישור להגשה' : 'Agent requests approval'}
+                  </p>
+                  <p className="text-sm font-semibold text-violet-300 truncate mt-0.5">
+                    {agentRow.pending_approval.job.title}
+                  </p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-xs text-white/50">{agentRow.pending_approval.job.company}</p>
+                    {agentRow.pending_approval.job.score !== undefined && (
+                      <Badge className="text-[10px] bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                        {agentRow.pending_approval.job.score}%
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  disabled={approvalLoading}
+                  onClick={() => sendApprovalDecision('approved')}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 h-8"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  {isRTL ? 'הגש' : 'Apply'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={approvalLoading}
+                  onClick={() => sendApprovalDecision('rejected')}
+                  className="flex-1 border-white/20 text-white/70 hover:bg-white/10 gap-1.5 h-8"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  {isRTL ? 'דלג' : 'Skip'}
+                </Button>
+              </div>
+              <p className="text-[10px] text-white/30 text-center">
+                {isRTL ? 'ידלג אוטומטית אחרי 30 שניות' : 'Auto-skips after 30 seconds'}
+              </p>
+            </div>
+          )}
 
           {/* Control buttons */}
           <div className="flex gap-2">
