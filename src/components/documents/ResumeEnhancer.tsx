@@ -124,19 +124,14 @@ Return ONLY valid JSON array:
     } catch (error: any) {
       console.error('Error generating bullet points:', error);
       setStreamingText('');
-      // FunctionsHttpError: context is the Response object — read body to get real error
-      let isCreditsError = false;
+      // Read actual body from FunctionsHttpError.context (Response object)
+      let serverMsg = '';
       try {
         const body = await error?.context?.json?.();
-        if (body?.error === 'insufficient_credits' || body?.required !== undefined || body?.balance !== undefined) {
-          isCreditsError = true;
-        }
-      } catch { /* context not a response */ }
-      if (isCreditsError) {
-        toast.error(isHebrew ? 'אין מספיק קרדיטים AI — רכוש קרדיטים ב"חשבון"' : 'No AI credits — purchase credits in Account');
-      } else {
-        toast.error(isHebrew ? `שגיאה: ${error?.message || 'נסה שוב'}` : `Error: ${error?.message || 'Please try again'}`);
-      }
+        serverMsg = body?.error || body?.message || '';
+      } catch { /* ignore */ }
+      const display = serverMsg || error?.message || (isHebrew ? 'נסה שוב' : 'Please try again');
+      toast.error(isHebrew ? `שגיאה: ${display}` : `Error: ${display}`);
     } finally {
       setIsLoading(false);
     }
@@ -318,18 +313,13 @@ Rules:
         setPromptResult(JSON.stringify(result, null, 2));
       }
     } catch (err: any) {
-      let isCreditsError = false;
+      let serverMsg = '';
       try {
         const body = await err?.context?.json?.();
-        if (body?.error === 'insufficient_credits' || body?.required !== undefined || body?.balance !== undefined) {
-          isCreditsError = true;
-        }
-      } catch { /* context not a response */ }
-      if (isCreditsError) {
-        toast.error(isHebrew ? 'אין מספיק קרדיטים AI — רכוש קרדיטים ב"חשבון"' : 'No AI credits — purchase credits in Account');
-      } else {
-        toast.error(isHebrew ? `שגיאה: ${err?.message || 'נסה שוב'}` : `Error: ${err?.message || 'Please try again'}`);
-      }
+        serverMsg = body?.error || body?.message || '';
+      } catch { /* ignore */ }
+      const display = serverMsg || err?.message || (isHebrew ? 'נסה שוב' : 'Please try again');
+      toast.error(isHebrew ? `שגיאה: ${display}` : `Error: ${display}`);
     } finally {
       setPromptLoading(false);
     }
