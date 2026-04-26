@@ -410,6 +410,11 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
 
       toast.success(isRTL ? 'השלב עודכן' : 'Stage updated');
 
+      // Show rejection feedback dialog
+      if (newStage === 'rejected') {
+        setRejectionAppId(id);
+      }
+
       // Show interview flow dialog for interview-related stages
       if (INTERVIEW_FLOW_STAGES.includes(newStage) && app) {
         setInterviewFlowApp(app);
