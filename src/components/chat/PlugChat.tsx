@@ -4,7 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Sparkles, User, Loader2, Paperclip, Mic, Image } from 'lucide-react';
+import { Send, Sparkles, User, Loader2, Paperclip, Mic, Image, FileText, Search, DollarSign, BarChart3, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -37,6 +37,7 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, con
   const [uploadedAttachmentSummary, setUploadedAttachmentSummary] = useState<any>(null);
   const [hasProcessedInitial, setHasProcessedInitial] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [activePromptCat, setActivePromptCat] = useState('resume');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -757,6 +758,94 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, con
 
   const showGreeting = messages.length === 0;
 
+  const PROMPT_CATEGORIES = [
+    {
+      id: 'resume', icon: FileText,
+      he: 'קורות חיים', en: 'Resume',
+      prompts: isRTL ? [
+        'תנתח את קורות החיים שלי ותן לי משוב',
+        'כתוב לי סיכום מקצועי חזק',
+        'שפר את הבולטים שלי עם מספרים ותוצאות',
+        'מה חסר בקורות החיים שלי?',
+        'התאם את ה-CV שלי למשרה הזו',
+      ] : [
+        'Analyze my resume and give feedback',
+        'Write me a strong professional summary',
+        'Improve my bullet points with metrics',
+        'What is missing from my CV?',
+        'Tailor my CV for this specific job',
+      ],
+    },
+    {
+      id: 'interview', icon: Mic,
+      he: 'ראיונות', en: 'Interviews',
+      prompts: isRTL ? [
+        'איך להתכונן לראיון טכני?',
+        'שאלות ראיון נפוצות בתחום שלי',
+        'ספר לי על עצמך — תנסח לי תשובה',
+        'מה חולשות טובות לציין בראיון?',
+        'תן לי דוגמה לסיפור STAR',
+      ] : [
+        'How to prep for a technical interview?',
+        'Common interview questions in my field',
+        'Tell me about yourself — draft an answer',
+        'Good weaknesses to mention in an interview?',
+        'Give me a STAR story example',
+      ],
+    },
+    {
+      id: 'search', icon: Search,
+      he: 'אסטרטגיה', en: 'Job Search',
+      prompts: isRTL ? [
+        'מה הכישורים החסרים לי לתפקיד הבא?',
+        'איך לשפר את הלינקדאין שלי?',
+        'תכתוב לי cover letter למשרה',
+        'איך לפנות לריקרוטר בצורה נכונה?',
+        'מה תחומי הביקוש הגבוה עכשיו?',
+      ] : [
+        'What skills am I missing for my next role?',
+        'How to improve my LinkedIn profile?',
+        'Write me a cover letter for this job',
+        'How to reach out to a recruiter?',
+        'What fields are in high demand now?',
+      ],
+    },
+    {
+      id: 'salary', icon: DollarSign,
+      he: 'שכר ומשא ומתן', en: 'Salary',
+      prompts: isRTL ? [
+        'מה השכר המקובל לתפקיד שלי?',
+        'איך לנהל משא ומתן על שכר?',
+        'מה לבקש מלבד שכר בסיס?',
+        'קיבלתי הצעה — האם היא הוגנת?',
+        'איך לסרב להצעה בנימוס?',
+      ] : [
+        'What salary should I expect for my role?',
+        'How to negotiate my salary effectively?',
+        'What to ask for besides base salary?',
+        'I got an offer — is it fair?',
+        'How to politely decline an offer?',
+      ],
+    },
+    {
+      id: 'status', icon: BarChart3,
+      he: 'ניתוח מצב', en: 'Analysis',
+      prompts: isRTL ? [
+        'נתח את מצב המועמדויות שלי',
+        'למה אני נדחה ממשרות?',
+        'מה מעכב אותי להתקדם?',
+        'כמה זמן אמור לקחת חיפוש עבודה?',
+        'מה היתרונות שלי כמועמד?',
+      ] : [
+        'Analyze my application pipeline',
+        'Why do I keep getting rejected?',
+        'What is holding me back from progressing?',
+        'How long should job search take?',
+        'What are my strengths as a candidate?',
+      ],
+    },
+  ];
+
   const greeting = getContextualGreeting();
 
   const handleSessionSelect = useCallback(async (sessionId: string) => {
@@ -821,30 +910,45 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, con
               </p>
             </div>
 
-            {/* Prompt Starters */}
-            <div className="w-full max-w-md grid grid-cols-2 gap-2 px-2">
-              {(isRTL ? [
-                'תנתח את קורות החיים שלי',
-                'מה הכישורים החסרים לי?',
-                'כתוב לי cover letter למשרה',
-                'איך להתכונן לראיון מחר?',
-                'מה השכר המקובל לתפקיד שלי?',
-                'תעזור לי לשפר את הפרופיל',
-              ] : [
-                'Analyze my resume',
-                'What skills am I missing?',
-                'Write me a cover letter',
-                'How to prep for an interview?',
-                'What salary should I expect?',
-                'Help me improve my profile',
-              ]).map((prompt) => (
-                <button
-                  key={prompt}
-                  onClick={() => setInput(prompt)}
-                  className="text-start text-xs px-3 py-2 rounded-xl border border-border bg-muted/40 hover:bg-muted hover:border-primary/40 text-muted-foreground hover:text-foreground transition-all cursor-pointer leading-snug"
-                >
-                  {prompt}
-                </button>
+            {/* Prompt Starters — categorized */}
+            <div className="w-full max-w-md px-2 space-y-3">
+              {/* Category tabs */}
+              <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none" dir={isRTL ? 'rtl' : 'ltr'}>
+                {PROMPT_CATEGORIES.map(cat => {
+                  const Icon = cat.icon;
+                  const isActive = activePromptCat === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => setActivePromptCat(cat.id)}
+                      className={cn(
+                        'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap transition-all cursor-pointer flex-shrink-0',
+                        isActive
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted/40 text-muted-foreground hover:bg-muted border border-border'
+                      )}
+                    >
+                      <Icon className="w-3 h-3" />
+                      {isRTL ? cat.he : cat.en}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Prompts for active category */}
+              {PROMPT_CATEGORIES.filter(c => c.id === activePromptCat).map(cat => (
+                <div key={cat.id} className="grid grid-cols-1 gap-1.5">
+                  {cat.prompts.map(prompt => (
+                    <button
+                      key={prompt}
+                      onClick={() => { setInput(prompt); }}
+                      className="flex items-center justify-between text-start text-xs px-3 py-2 rounded-xl border border-border bg-muted/40 hover:bg-muted hover:border-primary/40 text-muted-foreground hover:text-foreground transition-all cursor-pointer leading-snug group"
+                    >
+                      <span>{prompt}</span>
+                      <ChevronRight className={cn('w-3 h-3 flex-shrink-0 opacity-0 group-hover:opacity-60 transition-opacity', isRTL && 'rotate-180')} />
+                    </button>
+                  ))}
+                </div>
               ))}
             </div>
           </div>

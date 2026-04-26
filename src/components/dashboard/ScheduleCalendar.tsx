@@ -27,13 +27,13 @@ import { he, enUS } from 'date-fns/locale';
 import {
   Calendar, Plus, ChevronLeft, ChevronRight, Clock, Tag, Trash2, CheckCircle2,
   Circle, Loader2, CalendarDays, List, Filter, MapPin, Link2, Users, UserPlus, X, Sun,
-  RefreshCw, Unlink, Search, BarChart3
+  RefreshCw, Unlink, Search, BarChart3, LayoutGrid
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 type TaskType = 'interview' | 'phone_call' | 'frontal_interview' | 'home_assignment' | 'followup' | 'task' | 'meeting' | 'deadline' | 'reminder';
-type ViewMode = 'day' | 'week' | 'calendar' | 'list';
+type ViewMode = 'day' | 'week' | 'calendar' | 'list' | 'board';
 
 interface ExternalAttendee { name: string; email: string; }
 
@@ -547,6 +547,7 @@ export function ScheduleCalendar() {
             ['week', isRTL ? 'שבוע' : 'Week', CalendarDays],
             ['calendar', isRTL ? 'חודש' : 'Month', Calendar],
             ['list', isRTL ? 'רשימה' : 'List', List],
+            ['board', isRTL ? 'לוח' : 'Board', LayoutGrid],
           ] as [ViewMode, string, any][]).map(([mode, label, Icon]) => (
             <button
               key={mode}
@@ -1260,6 +1261,95 @@ export function ScheduleCalendar() {
           </CardContent>
         </Card>
       )}
+
+      {/* ═══ BOARD VIEW ═══ */}
+      {viewMode === 'board' && (() => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        const todayStr = format(now, 'yyyy-MM-dd');
+        const in7 = new Date(now); in7.setDate(now.getDate() + 7);
+        const in14 = new Date(now); in14.setDate(now.getDate() + 14);
+
+        const BOARD_COLS = [
+          { id: 'overdue', he: 'באיחור', en: 'Overdue', accent: 'border-t-red-400',    filter: (t: ScheduleTask) => !!t.due_date && t.due_date < todayStr && !t.is_completed },
+          { id: 'today',   he: 'היום',   en: 'Today',   accent: 'border-t-primary',    filter: (t: ScheduleTask) => t.due_date === todayStr },
+          { id: 'week',    he: 'השבוע',  en: 'This Week', accent: 'border-t-blue-400', filter: (t: ScheduleTask) => !!t.due_date && t.due_date > todayStr && t.due_date <= format(in7, 'yyyy-MM-dd') },
+          { id: 'next',    he: 'השבוע הבא', en: 'Next Week', accent: 'border-t-purple-400', filter: (t: ScheduleTask) => !!t.due_date && t.due_date > format(in7, 'yyyy-MM-dd') && t.due_date <= format(in14, 'yyyy-MM-dd') },
+          { id: 'later',   he: 'בהמשך',  en: 'Later',   accent: 'border-t-muted-foreground', filter: (t: ScheduleTask) => !t.due_date || t.due_date > format(in14, 'yyyy-MM-dd') },
+        ];
+
+        const base = showCompleted ? filteredTasks : filteredTasks.filter(t => !t.is_completed);
+
+        return (
+          <div className="overflow-x-auto pb-2">
+            <div className="flex gap-3 min-w-[800px]">
+              {BOARD_COLS.map(col => {
+                const colTasks = base.filter(col.filter);
+                return (
+                  <div key={col.id} className={cn('flex-1 min-w-[150px] rounded-lg border border-border bg-muted/30 flex flex-col border-t-2', col.accent)}>
+                    <div className="px-3 py-2 border-b border-border/50 flex items-center justify-between">
+                      <span className="text-xs font-semibold">{isRTL ? col.he : col.en}</span>
+                      <Badge variant="secondary" className="text-[10px] h-4 px-1.5 font-normal">{colTasks.length}</Badge>
+                    </div>
+                    <div className="p-2 space-y-2 flex-1 min-h-[200px]">
+                      {colTasks.length === 0 ? (
+                        <div className="min-h-[80px] rounded border-2 border-dashed border-border/40 flex items-center justify-center">
+                          <span className="text-[10px] text-muted-foreground/40">{isRTL ? 'ריק' : 'Empty'}</span>
+                        </div>
+                      ) : colTasks.map(task => (
+                        <div
+                          key={task.id}
+                          onClick={() => { setSelectedTask(task); setTaskDetailOpen(true); }}
+                          className={cn(
+                            'bg-card border border-border rounded-lg p-2.5 cursor-pointer',
+                            'hover:border-primary/40 hover:shadow-sm transition-all',
+                            task.is_completed && 'opacity-50',
+                          )}
+                        >
+                          <div className="flex items-start gap-2">
+                            <button
+                              onClick={e => { e.stopPropagation(); toggleCompleteMutation.mutate({ id: task.id, is_completed: task.is_completed }); }}
+                              className="mt-0.5 flex-shrink-0 cursor-pointer"
+                            >
+                              {task.is_completed
+                                ? <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                                : <Circle className="w-3.5 h-3.5 text-muted-foreground/40" />}
+                            </button>
+                            <div className="flex-1 min-w-0">
+                              <p className={cn('text-xs font-medium leading-snug line-clamp-2', task.is_completed && 'line-through')}>{task.title}</p>
+                              {task.due_time && (
+                                <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-0.5">
+                                  <Clock className="w-2.5 h-2.5" />{task.due_time.slice(0, 5)}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            <span className={cn('text-[9px] px-1.5 py-0.5 rounded-full border', typeColors[task.task_type])}>
+                              {isRTL ? typeLabels[task.task_type].he : typeLabels[task.task_type].en}
+                            </span>
+                            {task.priority === 'urgent' || task.priority === 'high' ? (
+                              <span className={cn('text-[9px] px-1.5 py-0.5 rounded-full border', priorityColors[task.priority])}>
+                                {isRTL ? priorityLabels[task.priority].he : priorityLabels[task.priority].en}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => setAddDialogOpen(true)}
+                        className="w-full text-[10px] text-muted-foreground/50 hover:text-muted-foreground py-1 flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <Plus className="w-3 h-3" />{isRTL ? 'הוסף' : 'Add'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ═══ TASK DETAIL DIALOG ═══ */}
       <Dialog open={taskDetailOpen} onOpenChange={setTaskDetailOpen}>
