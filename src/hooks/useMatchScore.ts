@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface JobForMatching {
   field_id?: string | null;
@@ -140,6 +142,31 @@ export function getMatchBreakdown(
     missingSkills,
     totalScore: calculateMatchScore(job, preferences),
   };
+}
+
+/** Fetch all cached AI scores for a list of job IDs (from extension scoring) */
+export function useStoredMatchScores(jobIds: string[]): Record<string, number> {
+  const { user } = useAuth();
+
+  const { data } = useQuery({
+    queryKey: ['job_match_scores', user?.id, jobIds.join(',')],
+    enabled: !!user && jobIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('job_match_scores')
+        .select('job_id, score')
+        .eq('user_id', user!.id)
+        .in('job_id', jobIds);
+      const map: Record<string, number> = {};
+      (data ?? []).forEach((row: { job_id: string; score: number }) => {
+        map[row.job_id] = row.score;
+      });
+      return map;
+    },
+  });
+
+  return data ?? {};
 }
 
 export function useMatchScore(job: JobForMatching): number {

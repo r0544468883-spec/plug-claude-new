@@ -5,7 +5,7 @@ import { MapPin, Clock, Building2, Users, Globe } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { he, enUS } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { useMatchScore } from '@/hooks/useMatchScore';
+import { useMatchScore, useStoredMatchScores } from '@/hooks/useMatchScore';
 
 interface JobCardCompactProps {
   job: any;
@@ -19,7 +19,8 @@ export function JobCardCompact({ job, isSelected, onClick, matchScore: propMatch
   const isHebrew = language === 'he';
 
   const calculatedMatchScore = useMatchScore(job);
-  const displayMatchScore = propMatchScore ?? calculatedMatchScore;
+  const storedScores = useStoredMatchScores([job.id]);
+  const displayMatchScore = propMatchScore ?? storedScores[job.id] ?? calculatedMatchScore;
 
   const timeAgo = formatDistanceToNow(new Date(job.created_at), {
     addSuffix: true,

@@ -8,7 +8,7 @@ import { MapPin, Clock, DollarSign, Building2, ExternalLink, Heart, Users, Navig
 import { formatDistanceToNow } from 'date-fns';
 import { he, enUS } from 'date-fns/locale';
 import { useSavedJobs, useSaveJobMutation } from '@/hooks/useSavedJobs';
-import { useMatchScore } from '@/hooks/useMatchScore';
+import { useMatchScore, useStoredMatchScores } from '@/hooks/useMatchScore';
 import { formatSalaryRange, getILSFootnote } from '@/lib/salary-utils';
 import { GhostingMeter } from './GhostingMeter';
 
@@ -95,7 +95,8 @@ export function JobCard({ job, onViewDetails, onApply, onDismiss, onMarkApplied,
   const isHebrew = language === 'he';
 
   const calculatedMatchScore = useMatchScore(job);
-  const displayMatchScore = propMatchScore ?? calculatedMatchScore;
+  const storedScores = useStoredMatchScores([job.id]);
+  const displayMatchScore = propMatchScore ?? storedScores[job.id] ?? calculatedMatchScore;
 
   const { data: savedJobIds = [] } = useSavedJobs();
   const saveJobMutation = useSaveJobMutation();
