@@ -126,7 +126,10 @@ ${jd}
         }),
       });
 
-      if (!response.ok) throw new Error('API error');
+      if (!response.ok) {
+        const errBody = await response.json().catch(() => ({}));
+        throw new Error(errBody?.error || `HTTP ${response.status}`);
+      }
 
       // Stream and collect
       const reader = response.body?.getReader();
@@ -165,7 +168,8 @@ ${jd}
       setStreamText('');
     } catch (e: any) {
       console.error('Tailoring error:', e);
-      toast.error(isRTL ? 'שגיאה בניתוח — נסה שוב' : 'Analysis failed — try again');
+      const msg = e?.message || String(e);
+      toast.error(isRTL ? `שגיאה: ${msg}` : `Error: ${msg}`);
     } finally {
       setLoading(false);
     }
