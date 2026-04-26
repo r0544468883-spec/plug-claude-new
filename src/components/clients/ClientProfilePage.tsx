@@ -270,11 +270,14 @@ export function ClientProfilePage({ companyId, onBack }: ClientProfilePageProps)
   const addJobMutation = useMutation({
     mutationFn: async (job: typeof newJob) => {
       if (!user?.id) throw new Error('Not authenticated');
-      const { error } = await supabase.from('jobs').insert({
+      const { data: inserted, error } = await supabase.from('jobs').insert({
         title: job.title, location: job.location, job_type: job.job_type, description: job.description,
         company_id: companyId, created_by: user.id, status: 'active',
-      });
+      }).select('id').single();
       if (error) throw error;
+      if (inserted?.id) {
+        supabase.functions.invoke('parse-jd', { body: { jobId: inserted.id, title: job.title, description: job.description } }).catch(() => {});
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['client-active-jobs', companyId] });

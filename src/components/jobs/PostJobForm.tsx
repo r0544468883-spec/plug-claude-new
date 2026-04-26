@@ -158,6 +158,9 @@ export function PostJobForm({ onSuccess }: PostJobFormProps) {
       // Get the new job ID and create publications
       const { data: newJob } = await supabase.from('jobs').select('id').eq('created_by', user.id).order('created_at', { ascending: false }).limit(1).single();
       if (newJob) {
+        // Fire-and-forget: normalize JD in background
+        supabase.functions.invoke('parse-jd', { body: { jobId: newJob.id, title, description, requirements } }).catch(() => {});
+
         await supabase.from('job_publications' as any).insert(
           selectedChannels.map(ch => ({
             job_id: newJob.id,

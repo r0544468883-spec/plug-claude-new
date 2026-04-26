@@ -206,6 +206,13 @@ export function ShareJobForm({ trigger }: ShareJobFormProps) {
 
       if (jobError) throw jobError;
 
+      // Fire-and-forget: normalize JD in background
+      if (newJob?.id) {
+        supabase.functions.invoke('parse-jd', {
+          body: { jobId: newJob.id, title: scrapedJob.job_title, description: scrapedJob.description, requirements: scrapedJob.requirements },
+        }).catch(() => {});
+      }
+
       return newJob?.id;
     },
     onSuccess: (jobId) => {
