@@ -90,6 +90,58 @@ export function calculateMatchScore(
   return Math.round((score / factors) * 100);
 }
 
+export interface MatchBreakdownData {
+  fieldScore: number;    // 0–100
+  roleScore: number;     // 0–100
+  expScore: number;      // 0–100
+  skillScore: number;    // 0–100 (Jaccard × 100)
+  matchingSkills: string[];
+  missingSkills: string[];
+  totalScore: number;
+}
+
+export function getMatchBreakdown(
+  job: JobForMatching,
+  preferences: UserPreferences | null
+): MatchBreakdownData {
+  const jobFieldId = job.field_id || job.job_field?.id;
+  const jobRoleId = job.role_id || job.job_role?.id;
+  const jobExpLevelId = job.experience_level_id || job.experience_level?.id;
+
+  const fieldScore = preferences?.preferred_fields?.length
+    ? (jobFieldId && preferences.preferred_fields.includes(jobFieldId) ? 100 : 0)
+    : -1; // -1 = not applicable
+
+  const roleScore = preferences?.preferred_roles?.length
+    ? (jobRoleId && preferences.preferred_roles.includes(jobRoleId) ? 100 : 0)
+    : -1;
+
+  const expScore = preferences?.preferred_experience_level_id
+    ? (jobExpLevelId === preferences.preferred_experience_level_id ? 100 : 0)
+    : -1;
+
+  const userSkills = (preferences?.skills ?? []).map(s => s.toLowerCase().trim());
+  const jobSkills = [...(job.required_skills ?? []), ...(job.tags ?? [])];
+  const jobSkillsLower = jobSkills.map(s => s.toLowerCase().trim());
+
+  const matchingSkills = jobSkills.filter((s, i) => userSkills.includes(jobSkillsLower[i]));
+  const missingSkills = jobSkills.filter((s, i) => !userSkills.includes(jobSkillsLower[i])).slice(0, 5);
+
+  const skillScore = userSkills.length > 0 && jobSkills.length > 0
+    ? Math.round(jaccardIndex(userSkills, jobSkillsLower) * 100)
+    : -1;
+
+  return {
+    fieldScore,
+    roleScore,
+    expScore,
+    skillScore,
+    matchingSkills,
+    missingSkills,
+    totalScore: calculateMatchScore(job, preferences),
+  };
+}
+
 export function useMatchScore(job: JobForMatching): number {
   const { profile } = useAuth();
 

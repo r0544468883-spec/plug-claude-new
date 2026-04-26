@@ -1,10 +1,10 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Progress } from '@/components/ui/progress';
-import { Briefcase, Code, GraduationCap, MapPin, DollarSign, Lightbulb } from 'lucide-react';
+import { Briefcase, Code, GraduationCap, CheckCircle2, XCircle, Lightbulb } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ReactNode } from 'react';
+import { getMatchBreakdown } from '@/hooks/useMatchScore';
 
 interface MatchBreakdownProps {
   score: number;
@@ -12,104 +12,114 @@ interface MatchBreakdownProps {
   children: ReactNode;
 }
 
-interface BreakdownItem {
-  icon: typeof Briefcase;
-  label_he: string;
-  label_en: string;
-  score: number;
-}
-
 export function MatchBreakdown({ score, job, children }: MatchBreakdownProps) {
   const { profile } = useAuth();
   const { language } = useLanguage();
   const isRTL = language === 'he';
 
-  // Generate breakdown based on available data
-  const getBreakdown = (): BreakdownItem[] => {
-    const prefs = profile as any;
-    const items: BreakdownItem[] = [];
-
-    // Field match
-    const jobFieldId = job?.field_id || job?.job_field?.id;
-    const fieldMatch = prefs?.preferred_fields?.includes(jobFieldId) ? 90 : 30;
-    items.push({ icon: Briefcase, label_he: 'ניסיון רלוונטי', label_en: 'Relevant Experience', score: fieldMatch });
-
-    // Role match
-    const jobRoleId = job?.role_id || job?.job_role?.id;
-    const roleMatch = prefs?.preferred_roles?.includes(jobRoleId) ? 85 : 40;
-    items.push({ icon: Code, label_he: 'כישורים טכניים', label_en: 'Technical Skills', score: roleMatch });
-
-    // Experience level match
-    const expMatch = job?.experience_level_id === prefs?.preferred_experience_level_id ? 80 : 50;
-    items.push({ icon: GraduationCap, label_he: 'רמת ניסיון', label_en: 'Experience Level', score: expMatch });
-
-    // Location (always high if no location filter)
-    items.push({ icon: MapPin, label_he: 'מיקום גאוגרפי', label_en: 'Location', score: job?.location ? 75 : 100 });
-
-    // Salary range
-    items.push({ icon: DollarSign, label_he: 'התאמת שכר', label_en: 'Salary Match', score: job?.salary_range ? 70 : 80 });
-
-    return items;
-  };
-
-  const breakdown = getBreakdown();
+  const bd = getMatchBreakdown(job, profile as any);
 
   const getColorClass = (s: number) => {
-    if (s >= 80) return 'text-primary';
-    if (s >= 60) return 'text-yellow-400';
+    if (s >= 80) return 'text-emerald-500';
+    if (s >= 50) return 'text-yellow-400';
     return 'text-destructive';
   };
 
   const getBarColor = (s: number) => {
-    if (s >= 80) return 'bg-primary';
-    if (s >= 60) return 'bg-yellow-400';
+    if (s >= 80) return 'bg-emerald-500';
+    if (s >= 50) return 'bg-yellow-400';
     return 'bg-destructive';
   };
+
+  const scoreColor = score >= 75 ? 'text-emerald-500' : score >= 50 ? 'text-yellow-400' : 'text-destructive';
+
+  // Only show factors that are applicable (≠ -1)
+  const factors = [
+    { icon: Briefcase, label_he: 'תחום', label_en: 'Field', value: bd.fieldScore },
+    { icon: Code, label_he: 'תפקיד', label_en: 'Role', value: bd.roleScore },
+    { icon: GraduationCap, label_he: 'רמת ניסיון', label_en: 'Seniority', value: bd.expScore },
+  ].filter(f => f.value !== -1);
 
   return (
     <Popover>
       <PopoverTrigger asChild>
         {children}
       </PopoverTrigger>
-      <PopoverContent className="w-80 bg-background border-accent/20" dir={isRTL ? 'rtl' : 'ltr'}>
+      <PopoverContent className="w-80 bg-background border-border" dir={isRTL ? 'rtl' : 'ltr'}>
         <div className="space-y-4">
+          {/* Header */}
           <div className="flex items-center justify-between">
-            <h4 className="font-semibold">
+            <h4 className="font-semibold text-sm">
               {isRTL ? 'פירוט ציון התאמה' : 'Match Score Breakdown'}
             </h4>
-            <span className={cn('text-lg font-bold', getColorClass(score))}>
-              {score}%
-            </span>
+            <span className={cn('text-lg font-bold', scoreColor)}>{score}%</span>
           </div>
 
-          <div className="space-y-3">
-            {breakdown.map((item, i) => (
-              <div key={i} className="space-y-1">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2">
-                    <item.icon className="w-4 h-4 text-muted-foreground" />
-                    {isRTL ? item.label_he : item.label_en}
-                  </span>
-                  <span className={cn('font-medium', getColorClass(item.score))}>
-                    {item.score}%
-                  </span>
+          {/* Factor bars */}
+          {factors.length > 0 && (
+            <div className="space-y-2.5">
+              {factors.map((f, i) => (
+                <div key={i} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5 text-muted-foreground">
+                      <f.icon className="w-3.5 h-3.5" />
+                      {isRTL ? f.label_he : f.label_en}
+                    </span>
+                    <span className={cn('font-semibold', getColorClass(f.value))}>
+                      {f.value === 100 ? (isRTL ? 'מתאים ✓' : 'Match ✓') : (isRTL ? 'לא מתאים' : 'No match')}
+                    </span>
+                  </div>
+                  <div className="w-full h-1 rounded-full bg-secondary">
+                    <div
+                      className={cn('h-1 rounded-full transition-all', getBarColor(f.value))}
+                      style={{ width: `${f.value}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="w-full h-1.5 rounded-full bg-secondary">
-                  <div
-                    className={cn('h-1.5 rounded-full transition-all', getBarColor(item.score))}
-                    style={{ width: `${item.score}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
-          <div className="p-3 rounded-lg bg-accent/5 border border-accent/10">
-            <p className="text-xs text-muted-foreground flex gap-2">
-              <Lightbulb className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
+          {/* Skill overlap */}
+          {(bd.matchingSkills.length > 0 || bd.missingSkills.length > 0) && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">
+                {isRTL ? `כישורים (${bd.matchingSkills.length}/${bd.matchingSkills.length + bd.missingSkills.length} תואמים)` : `Skills (${bd.matchingSkills.length}/${bd.matchingSkills.length + bd.missingSkills.length} match)`}
+              </p>
+
+              {/* Matching skills */}
+              {bd.matchingSkills.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {bd.matchingSkills.slice(0, 6).map((s, i) => (
+                    <span key={i} className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                      <CheckCircle2 className="w-2.5 h-2.5" />
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Missing skills */}
+              {bd.missingSkills.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {bd.missingSkills.slice(0, 5).map((s, i) => (
+                    <span key={i} className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-destructive/10 text-destructive border border-destructive/20">
+                      <XCircle className="w-2.5 h-2.5" />
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Tip */}
+          <div className="p-2.5 rounded-lg bg-muted/40 border border-border">
+            <p className="text-[10px] text-muted-foreground flex gap-1.5">
+              <Lightbulb className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
               {isRTL
-                ? 'כדי לשפר את הציון, עדכן את קורות החיים וההעדפות בפרופיל'
-                : 'To improve your score, update your CV and profile preferences'}
+                ? 'כדי לשפר את הציון, הוסף כישורים חסרים לפרופיל שלך'
+                : 'Add missing skills to your profile to improve your score'}
             </p>
           </div>
         </div>
