@@ -26,8 +26,10 @@ export function ResumeEnhancer() {
 
   const [jobTitle, setJobTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [achievements, setAchievements] = useState('');
   const [bulletPoints, setBulletPoints] = useState<BulletPoint[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [streamingText, setStreamingText] = useState('');
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   // Tailor mode state
@@ -56,43 +58,35 @@ export function ResumeEnhancer() {
 
     setIsLoading(true);
     setBulletPoints([]);
+    setStreamingText('');
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
-      const response = await supabase.functions.invoke('plug-chat', {
-        body: {
-          messages: [
-            {
-              role: 'user',
-              content: `Generate 5 professional resume bullet points for a ${jobTitle} position.
-${description ? `Additional context: ${description}` : ''}
+      const prompt = `Generate 6 powerful resume bullet points for a ${jobTitle} position.
 
-Requirements:
-1. Start each bullet with a strong action verb
-2. Include quantifiable achievements where possible
-3. Be specific and results-oriented
-4. Keep each bullet to 1-2 lines maximum
-5. Make them ATS-friendly
+${description ? `Role context: ${description}\n` : ''}${achievements ? `Specific achievements to highlight (incorporate these — add numbers/metrics if missing):\n${achievements}\n` : ''}
+Rules:
+1. Start each bullet with a strong action verb (Led, Drove, Built, Reduced, Increased, Launched, etc.)
+2. Every bullet must include a metric or result — e.g., "by 40%", "saving $200K/year", "for 50K users"
+3. Use keywords from the job title for ATS compatibility
+4. Keep each bullet to 1–2 lines
+5. impact: "high" if quantified achievement, "medium" if strong action verb + context, "low" if basic
 
-Return ONLY a JSON array in this format:
+Return ONLY valid JSON array:
 [
-  {"text": "bullet point text here", "impact": "high"},
-  {"text": "bullet point text here", "impact": "medium"},
+  {"text": "Led migration of legacy system to AWS, reducing infrastructure costs by 35% and improving uptime to 99.9%", "impact": "high"},
+  {"text": "...", "impact": "medium"},
   ...
-]
+]`;
 
-The "impact" field should be "high" for strongly quantified achievements, "medium" for good action-oriented statements, and "low" for basic responsibilities.`
-            }
-          ],
-          context: {}
-        }
+      const response = await supabase.functions.invoke('plug-chat', {
+        body: { messages: [{ role: 'user', content: prompt }], context: {} }
       });
 
       if (response.error) throw response.error;
 
-      // Parse the streaming response
       const reader = response.data?.getReader();
       if (!reader) throw new Error('No response stream');
 
@@ -104,28 +98,23 @@ The "impact" field should be "high" for strongly quantified achievements, "mediu
         if (done) break;
 
         const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') continue;
-            
+        for (const line of chunk.split('\n')) {
+          if (line.startsWith('data: ') && line.slice(6) !== '[DONE]') {
             try {
-              const parsed = JSON.parse(data);
-              const content = parsed.choices?.[0]?.delta?.content || '';
+              const content = JSON.parse(line.slice(6)).choices?.[0]?.delta?.content || '';
               fullResponse += content;
-            } catch {
-              // Skip invalid JSON
-            }
+              // Show live streaming text (strip partial JSON wrapper for readability)
+              const preview = fullResponse.replace(/^\s*\[?\s*\{?\s*"text"\s*:\s*"?/g, '').replace(/",?\s*"impact"[\s\S]*$/g, '');
+              setStreamingText(fullResponse);
+            } catch { /* ignore partial JSON */ }
           }
         }
       }
 
-      // Extract JSON from response
       const jsonMatch = fullResponse.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
         const points = JSON.parse(jsonMatch[0]) as BulletPoint[];
+        setStreamingText('');
         setBulletPoints(points);
         toast.success(isHebrew ? 'נקודות נוצרו בהצלחה!' : 'Bullet points generated!');
       } else {
@@ -134,6 +123,7 @@ The "impact" field should be "high" for strongly quantified achievements, "mediu
 
     } catch (error: any) {
       console.error('Error generating bullet points:', error);
+      setStreamingText('');
       const msg = error?.message || JSON.stringify(error) || '';
       if (msg.includes('credit') || msg.includes('quota') || msg.includes('balance')) {
         toast.error(isHebrew ? 'אין מספיק קרדיטים AI — רכוש קרדיטים ב"חשבון"' : 'No AI credits — purchase credits in Account');
@@ -363,7 +353,7 @@ Rules:
             </TabsTrigger>
           </TabsList>
 
-          {/* Tab 1: Generate Bullets (existing) */}
+          {/* Tab 1: Generate Bullets */}
           <TabsContent value="bullets" className="space-y-4">
             <div className="space-y-4">
               <div className="space-y-2">
@@ -378,12 +368,26 @@ Rules:
                 />
               </div>
               <div className="space-y-2">
-                <Label>{isHebrew ? 'תיאור קצר (אופציונלי)' : 'Brief Description (optional)'}</Label>
+                <Label className="flex items-center gap-1.5">
+                  {isHebrew ? 'הישגים ספציפיים' : 'Specific Achievements'}
+                  <Badge variant="secondary" className="text-[10px] font-normal">{isHebrew ? 'חובה לתוצאות טובות' : 'key for quality'}</Badge>
+                </Label>
+                <Textarea
+                  value={achievements}
+                  onChange={(e) => setAchievements(e.target.value)}
+                  placeholder={isHebrew
+                    ? 'לדוגמה:\n• הגדלתי מכירות ב-30% תוך רבעון\n• ניהלתי צוות של 8 אנשים\n• חסכתי 200K₪ בשנה על ידי...'
+                    : 'e.g.:\n• Grew revenue by 30% in one quarter\n• Managed a team of 8 engineers\n• Saved $200K/year by automating...'}
+                  rows={4}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{isHebrew ? 'הקשר נוסף (אופציונלי)' : 'Additional Context (optional)'}</Label>
                 <Textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder={isHebrew ? 'תאר הישגים עיקריים או כישורים...' : 'Describe key achievements or skills...'}
-                  rows={3}
+                  placeholder={isHebrew ? 'תחום, חברה, כלים שבהם עבדת...' : 'Industry, company type, tools you used...'}
+                  rows={2}
                 />
               </div>
               <Button onClick={generateBulletPoints} disabled={isLoading || !jobTitle.trim()} className="w-full gap-2">
@@ -391,6 +395,19 @@ Rules:
                 {isHebrew ? 'צור נקודות מקצועיות' : 'Generate Professional Bullets'}
               </Button>
             </div>
+
+            {/* Live streaming preview */}
+            {isLoading && streamingText && (
+              <div className="rounded-lg border border-primary/20 bg-muted/30 p-3 space-y-1.5">
+                <p className="text-[10px] font-medium text-primary flex items-center gap-1.5">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  {isHebrew ? 'AI כותב...' : 'AI writing...'}
+                </p>
+                <ScrollArea className="max-h-40">
+                  <pre className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed font-sans">{streamingText}</pre>
+                </ScrollArea>
+              </div>
+            )}
 
             {bulletPoints.length > 0 && (
               <div className="space-y-3 pt-4 border-t border-border">
