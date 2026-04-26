@@ -19,6 +19,7 @@ import { CompanyVouchModal } from '@/components/vouch/CompanyVouchModal';
 import { CompanyVouchToast } from '@/components/vouch/CompanyVouchToast';
 import { useCompanyVouchPrompts } from '@/hooks/useCompanyVouchPrompts';
 import { PIPELINE_STAGES, STAGE_MAP, getStage } from './stageConfig';
+import { useActivityLog } from '@/hooks/useActivityLog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,7 +27,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Briefcase, Loader2, Sparkles, FileSpreadsheet, Bookmark, ExternalLink, Heart, Building2, Plus, BarChart3, History } from 'lucide-react';
+import { Briefcase, Loader2, Sparkles, FileSpreadsheet, Bookmark, ExternalLink, Heart, Building2, Plus, BarChart3, History, LayoutGrid, List } from 'lucide-react';
+import { KanbanView } from './KanbanView';
 import { toast } from 'sonner';
 
 interface Application {
@@ -68,9 +70,11 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const isRTL = language === 'he';
+  const { logActivity } = useActivityLog();
 
   const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [fetchError, setFetchError] = useState<string | null>(null);
   // Restore filters from sessionStorage
   const filterStorageKey = user ? `plug_app_filters_${user.id}` : null;
@@ -385,6 +389,12 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
 
       if (error) throw error;
 
+      // Log activity
+      logActivity(newStage === 'rejected' ? 'rejection_noted' : 'stage_change', {
+        applicationId: id,
+        metadata: { stage: newStage },
+      });
+
       // Find the application to get company info
       const app = applications.find(a => a.id === id);
 
@@ -653,7 +663,49 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
 
         {/* ── Applications Tab ── */}
         <TabsContent value="applications" className="mt-4">
-          {filteredApplications.length === 0 ? (
+          {/* View toggle — only show when there are applications */}
+          {applications.length > 0 && (
+            <div className="flex justify-end mb-3">
+              <div className="flex items-center border border-border rounded-lg p-0.5 bg-muted/40">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
+                    viewMode === 'list'
+                      ? 'bg-background shadow-sm text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <List className="w-3.5 h-3.5" />
+                  {isRTL ? 'רשימה' : 'List'}
+                </button>
+                <button
+                  onClick={() => setViewMode('kanban')}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
+                    viewMode === 'kanban'
+                      ? 'bg-background shadow-sm text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  {isRTL ? 'לוח' : 'Board'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Kanban view */}
+          {viewMode === 'kanban' && applications.length > 0 && (
+            <KanbanView
+              applications={filteredApplications as any}
+              onStageChange={(id, stage) => handleStageChange(id, stage)}
+              onViewDetails={(app) => handleViewDetails(app as any)}
+            />
+          )}
+
+          {/* List view */}
+          {viewMode === 'list' && (filteredApplications.length === 0 ? (
             applications.length === 0 ? (
               <EmptyApplicationsState onNavigateToJobs={() => {
                 window.dispatchEvent(new CustomEvent('plug:navigate', { detail: 'job-search' }));
@@ -702,7 +754,7 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
                 />
               ))}
             </div>
-          )}
+          ))}
         </TabsContent>
 
         {/* ── Saved Jobs Tab ── */}

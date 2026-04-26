@@ -14,6 +14,7 @@ import { VouchDiscovery } from '@/components/vouch/VouchDiscovery';
 import { ConnectionsWidget } from '@/components/connections/ConnectionsWidget';
 import { SwipeWidget } from '@/components/job-swipe/SwipeWidget';
 import { ProfileViewsWidget } from '@/components/profile/ProfileViewsWidget';
+import { ActivityWidget } from '@/components/dashboard/ActivityWidget';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -404,6 +405,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog, onOpenChat }: Ove
               <VouchWidget onNavigate={() => onNavigate('profile-settings')} />
               <VouchDiscovery />
               {role === 'job_seeker' && <SwipeWidget />}
+              {role === 'job_seeker' && <ActivityWidget />}
             </div>
           </CardContent>
         </Card>
