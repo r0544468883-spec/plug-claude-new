@@ -320,7 +320,7 @@ export function JobDetailsPanel({ job, onApply, onDismiss, onMarkApplied, onRefr
       )}
 
       {/* Resume Tailoring */}
-      {user && (displayRequirements || displayDescription) && (
+      {user && (
         <>
           <Separator className="my-4" />
           <ResumeTailoringPanel

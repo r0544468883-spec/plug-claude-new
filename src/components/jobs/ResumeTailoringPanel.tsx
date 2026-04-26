@@ -83,7 +83,7 @@ export function ResumeTailoringPanel({ jobTitle, jobDescription, jobRequirements
           : '',
       ].filter(Boolean).join('\n\n');
 
-      const jd = [jobRequirements, jobDescription].filter(Boolean).join('\n\n');
+      const jd = [jobRequirements, jobDescription].filter(Boolean).join('\n\n') || `תפקיד: ${jobTitle}${companyName ? ` בחברת ${companyName}` : ''}`;
 
       const prompt = `אתה מומחה לכתיבת קורות חיים. המשימה: התאם את ה-CV של ${userName} למשרת "${jobTitle}"${companyName ? ` ב-${companyName}` : ''}.
 
