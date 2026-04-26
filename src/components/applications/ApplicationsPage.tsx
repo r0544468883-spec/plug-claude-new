@@ -702,6 +702,7 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
               applications={filteredApplications as any}
               onStageChange={(id, stage) => handleStageChange(id, stage)}
               onViewDetails={(app) => handleViewDetails(app as any)}
+              onNavigateToSchedule={() => onNavigate?.('schedule')}
             />
           )}
 
