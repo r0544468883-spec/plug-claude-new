@@ -199,6 +199,31 @@ export function JobCard({ job, onViewDetails, onApply, onDismiss, onMarkApplied,
               )}
             </div>
 
+            {/* parsed_jd skill chips */}
+            {(() => {
+              const pjd = (job as any).parsed_jd;
+              const seniorityLabel: Record<string, string> = { junior: 'Junior', mid: 'Mid', senior: 'Senior', lead: 'Lead', manager: 'Manager', director: 'Director', intern: 'Intern' };
+              const remoteLabel: Record<string, { en: string; he: string }> = { remote: { en: 'Remote', he: 'מרחוק' }, hybrid: { en: 'Hybrid', he: 'היברידי' }, onsite: { en: 'On-site', he: 'פיזי' } };
+              if (!pjd) return null;
+              return (
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {pjd.seniority && seniorityLabel[pjd.seniority] && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-violet-500/10 text-violet-600 border-violet-500/20">
+                      {seniorityLabel[pjd.seniority]}
+                    </Badge>
+                  )}
+                  {pjd.remote_type && remoteLabel[pjd.remote_type] && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-sky-500/10 text-sky-600 border-sky-500/20">
+                      {isHebrew ? remoteLabel[pjd.remote_type].he : remoteLabel[pjd.remote_type].en}
+                    </Badge>
+                  )}
+                  {(pjd.required_skills as string[] | undefined)?.slice(0, 4).map((s: string, i: number) => (
+                    <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-primary/5 text-primary border-primary/20">{s}</Badge>
+                  ))}
+                </div>
+              );
+            })()}
+
             {job.description && (
               <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{job.description}</p>
             )}

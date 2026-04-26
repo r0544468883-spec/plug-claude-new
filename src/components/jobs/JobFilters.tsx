@@ -59,6 +59,8 @@ export interface JobFiltersState {
   userLongitude: number | null;
   maxDistance: number;
   source: string;
+  seniority: string;
+  remoteType: string;
 }
 
 interface JobFiltersProps {
@@ -603,6 +605,32 @@ export function JobFilters({ filters, onFiltersChange, onClearFilters, compact =
                   <SelectItem value="all">{isHebrew ? 'הכל' : 'All'}</SelectItem>
                   <SelectItem value="alljobs">AllJobs</SelectItem>
                   <SelectItem value="linkedin">LinkedIn</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full lg:w-36">
+              <Select value={filters.seniority || 'all'} onValueChange={(v) => updateFilter('seniority', v === 'all' ? '' : v)}>
+                <SelectTrigger className="h-9"><SelectValue placeholder={isHebrew ? 'סניוריטי' : 'Seniority'} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{isHebrew ? 'כל הרמות' : 'All levels'}</SelectItem>
+                  <SelectItem value="intern">{isHebrew ? 'סטז׳' : 'Intern'}</SelectItem>
+                  <SelectItem value="junior">{isHebrew ? 'ג׳וניור' : 'Junior'}</SelectItem>
+                  <SelectItem value="mid">{isHebrew ? 'מיד' : 'Mid'}</SelectItem>
+                  <SelectItem value="senior">{isHebrew ? 'סניור' : 'Senior'}</SelectItem>
+                  <SelectItem value="lead">{isHebrew ? 'ליד' : 'Lead'}</SelectItem>
+                  <SelectItem value="manager">{isHebrew ? 'מנהל' : 'Manager'}</SelectItem>
+                  <SelectItem value="director">{isHebrew ? 'דירקטור' : 'Director'}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full lg:w-36">
+              <Select value={filters.remoteType || 'all'} onValueChange={(v) => updateFilter('remoteType', v === 'all' ? '' : v)}>
+                <SelectTrigger className="h-9"><SelectValue placeholder={isHebrew ? 'עבודה מרחוק' : 'Remote'} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{isHebrew ? 'הכל' : 'All'}</SelectItem>
+                  <SelectItem value="remote">{isHebrew ? 'מרחוק' : 'Remote'}</SelectItem>
+                  <SelectItem value="hybrid">{isHebrew ? 'היברידי' : 'Hybrid'}</SelectItem>
+                  <SelectItem value="onsite">{isHebrew ? 'פיזי' : 'On-site'}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

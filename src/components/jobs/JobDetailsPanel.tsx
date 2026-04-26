@@ -279,6 +279,53 @@ export function JobDetailsPanel({ job, onApply, onDismiss, onMarkApplied, onRefr
         </div>
       )}
 
+      {/* Parsed JD Skills */}
+      {(() => {
+        const pjd = (job as any).parsed_jd;
+        if (!pjd) return null;
+        const seniorityLabel: Record<string, string> = { junior: 'Junior', mid: 'Mid', senior: 'Senior', lead: 'Lead', manager: 'Manager', director: 'Director', intern: 'Intern' };
+        const remoteLabel: Record<string, { en: string; he: string }> = { remote: { en: 'Remote', he: 'מרחוק' }, hybrid: { en: 'Hybrid', he: 'היברידי' }, onsite: { en: 'On-site', he: 'פיזי' } };
+        return (
+          <div className="mb-4 space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {pjd.seniority && seniorityLabel[pjd.seniority] && (
+                <Badge variant="outline" className="text-xs bg-violet-500/10 text-violet-600 border-violet-500/20">{seniorityLabel[pjd.seniority]}</Badge>
+              )}
+              {pjd.remote_type && remoteLabel[pjd.remote_type] && (
+                <Badge variant="outline" className="text-xs bg-sky-500/10 text-sky-600 border-sky-500/20">
+                  {isHebrew ? remoteLabel[pjd.remote_type].he : remoteLabel[pjd.remote_type].en}
+                </Badge>
+              )}
+              {pjd.experience_years && (
+                <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-600 border-amber-500/20">
+                  {pjd.experience_years}+ {isHebrew ? 'שנות ניסיון' : 'years exp'}
+                </Badge>
+              )}
+            </div>
+            {(pjd.required_skills as string[] | undefined)?.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1.5">{isHebrew ? 'כישורים נדרשים' : 'Required Skills'}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(pjd.required_skills as string[]).map((s: string, i: number) => (
+                    <Badge key={i} variant="outline" className="text-xs bg-primary/5 text-primary border-primary/20">{s}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            {(pjd.preferred_skills as string[] | undefined)?.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1.5">{isHebrew ? 'כישורים מועדפים' : 'Preferred Skills'}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(pjd.preferred_skills as string[]).map((s: string, i: number) => (
+                    <Badge key={i} variant="outline" className="text-xs bg-muted text-muted-foreground">{s}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       <Separator className="my-4" />
 
       {/* Company Info — always show if we have a name */}

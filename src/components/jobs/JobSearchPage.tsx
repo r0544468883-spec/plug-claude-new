@@ -27,6 +27,7 @@ const defaultFilters: JobFiltersState = {
   search: '', location: '', jobType: '', salaryRange: '', companySearch: '',
   industry: '', category: '', fieldSlug: '', roleSlug: '', experienceLevelSlug: '',
   userLatitude: null, userLongitude: null, maxDistance: 25, source: '',
+  seniority: '', remoteType: '',
 };
 
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -123,6 +124,8 @@ export function JobSearchPage() {
       if (filters.category) query = query.eq('category', filters.category);
       if (filters.source === 'alljobs') query = query.eq('external_source', 'alljobs');
       else if (filters.source === 'linkedin') query = query.eq('external_source', 'linkedin');
+      if (filters.seniority) query = (query as any).eq('parsed_jd->>seniority', filters.seniority);
+      if (filters.remoteType) query = (query as any).eq('parsed_jd->>remote_type', filters.remoteType);
 
       const { data, error } = await query.limit(100);
       if (error) throw error;
