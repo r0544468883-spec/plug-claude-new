@@ -57,6 +57,7 @@ export function JobSearchPage() {
   const [matchMeActive, setMatchMeActive] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [visibleCount, setVisibleCount] = useState(20);
+  const [localMaxAge, setLocalMaxAge] = useState<number>(90);
 
   const dismissStorageKey = user ? `plug_dismissed_jobs_${user.id}` : null;
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => {
@@ -86,6 +87,11 @@ export function JobSearchPage() {
 
   const blockedCompanies: string[] = ((userProfile as any)?.blocked_companies || []).map((c: string) => c.toLowerCase());
   const maxAgeDays: number = (userProfile as any)?.max_job_age_days ?? 90;
+
+  // Sync localMaxAge from profile on first load
+  useEffect(() => {
+    if (userProfile) setLocalMaxAge((userProfile as any)?.max_job_age_days ?? 90);
+  }, [userProfile]);
 
   // Fetch jobs
   const { data: jobs = [], isLoading, error: jobsError, refetch } = useQuery({
@@ -184,10 +190,10 @@ export function JobSearchPage() {
       if (blockedCompanies.length > 0 && (j as any).company?.name) {
         if (blockedCompanies.includes((j as any).company.name.toLowerCase())) return false;
       }
-      // Age filter
-      if (maxAgeDays > 0 && (j as any).created_at) {
+      // Age filter (localMaxAge: 0 = no limit)
+      if (localMaxAge > 0 && (j as any).created_at) {
         const ageDays = (Date.now() - new Date((j as any).created_at).getTime()) / (1000 * 60 * 60 * 24);
-        if (ageDays > maxAgeDays) return false;
+        if (ageDays > localMaxAge) return false;
       }
       return true;
     });
@@ -200,7 +206,7 @@ export function JobSearchPage() {
     // 'newest' is default from query order
 
     return result;
-  }, [matchMeActive, matchedJobs, jobs, dismissedIds, sortBy, blockedCompanies, maxAgeDays]);
+  }, [matchMeActive, matchedJobs, jobs, dismissedIds, sortBy, blockedCompanies, localMaxAge]);
 
   const displayedJobs = allDisplayedJobs.slice(0, visibleCount);
   const hasMore = visibleCount < allDisplayedJobs.length;
@@ -314,6 +320,22 @@ export function JobSearchPage() {
             </div>
           </SheetContent>
         </Sheet>
+
+        {/* Age filter */}
+        <Select value={String(localMaxAge)} onValueChange={(v) => setLocalMaxAge(Number(v))}>
+          <SelectTrigger className="h-8 w-auto gap-1.5 text-xs border-dashed">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="7">{isHebrew ? 'עד שבוע' : 'Last 7d'}</SelectItem>
+            <SelectItem value="14">{isHebrew ? 'עד שבועיים' : 'Last 14d'}</SelectItem>
+            <SelectItem value="30">{isHebrew ? 'עד חודש' : 'Last 30d'}</SelectItem>
+            <SelectItem value="60">{isHebrew ? 'עד חודשיים' : 'Last 60d'}</SelectItem>
+            <SelectItem value="90">{isHebrew ? 'עד 3 חודשים' : 'Last 90d'}</SelectItem>
+            <SelectItem value="180">{isHebrew ? 'עד חצי שנה' : 'Last 180d'}</SelectItem>
+            <SelectItem value="0">{isHebrew ? 'הכל' : 'All time'}</SelectItem>
+          </SelectContent>
+        </Select>
 
         {/* Sort */}
         <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>

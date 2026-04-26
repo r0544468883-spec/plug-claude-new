@@ -124,11 +124,15 @@ Return ONLY valid JSON array:
     } catch (error: any) {
       console.error('Error generating bullet points:', error);
       setStreamingText('');
-      const msg = error?.message || JSON.stringify(error) || '';
-      if (msg.includes('credit') || msg.includes('quota') || msg.includes('balance')) {
+      const errStr = [
+        error?.message,
+        JSON.stringify(error?.context),
+        JSON.stringify(error),
+      ].join(' ').toLowerCase();
+      if (errStr.includes('credit') || errStr.includes('insufficient') || errStr.includes('quota') || errStr.includes('balance') || errStr.includes('required')) {
         toast.error(isHebrew ? 'אין מספיק קרדיטים AI — רכוש קרדיטים ב"חשבון"' : 'No AI credits — purchase credits in Account');
       } else {
-        toast.error(isHebrew ? 'שגיאה ביצירת נקודות' : 'Failed to generate bullet points');
+        toast.error(isHebrew ? `שגיאה: ${error?.message || 'נסה שוב'}` : `Error: ${error?.message || 'Please try again'}`);
       }
     } finally {
       setIsLoading(false);
@@ -311,11 +315,11 @@ Rules:
         setPromptResult(JSON.stringify(result, null, 2));
       }
     } catch (err: any) {
-      const msg = err?.message || JSON.stringify(err) || '';
-      if (msg.includes('credit') || msg.includes('quota') || msg.includes('balance')) {
+      const errStr = [err?.message, JSON.stringify(err?.context), JSON.stringify(err)].join(' ').toLowerCase();
+      if (errStr.includes('credit') || errStr.includes('insufficient') || errStr.includes('quota') || errStr.includes('balance') || errStr.includes('required')) {
         toast.error(isHebrew ? 'אין מספיק קרדיטים AI — רכוש קרדיטים ב"חשבון"' : 'No AI credits — purchase credits in Account');
       } else {
-        toast.error(isHebrew ? 'שגיאה בהרצת הפרומפט' : 'Failed to run prompt');
+        toast.error(isHebrew ? `שגיאה: ${err?.message || 'נסה שוב'}` : `Error: ${err?.message || 'Please try again'}`);
       }
     } finally {
       setPromptLoading(false);

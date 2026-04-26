@@ -244,8 +244,8 @@ export function PersonalCardEditor() {
       total: 3,
     };
     const availability = {
-      filled: [formData.available_start_date, formData.desired_salary].filter(Boolean).length,
-      total: 2,
+      filled: [formData.available_start_date].filter(Boolean).length,
+      total: 1,
     };
     const legal = {
       filled: [formData.work_authorized].filter(Boolean).length,
