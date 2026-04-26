@@ -289,6 +289,9 @@ Rules:
       prompts: [
         { id: 'salary', labelHe: 'נסח דרישת שכר', labelEn: 'Frame salary expectation', placeholder: isHebrew ? 'תפקיד + טווח שכר רצוי...' : 'Role + desired range...', promptFn: (v: string) => `Write professional ways to communicate salary expectations for: ${v}\n\nProvide 3 phrasings for: email, interview, negotiation counter-offer.` },
         { id: 'weakness', labelHe: 'ענה על "מה החולשה שלך?"', labelEn: 'Answer "What\'s your weakness?"', placeholder: isHebrew ? 'חולשה אמיתית שלך...' : 'A real weakness you have...', promptFn: (v: string) => `Write a professional, authentic interview answer for "What is your greatest weakness?" based on: ${v}\n\nShow self-awareness, growth mindset, and how you're improving it.` },
+        { id: 'tell_me', labelHe: 'ענה על "ספר לי על עצמך"', labelEn: 'Answer "Tell me about yourself"', placeholder: isHebrew ? 'רקע מקצועי + תפקיד המטרה...' : 'Background + target role...', promptFn: (v: string) => `Write a compelling 90-second "Tell me about yourself" answer for an interview, based on:\n\n${v}\n\nStructure: Present (current role), Past (relevant background), Future (why this role). Keep it under 200 words, confident, and focused on value.` },
+        { id: 'star_story', labelHe: 'צור סיפור STAR', labelEn: 'Build a STAR story', placeholder: isHebrew ? 'מצב או הישג שרוצה להציג...' : 'A situation or achievement to present...', promptFn: (v: string) => `Transform this experience into a structured STAR interview story:\n\n${v}\n\nFormat:\n- Situation: (context, 1-2 sentences)\n- Task: (your responsibility)\n- Action: (what YOU specifically did, 3 bullet points)\n- Result: (measurable outcome)\n\nKeep it under 3 minutes when spoken aloud.` },
+        { id: 'rejection_follow', labelHe: 'תגובה לדחייה מחברה', labelEn: 'Respond to a job rejection', placeholder: isHebrew ? 'חברה + תפקיד שנדחית ממנו...' : 'Company + role you were rejected from...', promptFn: (v: string) => `Write a professional, gracious response to a job rejection from:\n\n${v}\n\nGoals: 1) Thank them genuinely, 2) Request feedback (diplomatically), 3) Leave door open for future. Keep it under 100 words, no desperation.` },
       ]
     },
   ];
@@ -301,17 +304,30 @@ Rules:
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
       const response = await supabase.functions.invoke('plug-chat', {
-        body: { messages: [{ role: 'user', content: promptText }] },
+        body: { messages: [{ role: 'user', content: promptText }], context: {} },
       });
       if (response.error) throw response.error;
-      const result = response.data;
-      if (typeof result === 'string') {
-        setPromptResult(result);
-      } else if (result?.content) {
-        setPromptResult(typeof result.content === 'string' ? result.content : JSON.stringify(result.content, null, 2));
-      } else {
-        setPromptResult(JSON.stringify(result, null, 2));
+
+      const reader = response.data?.getReader();
+      if (!reader) throw new Error('No response stream');
+
+      let full = '';
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        for (const line of decoder.decode(value).split('\n')) {
+          if (line.startsWith('data: ') && line.slice(6) !== '[DONE]') {
+            try {
+              const delta = JSON.parse(line.slice(6));
+              const chunk = delta.choices?.[0]?.delta?.content || '';
+              full += chunk;
+              setPromptResult(full);
+            } catch { /* ignore partial JSON */ }
+          }
+        }
       }
+      if (!full) throw new Error('Empty response');
     } catch (err: any) {
       let serverMsg = '';
       try {
