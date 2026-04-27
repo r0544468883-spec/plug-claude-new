@@ -78,20 +78,8 @@ export function OverviewHome({ onNavigate, onShowResumeDialog, onOpenChat }: Ove
     enabled: !!user?.id,
   });
 
-  // ── Upcoming interviews ──
-  const { data: upcomingInterviews } = useQuery({
-    queryKey: ['overview-upcoming-interviews', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      // Limit to 50 most recent apps to avoid URL-too-long 400 errors
-      const { data: apps } = await supabase.from('applications').select('id').eq('candidate_id', user.id).order('created_at', { ascending: false }).limit(50);
-      const appIds = apps?.map(a => a.id) || [];
-      if (!appIds.length) return [];
-      const { data } = await supabase.from('interview_reminders').select('id, interview_date, interview_type, notes, application_id').in('application_id', appIds).gte('interview_date', new Date().toISOString()).order('interview_date', { ascending: true }).limit(3);
-      return data || [];
-    },
-    enabled: !!user?.id,
-  });
+  // Upcoming interviews shown in Schedule section — skip heavy query here
+  const upcomingInterviews: unknown[] = [];
 
   // ── Matched jobs ──
   const { data: matchedJobs } = useQuery({
