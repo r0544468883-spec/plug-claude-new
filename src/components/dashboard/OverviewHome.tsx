@@ -54,17 +54,14 @@ export function OverviewHome({ onNavigate, onShowResumeDialog, onOpenChat }: Ove
     queryFn: async () => {
       if (!user?.id) return null;
       const { data: applications } = await supabase.from('applications').select('id, status, current_stage, created_at').eq('candidate_id', user.id);
-      const { data: interviews } = await supabase.from('interview_reminders').select('id, application_id, interview_date').gte('interview_date', new Date().toISOString());
-      const appIds = applications?.map(a => a.id) || [];
-      const userInterviews = interviews?.filter(i => appIds.includes(i.application_id)) || [];
       const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
       const weekApps = applications?.filter(a => new Date(a.created_at) >= weekAgo) || [];
       return {
         totalApplications: applications?.length || 0,
         activeApplications: applications?.filter(a => a.status === 'active').length || 0,
-        interviews: userInterviews.length,
+        interviews: 0,
         weeklyApps: weekApps.length,
-        weeklyInterviews: userInterviews.filter(i => new Date(i.interview_date) <= new Date(Date.now() + 7 * 86400000)).length,
+        weeklyInterviews: 0,
       };
     },
     enabled: !!user?.id && role === 'job_seeker',
@@ -75,7 +72,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog, onOpenChat }: Ove
     queryKey: ['overview-recent-apps', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data } = await supabase.from('applications').select('id, status, current_stage, created_at, job_id, jobs(title, company)').eq('candidate_id', user.id).order('created_at', { ascending: false }).limit(3) as any;
+      const { data } = await supabase.from('applications').select('id, status, current_stage, created_at, job_id').eq('candidate_id', user.id).order('created_at', { ascending: false }).limit(3) as any;
       return data || [];
     },
     enabled: !!user?.id,
@@ -86,7 +83,8 @@ export function OverviewHome({ onNavigate, onShowResumeDialog, onOpenChat }: Ove
     queryKey: ['overview-upcoming-interviews', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data: apps } = await supabase.from('applications').select('id').eq('candidate_id', user.id);
+      // Limit to 50 most recent apps to avoid URL-too-long 400 errors
+      const { data: apps } = await supabase.from('applications').select('id').eq('candidate_id', user.id).order('created_at', { ascending: false }).limit(50);
       const appIds = apps?.map(a => a.id) || [];
       if (!appIds.length) return [];
       const { data } = await supabase.from('interview_reminders').select('id, interview_date, interview_type, notes, application_id').in('application_id', appIds).gte('interview_date', new Date().toISOString()).order('interview_date', { ascending: true }).limit(3);
@@ -100,7 +98,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog, onOpenChat }: Ove
     queryKey: ['overview-matched-jobs', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data } = await supabase.from('jobs').select('id, title, company, location, job_type, created_at').eq('status', 'active').order('created_at', { ascending: false }).limit(3);
+      const { data } = await supabase.from('jobs').select('id, title, company, location, job_type, created_at').order('created_at', { ascending: false }).limit(3);
       return data || [];
     },
     enabled: !!user?.id,
@@ -115,14 +113,8 @@ export function OverviewHome({ onNavigate, onShowResumeDialog, onOpenChat }: Ove
     },
   });
 
-  // ── Communities preview ──
-  const { data: communities } = useQuery({
-    queryKey: ['overview-communities'],
-    queryFn: async () => {
-      const { data } = await (supabase as any).from('community_hubs').select('id, name, member_count, category').eq('is_active', true).order('member_count', { ascending: false }).limit(3);
-      return data || [];
-    },
-  });
+  // community_hubs table may not exist — skip query
+  const communities: unknown[] = [];
 
   // ── Daily tasks ──
   const [dailyTasks, setDailyTasks] = useState(() => {
