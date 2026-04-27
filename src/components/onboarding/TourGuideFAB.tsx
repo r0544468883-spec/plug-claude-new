@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Route, X, ChevronRight, Check, ChevronDown } from 'lucide-react';
+import { Route, X, ChevronRight, Check, ChevronDown, Map, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { DashboardSection } from '@/components/dashboard/DashboardLayout';
+import { TOUR_STEPS, type TourStep } from './JobSeekerTour';
 
 interface TourGuideFABProps {
   onNavigate?: (section: DashboardSection) => void;
@@ -42,6 +43,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'tour' | 'screens'>('tour');
 
   useEffect(() => {
     const handler = () => setOpen(true);
@@ -366,6 +368,33 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
   const tips = getTips();
   const completedCount = checklist.filter(c => c.done).length;
 
+  // "By screens" view — group TOUR_STEPS by section (job_seeker only)
+  const sectionNames: Partial<Record<DashboardSection, { he: string; en: string }>> = {
+    'overview':       { he: '🏠 דף הבית',         en: '🏠 Home' },
+    'profile-docs':   { he: '🙋 פרופיל ומסמכים',  en: '🙋 Profile & Docs' },
+    'cv-builder':     { he: '📄 בניית קו"ח',       en: '📄 CV Builder' },
+    'settings':       { he: '⚙️ הגדרות',           en: '⚙️ Settings' },
+    'job-search':     { he: '🔍 חיפוש משרות',      en: '🔍 Job Search' },
+    'companies':      { he: '🏢 ספריית חברות',     en: '🏢 Companies' },
+    'applications':   { he: '💼 מועמדויות',         en: '💼 Applications' },
+    'schedule':       { he: '📅 יומן החיפוש',      en: '📅 Search Journal' },
+    'interview-prep': { he: '🎤 סימולציות',        en: '🎤 Simulations' },
+    'messages':       { he: '💬 הודעות',            en: '💬 Messages' },
+    'feed':           { he: '📰 פיד קהילה',        en: '📰 Community Feed' },
+    'my-stats':       { he: '📊 סטטיסטיקות',       en: '📊 My Stats' },
+  };
+
+  // Preserve section order from TOUR_STEPS
+  const sectionOrder: DashboardSection[] = [];
+  const stepsBySection: Record<string, (TourStep & { stepIndex: number })[]> = {};
+  TOUR_STEPS.forEach((step, idx) => {
+    if (!stepsBySection[step.section]) {
+      stepsBySection[step.section] = [];
+      sectionOrder.push(step.section);
+    }
+    stepsBySection[step.section].push({ ...step, stepIndex: idx });
+  });
+
   return (
     <>
       {/* FAB Button - visible on mobile and desktop */}
@@ -414,8 +443,54 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                 </button>
               </div>
 
-              {/* Start Guided Tour Button - right below header */}
-              {onStartTour && (
+              {/* View mode toggle + guided tour button (job_seeker only) */}
+              {role === 'job_seeker' && (
+                <div className="px-4 py-3 border-b border-border space-y-2">
+                  {/* Toggle */}
+                  <div className="flex rounded-lg overflow-hidden border border-border text-sm">
+                    <button
+                      onClick={() => setViewMode('tour')}
+                      className={cn(
+                        'flex-1 flex items-center justify-center gap-1.5 py-2 transition-colors',
+                        viewMode === 'tour'
+                          ? 'bg-primary text-primary-foreground font-medium'
+                          : 'text-muted-foreground hover:bg-secondary/60'
+                      )}
+                    >
+                      <Map className="w-3.5 h-3.5" />
+                      {isRTL ? 'מסע מודרך' : 'Guided Tour'}
+                    </button>
+                    <button
+                      onClick={() => setViewMode('screens')}
+                      className={cn(
+                        'flex-1 flex items-center justify-center gap-1.5 py-2 transition-colors border-s border-border',
+                        viewMode === 'screens'
+                          ? 'bg-primary text-primary-foreground font-medium'
+                          : 'text-muted-foreground hover:bg-secondary/60'
+                      )}
+                    >
+                      <Monitor className="w-3.5 h-3.5" />
+                      {isRTL ? 'לפי מסכים' : 'By Screen'}
+                    </button>
+                  </div>
+                  {/* Start tour button — only in 'tour' mode */}
+                  {viewMode === 'tour' && onStartTour && (
+                    <Button
+                      variant="default"
+                      className="w-full gap-2"
+                      onClick={() => {
+                        setOpen(false);
+                        onStartTour();
+                      }}
+                    >
+                      🗺️ {isRTL ? 'התחל סיור מודרך' : 'Start Guided Tour'}
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* Non-job_seeker: keep old tour button */}
+              {role !== 'job_seeker' && onStartTour && (
                 <div className="px-4 py-3 border-b border-border">
                   <Button
                     variant="default"
@@ -430,8 +505,63 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                 </div>
               )}
 
-              <ScrollArea className={cn(onStartTour ? "h-[calc(100%-120px)]" : "h-[calc(100%-60px)]")}>
+              <ScrollArea className="h-[calc(100%-130px)]">
                 <div className="p-4 space-y-6">
+
+                  {/* ── BY SCREENS VIEW ── */}
+                  {role === 'job_seeker' && viewMode === 'screens' && (
+                    <div className="space-y-5">
+                      <p className="text-xs text-muted-foreground">
+                        {isRTL
+                          ? 'כל הפיצ\'רים לפי מסך - לחצו על מסך כדי לנווט אליו'
+                          : 'All features by screen — click a screen to navigate'}
+                      </p>
+                      {sectionOrder.map((section) => {
+                        const name = sectionNames[section];
+                        const steps = stepsBySection[section];
+                        return (
+                          <div key={section}>
+                            <button
+                              onClick={() => { if (onNavigate) { onNavigate(section); setOpen(false); } }}
+                              className="w-full flex items-center justify-between mb-2 group"
+                            >
+                              <h3 className="font-semibold text-sm">
+                                {name ? (isRTL ? name.he : name.en) : section}
+                              </h3>
+                              <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                            </button>
+                            <div className="space-y-1 ps-2 border-s-2 border-border">
+                              {steps.map((step) => {
+                                const Icon = step.icon;
+                                return (
+                                  <button
+                                    key={step.stepIndex}
+                                    onClick={() => { if (onNavigate) { onNavigate(step.section); setOpen(false); } }}
+                                    className="w-full flex items-start gap-2.5 p-2 rounded-lg hover:bg-secondary/50 transition-colors text-start"
+                                  >
+                                    <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                      <Icon className="w-3.5 h-3.5 text-primary" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium leading-tight">
+                                        {isRTL ? step.titleHe : step.titleEn}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">
+                                        {isRTL ? step.descriptionHe : step.descriptionEn}
+                                      </p>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* ── TOUR / DEFAULT VIEW ── */}
+                  {(role !== 'job_seeker' || viewMode === 'tour') && (<>
 
                   {/* Progress */}
                   <div>
@@ -560,6 +690,8 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                       ))}
                     </div>
                   </div>
+
+                  </>)}
 
                 </div>
               </ScrollArea>
