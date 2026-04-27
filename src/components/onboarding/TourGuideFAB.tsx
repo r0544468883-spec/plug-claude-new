@@ -43,7 +43,14 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'tour' | 'screens'>('tour');
+  const [viewMode, setViewMode] = useState<'tour' | 'screens'>(() => {
+    try { return (localStorage.getItem('plug_tour_view') as 'tour' | 'screens') || 'tour'; } catch { return 'tour'; }
+  });
+
+  const switchView = (mode: 'tour' | 'screens') => {
+    try { localStorage.setItem('plug_tour_view', mode); } catch {}
+    setViewMode(mode);
+  };
 
   useEffect(() => {
     const handler = () => setOpen(true);
@@ -450,7 +457,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onPointerDown={() => { console.log('[FAB] tour clicked'); setViewMode('tour'); }}
+                      onClick={() => switchView('tour')}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium border transition-all"
                       style={viewMode === 'tour'
                         ? { background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))', borderColor: 'hsl(var(--primary))' }
@@ -461,7 +468,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                     </button>
                     <button
                       type="button"
-                      onPointerDown={() => { console.log('[FAB] screens clicked'); setViewMode('screens'); }}
+                      onClick={() => switchView('screens')}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium border transition-all"
                       style={viewMode === 'screens'
                         ? { background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))', borderColor: 'hsl(var(--primary))' }
