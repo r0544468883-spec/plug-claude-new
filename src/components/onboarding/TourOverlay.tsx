@@ -66,13 +66,13 @@ export function TourOverlay({ targetSelector, isActive, onElementFound }: TourOv
     const timer = setTimeout(tryFindElement, 350);
 
     // Update on resize/scroll
-    window.addEventListener('resize', updateSpotlight);
-    window.addEventListener('scroll', updateSpotlight, true);
+    window.addEventListener('resize', updateSpotlight, { passive: true });
+    window.addEventListener('scroll', updateSpotlight, { passive: true, capture: true });
 
     return () => {
       clearTimeout(timer);
       window.removeEventListener('resize', updateSpotlight);
-      window.removeEventListener('scroll', updateSpotlight, true);
+      window.removeEventListener('scroll', updateSpotlight, { capture: true } as EventListenerOptions);
     };
   }, [targetSelector, isActive, updateSpotlight, onElementFound]);
 

@@ -79,7 +79,7 @@ export function TourTooltip({
     }
 
     const rect = element.getBoundingClientRect();
-    const tooltipHeight = 280;
+    const tooltipHeight = Math.min(280, window.innerHeight * 0.55);
     const tooltipWidth = Math.min(360, window.innerWidth - 32);
     const padding = 16;
 
@@ -126,13 +126,13 @@ export function TourTooltip({
     setIsVisible(false);
 
     const timer = setTimeout(updatePosition, 400);
-    window.addEventListener('resize', updatePosition);
-    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition, { passive: true });
+    window.addEventListener('scroll', updatePosition, { passive: true, capture: true });
 
     return () => {
       clearTimeout(timer);
       window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('scroll', updatePosition, { capture: true } as EventListenerOptions);
     };
   }, [targetSelector, updatePosition]);
 
@@ -173,7 +173,7 @@ export function TourTooltip({
                 variant="ghost"
                 size="sm"
                 onClick={onSkip}
-                className="absolute top-3 end-3 h-7 w-7 p-0 text-muted-foreground hover:text-foreground rounded-full"
+                className="absolute top-2 end-2 h-10 w-10 p-0 text-muted-foreground hover:text-foreground rounded-full"
                 aria-label={isHebrew ? 'סגור' : 'Close'}
               >
                 <X className="w-4 h-4" />

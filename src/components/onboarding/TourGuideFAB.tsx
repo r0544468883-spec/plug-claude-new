@@ -571,7 +571,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
         onClick={() => setOpenPersistent(true)}
         className={cn(
           'fixed z-40 rounded-full bg-secondary border border-accent/30 shadow-lg flex items-center justify-center transition-all hover:scale-105 hover:border-accent',
-          isMobile ? 'w-12 h-12 bottom-[88px]' : 'w-11 h-11 bottom-6',
+          isMobile ? 'w-12 h-12 bottom-[calc(88px+env(safe-area-inset-bottom,0px))]' : 'w-11 h-11 bottom-6',
           isRTL ? 'right-4' : 'left-4'
         )}
         aria-label={isRTL ? 'מדריך המערכת' : 'System Guide'}
@@ -697,7 +697,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                 </div>
               )}
 
-              <ScrollArea className="h-[calc(100%-130px)]">
+              <ScrollArea className="h-[calc(100%-130px-env(safe-area-inset-bottom,0px))]">
                 <div key={viewMode} className="p-4 space-y-6">
 
                   {/* ── BY SCREENS VIEW — uses toolCategories (correct sections) ── */}
