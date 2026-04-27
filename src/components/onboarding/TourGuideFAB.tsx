@@ -450,7 +450,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => setViewMode('tour')}
+                      onPointerDown={() => { console.log('[FAB] tour clicked'); setViewMode('tour'); }}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium border transition-all"
                       style={viewMode === 'tour'
                         ? { background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))', borderColor: 'hsl(var(--primary))' }
@@ -461,7 +461,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setViewMode('screens')}
+                      onPointerDown={() => { console.log('[FAB] screens clicked'); setViewMode('screens'); }}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium border transition-all"
                       style={viewMode === 'screens'
                         ? { background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))', borderColor: 'hsl(var(--primary))' }
