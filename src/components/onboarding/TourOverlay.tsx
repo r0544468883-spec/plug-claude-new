@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 interface SpotlightRect {
@@ -18,6 +18,8 @@ export function TourOverlay({ targetSelector, isActive, onElementFound }: TourOv
   const [spotlightRect, setSpotlightRect] = useState<SpotlightRect | null>(null);
   const reducedMotion = useReducedMotion();
 
+  const hasScrolledRef = useRef(false);
+
   const updateSpotlight = useCallback(() => {
     const element = document.querySelector(targetSelector);
     if (element) {
@@ -30,14 +32,22 @@ export function TourOverlay({ targetSelector, isActive, onElementFound }: TourOv
         height: rect.height + padding * 2,
       });
 
-      // Scroll element into view if needed
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Scroll element into view only once per selector (avoid scroll loop)
+      if (!hasScrolledRef.current) {
+        hasScrolledRef.current = true;
+        element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
       onElementFound?.(true);
     } else {
       setSpotlightRect(null);
       onElementFound?.(false);
     }
   }, [targetSelector, onElementFound]);
+
+  // Reset scroll flag when selector changes
+  useEffect(() => {
+    hasScrolledRef.current = false;
+  }, [targetSelector]);
 
   useEffect(() => {
     if (!isActive || !targetSelector) {

@@ -79,9 +79,10 @@ export function TourTooltip({
     }
 
     const rect = element.getBoundingClientRect();
+    const isMobileViewport = window.innerWidth < 768;
     const tooltipHeight = Math.min(280, window.innerHeight * 0.55);
     const tooltipWidth = Math.min(360, window.innerWidth - 32);
-    const padding = 16;
+    const padding = isMobileViewport ? 10 : 16;
 
     // Determine placement
     const spaceBelow = window.innerHeight - rect.bottom;
@@ -97,10 +98,14 @@ export function TourTooltip({
       newPlacement = 'top';
       newTop = rect.top - tooltipHeight - padding;
     } else {
-      // Not enough space - show centered
+      // Not enough space — show centered vertically
       newPlacement = 'bottom';
       newTop = Math.max(padding, (window.innerHeight - tooltipHeight) / 2);
     }
+
+    // On mobile, clamp so tooltip never overflows the bottom of the viewport
+    const maxTop = window.innerHeight - tooltipHeight - padding;
+    newTop = Math.max(padding, Math.min(newTop, maxTop));
 
     // Calculate horizontal position with proper boundary checks
     const elementCenter = rect.left + rect.width / 2;
