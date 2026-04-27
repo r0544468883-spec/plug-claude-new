@@ -90,7 +90,8 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
   }, [spotlight?.selector, spotlight?.key]);
 
   // viewMode lives entirely in the module-level variable — no useState
-  const viewMode = _fabViewMode;
+  // On mobile, always force 'tour' mode (By Screens not useful)
+  const viewMode = isMobile ? 'tour' as const : _fabViewMode;
   const switchView = (mode: 'tour' | 'screens') => {
     _fabViewMode = mode;
     try { localStorage.setItem('plug_tour_view', mode); } catch {}
@@ -635,33 +636,35 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
               {/* View mode toggle + guided tour button (job_seeker only) */}
               {role === 'job_seeker' && (
                 <div className="px-4 py-3 border-b border-border space-y-2">
-                  {/* Toggle — two separate buttons with gap */}
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => switchView('tour')}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium border transition-all"
-                      style={viewMode === 'tour'
-                        ? { background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))', borderColor: 'hsl(var(--primary))' }
-                        : { background: 'transparent', color: 'hsl(var(--muted-foreground))', borderColor: 'hsl(var(--border))' }}
-                    >
-                      <Map className="w-3.5 h-3.5" />
-                      {isRTL ? 'מסע מודרך' : 'Guided Tour'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => switchView('screens')}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium border transition-all"
-                      style={viewMode === 'screens'
-                        ? { background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))', borderColor: 'hsl(var(--primary))' }
-                        : { background: 'transparent', color: 'hsl(var(--muted-foreground))', borderColor: 'hsl(var(--border))' }}
-                    >
-                      <Monitor className="w-3.5 h-3.5" />
-                      {isRTL ? 'לפי מסכים' : 'By Screen'}
-                    </button>
-                  </div>
-                  {/* Start tour button — only in 'tour' mode */}
-                  {viewMode === 'tour' && onStartTour && (
+                  {/* Toggle — desktop only (By Screens not useful on mobile) */}
+                  {!isMobile && (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => switchView('tour')}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium border transition-all"
+                        style={viewMode === 'tour'
+                          ? { background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))', borderColor: 'hsl(var(--primary))' }
+                          : { background: 'transparent', color: 'hsl(var(--muted-foreground))', borderColor: 'hsl(var(--border))' }}
+                      >
+                        <Map className="w-3.5 h-3.5" />
+                        {isRTL ? 'מסע מודרך' : 'Guided Tour'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => switchView('screens')}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium border transition-all"
+                        style={viewMode === 'screens'
+                          ? { background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))', borderColor: 'hsl(var(--primary))' }
+                          : { background: 'transparent', color: 'hsl(var(--muted-foreground))', borderColor: 'hsl(var(--border))' }}
+                      >
+                        <Monitor className="w-3.5 h-3.5" />
+                        {isRTL ? 'לפי מסכים' : 'By Screen'}
+                      </button>
+                    </div>
+                  )}
+                  {/* Start tour button — on mobile always, on desktop only in 'tour' mode */}
+                  {(isMobile || viewMode === 'tour') && onStartTour && (
                     <Button
                       type="button"
                       variant="default"

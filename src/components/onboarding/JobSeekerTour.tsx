@@ -188,7 +188,7 @@ export const TOUR_STEPS: TourStep[] = [
 
   {
     section: 'applications',
-    targetSelector: '[data-tour="add-application"]',
+    targetSelector: '[data-tour="applications-page"]',
     titleHe: 'מועמדויות - Kanban, לוח זמנים ופידבק',
     titleEn: 'Applications - Kanban, Schedule & Feedback',
     descriptionHe: 'הדביקו לינק למשרה - פלאג שולף את כל הפרטים. הציגו את המועמדויות כ-Kanban (גררו קלפים בין שלבים) או כקלנדר. נדחתם? סמנו את הסיבה - פלאג לומד ועוזר לשפר.',

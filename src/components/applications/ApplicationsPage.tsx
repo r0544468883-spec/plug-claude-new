@@ -509,7 +509,7 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
   }
 
   return (
-    <div className="space-y-4 pb-24" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="space-y-4 pb-24" dir={isRTL ? 'rtl' : 'ltr'} data-tour="applications-page">
       {/* ── Toolbar ── */}
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="text-xl font-bold text-foreground flex items-center gap-2 me-auto">
