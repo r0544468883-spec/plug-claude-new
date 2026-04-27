@@ -10,10 +10,11 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import type { DashboardSection } from '@/components/dashboard/DashboardLayout';
 import { TOUR_STEPS, type TourStep } from './JobSeekerTour';
 
-// Module-level variable: survives component remounts within the same session
+// Module-level variables: survive component remounts within the same session
 let _fabViewMode: 'tour' | 'screens' = (() => {
   try { return (localStorage.getItem('plug_tour_view') as 'tour' | 'screens') || 'tour'; } catch { return 'tour'; }
 })();
+let _fabOpen = false;
 
 interface TourGuideFABProps {
   onNavigate?: (section: DashboardSection) => void;
@@ -46,7 +47,8 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
   const { language } = useLanguage();
   const isRTL = language === 'he';
   const isMobile = useIsMobile();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(_fabOpen);
+  const setOpenPersistent = (v: boolean) => { _fabOpen = v; setOpen(v); };
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'tour' | 'screens'>(_fabViewMode);
 
@@ -57,7 +59,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
   };
 
   useEffect(() => {
-    const handler = () => setOpen(true);
+    const handler = () => setOpenPersistent(true);
     window.addEventListener('plug:open-tour-guide', handler);
     return () => window.removeEventListener('plug:open-tour-guide', handler);
   }, []);
@@ -67,7 +69,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
 
   const navigate = (section: DashboardSection) => {
     if (onNavigate) onNavigate(section);
-    setOpen(false);
+    setOpenPersistent(false);
   };
 
   const getChecklist = (): ChecklistItem[] => {
@@ -410,7 +412,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
     <>
       {/* FAB Button - visible on mobile and desktop */}
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => setOpenPersistent(true)}
         className={cn(
           'fixed z-40 rounded-full bg-secondary border border-accent/30 shadow-lg flex items-center justify-center transition-all hover:scale-105 hover:border-accent',
           isMobile ? 'w-12 h-12 bottom-[88px]' : 'w-10 h-10 bottom-6',
@@ -430,7 +432,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black/40 z-[55]"
-              onClick={() => setOpen(false)}
+              onClick={() => setOpenPersistent(false)}
             />
             <motion.div
               initial={{ x: isRTL ? '100%' : '-100%' }}
@@ -449,7 +451,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                 <h2 className="text-lg font-bold flex items-center gap-2">
                   📋 {isRTL ? 'מדריך המערכת' : 'System Guide'}
                 </h2>
-                <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
+                <button onClick={() => setOpenPersistent(false)} className="text-muted-foreground hover:text-foreground">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -489,7 +491,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                       variant="default"
                       className="w-full gap-2"
                       onClick={() => {
-                        setOpen(false);
+                        setOpenPersistent(false);
                         onStartTour();
                       }}
                     >
@@ -506,7 +508,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                     variant="default"
                     className="w-full gap-2"
                     onClick={() => {
-                      setOpen(false);
+                      setOpenPersistent(false);
                       onStartTour();
                     }}
                   >
@@ -532,7 +534,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                         return (
                           <div key={section}>
                             <button
-                              onClick={() => { if (onNavigate) { onNavigate(section); setOpen(false); } }}
+                              onClick={() => { if (onNavigate) { onNavigate(section); setOpenPersistent(false); } }}
                               className="w-full flex items-center justify-between mb-2 group"
                             >
                               <h3 className="font-semibold text-sm">
@@ -546,7 +548,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                                 return (
                                   <button
                                     key={step.stepIndex}
-                                    onClick={() => { if (onNavigate) { onNavigate(step.section); setOpen(false); } }}
+                                    onClick={() => { if (onNavigate) { onNavigate(step.section); setOpenPersistent(false); } }}
                                     className="w-full flex items-start gap-2.5 p-2 rounded-lg hover:bg-secondary/50 transition-colors text-start"
                                   >
                                     <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -618,7 +620,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                                 onClick={() => {
                                   if (!item.done && item.section && onNavigate) {
                                     onNavigate(item.section);
-                                    setOpen(false);
+                                    setOpenPersistent(false);
                                   }
                                 }}
                                 className={cn(
@@ -659,7 +661,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                                 tool.action();
                               } else if (tool.section && onNavigate) {
                                 onNavigate(tool.section);
-                                setOpen(false);
+                                setOpenPersistent(false);
                               }
                             }}
                             className={cn(
