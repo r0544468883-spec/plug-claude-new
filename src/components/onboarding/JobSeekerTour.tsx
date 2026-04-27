@@ -403,8 +403,20 @@ export function JobSeekerTour({ currentSection, onNavigate }: JobSeekerTourProps
     };
     (window as any).__startJobSeekerTour = handler;
     window.addEventListener('plug:start-job-seeker-tour', handler);
+
+    // Start tour at a specific step index (from "By Screens" view)
+    const handlerAtStep = (e: Event) => {
+      const idx = (e as CustomEvent<{ stepIndex: number }>).detail?.stepIndex ?? 0;
+      setCurrentStep(idx);
+      setIsActive(true);
+      setShowTransition(false);
+      setPendingStep(null);
+    };
+    window.addEventListener('plug:start-tour-at-step', handlerAtStep);
+
     return () => {
       window.removeEventListener('plug:start-job-seeker-tour', handler);
+      window.removeEventListener('plug:start-tour-at-step', handlerAtStep);
       delete (window as any).__startJobSeekerTour;
     };
   }, []);

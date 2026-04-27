@@ -399,16 +399,24 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
     'my-stats':       { he: '📊 סטטיסטיקות',       en: '📊 My Stats' },
   };
 
-  // Preserve section order from TOUR_STEPS
-  const sectionOrder: DashboardSection[] = [];
-  const stepsBySection: Record<string, (TourStep & { stepIndex: number })[]> = {};
+  // Map each section to its first matching TOUR_STEP index (for spotlight)
+  const sectionToFirstStep: Partial<Record<string, number>> = {};
   TOUR_STEPS.forEach((step, idx) => {
-    if (!stepsBySection[step.section]) {
-      stepsBySection[step.section] = [];
-      sectionOrder.push(step.section);
+    if (!(step.section in sectionToFirstStep)) {
+      sectionToFirstStep[step.section] = idx;
     }
-    stepsBySection[step.section].push({ ...step, stepIndex: idx });
   });
+
+  const launchSpotlight = (section: DashboardSection) => {
+    setOpenPersistent(false);
+    if (onNavigate) onNavigate(section);
+    const stepIdx = sectionToFirstStep[section];
+    if (stepIdx !== undefined) {
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('plug:start-tour-at-step', { detail: { stepIndex: stepIdx } }));
+      }, 450);
+    }
+  };
 
   return (
     <>
@@ -539,7 +547,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                                 key={i}
                                 onClick={() => {
                                   if (tool.action) { tool.action(); setOpenPersistent(false); }
-                                  else if (tool.section && onNavigate) { onNavigate(tool.section); setOpenPersistent(false); }
+                                  else if (tool.section) { launchSpotlight(tool.section); }
                                 }}
                                 className="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-secondary/50 transition-colors text-start"
                               >
