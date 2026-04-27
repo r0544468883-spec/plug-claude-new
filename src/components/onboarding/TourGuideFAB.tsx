@@ -10,6 +10,11 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import type { DashboardSection } from '@/components/dashboard/DashboardLayout';
 import { TOUR_STEPS, type TourStep } from './JobSeekerTour';
 
+// Module-level variable: survives component remounts within the same session
+let _fabViewMode: 'tour' | 'screens' = (() => {
+  try { return (localStorage.getItem('plug_tour_view') as 'tour' | 'screens') || 'tour'; } catch { return 'tour'; }
+})();
+
 interface TourGuideFABProps {
   onNavigate?: (section: DashboardSection) => void;
   onStartTour?: () => void;
@@ -43,11 +48,10 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'tour' | 'screens'>(() => {
-    try { return (localStorage.getItem('plug_tour_view') as 'tour' | 'screens') || 'tour'; } catch { return 'tour'; }
-  });
+  const [viewMode, setViewMode] = useState<'tour' | 'screens'>(_fabViewMode);
 
   const switchView = (mode: 'tour' | 'screens') => {
+    _fabViewMode = mode;
     try { localStorage.setItem('plug_tour_view', mode); } catch {}
     setViewMode(mode);
   };
