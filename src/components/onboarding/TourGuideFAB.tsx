@@ -446,28 +446,26 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
               {/* View mode toggle + guided tour button (job_seeker only) */}
               {role === 'job_seeker' && (
                 <div className="px-4 py-3 border-b border-border space-y-2">
-                  {/* Toggle */}
-                  <div className="flex rounded-lg overflow-hidden border border-border text-sm">
+                  {/* Toggle — two separate buttons with gap */}
+                  <div className="flex gap-2">
                     <button
-                      onClick={(e) => { e.stopPropagation(); setViewMode('tour'); }}
-                      className={cn(
-                        'flex-1 flex items-center justify-center gap-1.5 py-2 transition-colors',
-                        viewMode === 'tour'
-                          ? 'bg-primary text-primary-foreground font-medium'
-                          : 'text-muted-foreground hover:bg-secondary/60'
-                      )}
+                      type="button"
+                      onClick={() => setViewMode('tour')}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium border transition-all"
+                      style={viewMode === 'tour'
+                        ? { background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))', borderColor: 'hsl(var(--primary))' }
+                        : { background: 'transparent', color: 'hsl(var(--muted-foreground))', borderColor: 'hsl(var(--border))' }}
                     >
                       <Map className="w-3.5 h-3.5" />
                       {isRTL ? 'מסע מודרך' : 'Guided Tour'}
                     </button>
                     <button
-                      onClick={(e) => { e.stopPropagation(); setViewMode('screens'); }}
-                      className={cn(
-                        'flex-1 flex items-center justify-center gap-1.5 py-2 transition-colors border-s border-border',
-                        viewMode === 'screens'
-                          ? 'bg-primary text-primary-foreground font-medium'
-                          : 'text-muted-foreground hover:bg-secondary/60'
-                      )}
+                      type="button"
+                      onClick={() => setViewMode('screens')}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium border transition-all"
+                      style={viewMode === 'screens'
+                        ? { background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))', borderColor: 'hsl(var(--primary))' }
+                        : { background: 'transparent', color: 'hsl(var(--muted-foreground))', borderColor: 'hsl(var(--border))' }}
                     >
                       <Monitor className="w-3.5 h-3.5" />
                       {isRTL ? 'לפי מסכים' : 'By Screen'}
@@ -476,6 +474,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                   {/* Start tour button — only in 'tour' mode */}
                   {viewMode === 'tour' && onStartTour && (
                     <Button
+                      type="button"
                       variant="default"
                       className="w-full gap-2"
                       onClick={() => {
