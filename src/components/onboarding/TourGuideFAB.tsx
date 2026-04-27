@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Route, X, ChevronRight, Check, ChevronDown, Map, Monitor } from 'lucide-react';
+import { Route, X, ChevronRight, Check, ChevronDown, Map, Monitor, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { DashboardSection } from '@/components/dashboard/DashboardLayout';
 import { TOUR_STEPS } from './JobSeekerTour';
+import { TourTooltip } from './TourTooltip';
 
 // Module-level variables: survive component remounts within the same session
 let _fabViewMode: 'tour' | 'screens' = (() => {
@@ -500,6 +501,28 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
         )}
       </AnimatePresence>
 
+      {/* TourTooltip popup — shown when a feature is spotlighted in "By Screens" mode */}
+      {spotlight && viewMode === 'screens' && (() => {
+        const matchingStep = TOUR_STEPS.find(s => s.section === spotlight.section);
+        return (
+          <TourTooltip
+            key={spotlight.key}
+            targetSelector={spotlight.selector}
+            title={spotlight.label}
+            description={spotlight.desc}
+            currentStep={0}
+            totalSteps={1}
+            onNext={() => { if (onNavigate) onNavigate(spotlight.section); setSpotlight(null); }}
+            onPrev={() => {}}
+            onSkip={() => setSpotlight(null)}
+            isFirst
+            isLast
+            icon={matchingStep?.icon}
+            sectionLabel={isRTL ? matchingStep?.sectionLabelHe : matchingStep?.sectionLabelEn}
+          />
+        );
+      })()}
+
       {/* FAB Button - visible on mobile and desktop */}
       <button
         onClick={() => setOpenPersistent(true)}
@@ -546,29 +569,14 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                 </button>
               </div>
 
-              {/* Spotlight description card — shown when a feature is highlighted */}
+              {/* Spotlight active indicator — shown when a feature is highlighted */}
               {spotlight && viewMode === 'screens' && (
-                <div className="px-4 py-3 border-b border-border bg-primary/5 space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground leading-tight">{spotlight.label}</p>
-                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{spotlight.desc}</p>
-                    </div>
-                    <button
-                      onClick={() => setSpotlight(null)}
-                      className="text-muted-foreground hover:text-foreground flex-shrink-0 mt-0.5"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <Button
-                    size="sm"
-                    className="w-full gap-2"
-                    onClick={() => { if (onNavigate) onNavigate(spotlight.section); setSpotlight(null); }}
-                  >
-                    {isRTL ? 'עבור למסך' : 'Go to screen'}
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </Button>
+                <div className="px-4 py-2 border-b border-border bg-primary/5 flex items-center gap-2">
+                  <Info className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                  <p className="text-xs text-primary font-medium flex-1 truncate">{spotlight.label}</p>
+                  <button onClick={() => setSpotlight(null)} className="text-muted-foreground hover:text-foreground flex-shrink-0">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               )}
 
