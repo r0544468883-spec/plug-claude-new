@@ -98,7 +98,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog, onOpenChat }: Ove
     queryKey: ['overview-matched-jobs', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data } = await supabase.from('jobs').select('id, title, company, location, job_type, created_at').order('created_at', { ascending: false }).limit(3);
+      const { data } = await supabase.from('jobs').select('id, title, company_name, location, job_type, created_at').order('created_at', { ascending: false }).limit(3);
       return data || [];
     },
     enabled: !!user?.id,
