@@ -95,8 +95,8 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
         {
           title: isRTL ? 'חיפוש עבודה' : 'Job Hunting',
           tools: [
-            { icon: '🔍', label: isRTL ? 'חיפוש משרות' : 'Job Search', desc: isRTL ? 'AI Match + סינון מתקדם' : 'AI Match + advanced filters', section: 'job-search' as DashboardSection },
-            { icon: '💼', label: isRTL ? 'המועמדויות שלי' : 'My Applications', desc: isRTL ? 'מעקב Pipeline ויזואלי' : 'Visual pipeline tracking', section: 'applications' as DashboardSection },
+            { icon: '🔍', label: isRTL ? 'חיפוש משרות' : 'Job Search', desc: isRTL ? 'AI Match + סינון + תצוגת מיקומים' : 'AI Match + filters + location clustering', section: 'job-search' as DashboardSection },
+            { icon: '💼', label: isRTL ? 'המועמדויות שלי' : 'My Applications', desc: isRTL ? 'Kanban + לוח זמנים + Pipeline' : 'Kanban board + Schedule view + Pipeline', section: 'applications' as DashboardSection, isNew: true },
             { icon: '🔔', label: isRTL ? 'התראות משרות' : 'Job Alerts', desc: isRTL ? 'קבל משרות חדשות במייל' : 'Get new jobs by email', section: 'settings' as DashboardSection },
             { icon: '💾', label: isRTL ? 'משרות שמורות' : 'Saved Jobs', desc: isRTL ? 'משרות שסימנת לשמירה' : 'Jobs you bookmarked', section: 'saved-jobs' as DashboardSection },
           ],
@@ -104,17 +104,17 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
         {
           title: isRTL ? 'פרופיל ומסמכים' : 'Profile & Documents',
           tools: [
-            { icon: '📄', label: isRTL ? 'בונה קורות חיים' : 'CV Builder', desc: isRTL ? '10 תבניות + עיצוב AI' : '10 templates + AI design', section: 'cv-builder' as DashboardSection },
+            { icon: '📄', label: isRTL ? 'בונה קורות חיים' : 'CV Builder', desc: isRTL ? '10 תבניות + 20 פרומפטים AI לשיפור' : '10 templates + 20 AI resume prompts', section: 'cv-builder' as DashboardSection, isNew: true },
             { icon: '⭐', label: 'Vouches', desc: isRTL ? 'המלצות ממנהלים לשעבר' : 'Recommendations from managers', section: 'profile-docs' as DashboardSection },
-            { icon: '📊', label: isRTL ? 'ניתוח Skill Gap' : 'Skill Gap Analysis', desc: isRTL ? 'מה חסר לך + קורסים מומלצים' : 'What you lack + recommended courses', section: 'job-search' as DashboardSection, isNew: true },
-            { icon: '🔗', label: isRTL ? 'ייבא מ-LinkedIn' : 'Import from LinkedIn', desc: isRTL ? 'ייבא פרופיל LinkedIn בלחיצה' : 'Import LinkedIn profile in one click', section: 'profile-docs' as DashboardSection, isNew: true },
+            { icon: '📊', label: isRTL ? 'ניתוח Skill Gap' : 'Skill Gap Analysis', desc: isRTL ? 'מה חסר לך + קורסים מומלצים' : 'What you lack + recommended courses', section: 'job-search' as DashboardSection },
+            { icon: '🔗', label: isRTL ? 'ייבא מ-LinkedIn' : 'Import from LinkedIn', desc: isRTL ? 'ייבא פרופיל LinkedIn בלחיצה' : 'Import LinkedIn profile in one click', section: 'profile-docs' as DashboardSection },
           ],
         },
         {
           title: isRTL ? 'הכנה לראיון' : 'Interview Prep',
           tools: [
             { icon: '🎤', label: isRTL ? 'סימולציית ראיונות' : 'Interview Simulator', desc: isRTL ? 'תרגול קולי/וידאו לפי חברה' : 'Voice/video practice by company', section: 'interview-prep' as DashboardSection },
-            { icon: '📋', label: isRTL ? 'בוחן ידע' : 'Assessments', desc: isRTL ? 'מבחנים שמגייסים שולחים' : 'Tests sent by recruiters', section: 'applications' as DashboardSection, isNew: true },
+            { icon: '📋', label: isRTL ? 'בוחן ידע' : 'Assessments', desc: isRTL ? 'מבחנים שמגייסים שולחים' : 'Tests sent by recruiters', section: 'applications' as DashboardSection },
           ],
         },
         {
@@ -128,10 +128,18 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
         {
           title: isRTL ? 'כלים ומידע' : 'Tools & Data',
           tools: [
-            { icon: '💬', label: 'Plug Chat', desc: isRTL ? 'קואצ\'ר קריירה AI 24/7' : 'AI career coach 24/7', section: 'chat' as DashboardSection },
-            { icon: '📈', label: isRTL ? 'דוחות אישיים' : 'My Reports', desc: isRTL ? '8 דוחות אישיים + גרפים' : '8 personal reports + charts', section: 'settings' as DashboardSection, isNew: true },
+            { icon: '💬', label: 'Plug Chat', desc: isRTL ? '25 פרומפטים מוכנים + 4 סוב-אגנטים מתמחים' : '25 ready prompts + 4 specialist sub-agents', section: 'chat' as DashboardSection, isNew: true },
+            { icon: '⏱️', label: isRTL ? 'מעקב פעילות' : 'Activity Tracking', desc: isRTL ? 'כמה זמן השקעת בחיפוש עבודה השבוע' : 'Time spent on job search this week', section: 'applications' as DashboardSection, isNew: true },
+            { icon: '📈', label: isRTL ? 'דוחות אישיים' : 'My Reports', desc: isRTL ? '8 דוחות אישיים + גרפים' : '8 personal reports + charts', section: 'settings' as DashboardSection },
             { icon: '🔥', label: isRTL ? 'קרדיטים' : 'Credits', desc: isRTL ? '15 יומיים + צבירה + שגרירים' : '15 daily + earn more + ambassador', section: 'credits' as DashboardSection },
-            { icon: '🔗', label: isRTL ? 'תוכנית שותפים' : 'Referral Program', desc: isRTL ? 'הזמן חברים → הרוויח קרדיטים' : 'Invite friends → earn credits', section: 'settings' as DashboardSection, isNew: true },
+            { icon: '🔗', label: isRTL ? 'תוכנית שותפים' : 'Referral Program', desc: isRTL ? 'הזמן חברים → הרוויח קרדיטים' : 'Invite friends → earn credits', section: 'settings' as DashboardSection },
+          ],
+        },
+        {
+          title: isRTL ? 'סוכן AI אוטומטי' : 'AI Auto Agent',
+          tools: [
+            { icon: '🤖', label: isRTL ? 'סוכן חיפוש אוטומטי' : 'Auto Job Agent', desc: isRTL ? 'סורק LinkedIn/AllJobs ומגיש בשבילך' : 'Scans LinkedIn/AllJobs and applies for you', section: 'dashboard' as DashboardSection, isNew: true },
+            { icon: '✅', label: isRTL ? 'אישור הגשות (HITL)' : 'Application Approval (HITL)', desc: isRTL ? 'Agent מחכה לאישור שלך לפני הגשה' : 'Agent waits for your approval before applying', section: 'dashboard' as DashboardSection, isNew: true },
           ],
         },
       ];
@@ -264,7 +272,11 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
             'ציון Match 80%+ = כדאי להגיש מיד',
             'קו"ח מעודכן = פי 3 יותר חשיפה למגייסים',
             'Vouches מ-מנהלים מעלים דירוג ב-40%',
-            'השתמש ב-Skill Gap כדי לדעת מה ללמוד',
+            'ב-Plug Chat יש 25 פרומפטים מוכנים — לחץ על הכוכב בצ\'אט',
+            'תצוגת Kanban במועמדויות — גרור קלפים בין שלבים',
+            'תצוגת מיקומים במשרות — ראה איפה מרוכזות ההזדמנויות',
+            'סוכן AI אוטומטי — מגיש בשבילך ברקע בזמן שאתה ישן',
+            'HITL — הסוכן מחכה לאישורך לפני כל הגשה',
             'ראיונות AI מכינים אותך בדיוק לתפקיד',
             'קרדיטים יומיים מתחדשים כל יום — אל תבזבז',
           ]
@@ -272,7 +284,11 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
             'Match score 80%+ = apply immediately',
             'Updated CV = 3x more recruiter visibility',
             'Manager Vouches boost your ranking by 40%',
-            'Use Skill Gap to know exactly what to learn',
+            'Plug Chat has 25 ready prompts — click the star in chat',
+            'Kanban view in Applications — drag cards between stages',
+            'Location view in Jobs — see where opportunities cluster',
+            'AI Auto Agent — applies for you in the background while you sleep',
+            'HITL — the agent waits for your approval before each submission',
             'AI interview prep is tailored to the exact role',
             'Daily credits renew every day — use them!',
           ];
