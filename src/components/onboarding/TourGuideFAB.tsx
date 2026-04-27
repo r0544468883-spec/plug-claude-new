@@ -50,12 +50,14 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
   const [open, setOpen] = useState(_fabOpen);
   const setOpenPersistent = (v: boolean) => { _fabOpen = v; setOpen(v); };
   const [checklistOpen, setChecklistOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'tour' | 'screens'>(_fabViewMode);
+  const [, forceRender] = useState(0);
 
+  // viewMode lives entirely in the module-level variable — no useState
+  const viewMode = _fabViewMode;
   const switchView = (mode: 'tour' | 'screens') => {
     _fabViewMode = mode;
     try { localStorage.setItem('plug_tour_view', mode); } catch {}
-    setViewMode(mode);
+    forceRender(n => n + 1);
   };
 
   useEffect(() => {
