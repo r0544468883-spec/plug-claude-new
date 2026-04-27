@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowRight, ArrowLeft, X, Check } from 'lucide-react';
@@ -19,8 +19,9 @@ interface TourTooltipProps {
   icon?: React.ElementType;
   isElementFound?: boolean;
   customImage?: string;
-  /** Section label shown as a badge — tells users which area they're in */
   sectionLabel?: string;
+  /** Override the label of the last/finish button */
+  lastLabel?: string;
 }
 
 export function TourTooltip({
@@ -38,9 +39,11 @@ export function TourTooltip({
   isElementFound = true,
   customImage,
   sectionLabel,
+  lastLabel,
 }: TourTooltipProps) {
   const { language } = useLanguage();
   const isHebrew = language === 'he';
+  const reducedMotion = useReducedMotion();
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const [placement, setPlacement] = useState<'top' | 'bottom'>('bottom');
   const [isVisible, setIsVisible] = useState(false);
@@ -147,14 +150,18 @@ export function TourTooltip({
             width: tooltipWidth,
           }}
           dir={isHebrew ? 'rtl' : 'ltr'}
-          initial={{ opacity: 0, y: placement === 'bottom' ? -20 : 20, scale: 0.9 }}
+          role="dialog"
+          aria-modal="false"
+          aria-live="polite"
+          aria-label={title}
+          initial={{ opacity: 0, y: reducedMotion ? 0 : (placement === 'bottom' ? -20 : 20), scale: reducedMotion ? 1 : 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: placement === 'bottom' ? -10 : 10, scale: 0.95 }}
+          exit={{ opacity: 0, y: reducedMotion ? 0 : (placement === 'bottom' ? -10 : 10), scale: reducedMotion ? 1 : 0.95 }}
           transition={{
             type: "spring",
             stiffness: 300,
             damping: 25,
-            duration: 0.4,
+            duration: reducedMotion ? 0 : 0.4,
           }}
         >
           <Card className="bg-card/95 backdrop-blur-md border-primary/40 shadow-2xl overflow-hidden">
@@ -189,7 +196,11 @@ export function TourTooltip({
               )}
 
               {/* Progress dots */}
-              <div className="flex justify-center gap-1.5 mb-4">
+              <div
+                className="flex justify-center gap-1.5 mb-4"
+                aria-label={isHebrew ? `שלב ${currentStep + 1} מתוך ${totalSteps}` : `Step ${currentStep + 1} of ${totalSteps}`}
+                role="status"
+              >
                 {Array.from({ length: totalSteps }).map((_, i) => (
                   <motion.div
                     key={i}
@@ -259,32 +270,36 @@ export function TourTooltip({
                 className="flex items-center justify-between gap-3"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.35 }}
+                transition={{ delay: reducedMotion ? 0 : 0.35 }}
               >
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="default"
                   onClick={onPrev}
                   disabled={isFirst}
-                  className="gap-1.5"
+                  className="gap-1.5 min-h-[44px] px-3"
+                  aria-label={isHebrew ? 'שלב קודם' : 'Previous step'}
                 >
                   {isHebrew ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
                   {isHebrew ? 'הקודם' : 'Back'}
                 </Button>
 
-                <span className="text-xs text-muted-foreground font-medium">
+                <span className="text-xs text-muted-foreground font-medium" aria-hidden="true">
                   {currentStep + 1} / {totalSteps}
                 </span>
 
                 <Button
-                  size="sm"
+                  size="default"
                   onClick={onNext}
-                  className="gap-1.5 min-w-[100px]"
+                  className="gap-1.5 min-w-[100px] min-h-[44px]"
+                  aria-label={isLast
+                    ? (lastLabel ?? (isHebrew ? 'סיום הסיור' : 'Finish tour'))
+                    : (isHebrew ? 'שלב הבא' : 'Next step')}
                 >
                   {isLast ? (
                     <>
                       <Check className="w-4 h-4" />
-                      {isHebrew ? 'סיום' : 'Finish'}
+                      {lastLabel ?? (isHebrew ? 'סיום' : 'Finish')}
                     </>
                   ) : (
                     <>

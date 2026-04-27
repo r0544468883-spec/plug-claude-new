@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 interface SpotlightRect {
   top: number;
@@ -16,6 +16,7 @@ interface TourOverlayProps {
 
 export function TourOverlay({ targetSelector, isActive, onElementFound }: TourOverlayProps) {
   const [spotlightRect, setSpotlightRect] = useState<SpotlightRect | null>(null);
+  const reducedMotion = useReducedMotion();
 
   const updateSpotlight = useCallback(() => {
     const element = document.querySelector(targetSelector);
@@ -80,13 +81,15 @@ export function TourOverlay({ targetSelector, isActive, onElementFound }: TourOv
       {isActive && (
         <motion.div
           className="fixed inset-0 z-[9998]"
-          initial={{ opacity: 0, scale: 1.06 }}
+          role="presentation"
+          aria-hidden="true"
+          initial={{ opacity: 0, scale: reducedMotion ? 1 : 1.06 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.94 }}
-          transition={{ duration: 0.28, ease: 'easeOut' }}
+          exit={{ opacity: 0, scale: reducedMotion ? 1 : 0.94 }}
+          transition={{ duration: reducedMotion ? 0.15 : 0.28, ease: 'easeOut' }}
         >
           {/* Dark overlay with hole — blocks clicks outside spotlight */}
-          <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'auto' }}>
+          <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'auto' }} aria-hidden="true" focusable="false">
             <defs>
               <mask id="spotlight-mask">
                 <rect x="0" y="0" width="100%" height="100%" fill="white" />

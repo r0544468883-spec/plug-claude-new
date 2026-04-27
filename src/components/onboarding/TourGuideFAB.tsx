@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Route, X, ChevronRight, Check, ChevronDown, Map, Monitor, Info } from 'lucide-react';
+import { Route, X, ChevronRight, ChevronLeft, Check, ChevronDown, Map, Monitor, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { DashboardSection } from '@/components/dashboard/DashboardLayout';
 import { TOUR_STEPS } from './JobSeekerTour';
@@ -46,10 +46,13 @@ interface ToolCategory {
 }
 
 export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
-  const { role, profile, user } = useAuth();
+  const { role, profile } = useAuth();
   const { language } = useLanguage();
   const isRTL = language === 'he';
   const isMobile = useIsMobile();
+  const reducedMotion = useReducedMotion();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const fabRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(_fabOpen);
   const setOpenPersistent = (v: boolean) => { _fabOpen = v; setOpen(v); };
   const [checklistOpen, setChecklistOpen] = useState(false);
@@ -92,6 +95,44 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
     try { localStorage.setItem('plug_tour_view', mode); } catch {}
     forceRender(n => n + 1);
   };
+
+  // Focus management: move focus into panel on open, return to FAB on close
+  useEffect(() => {
+    if (open) {
+      const t = setTimeout(() => {
+        const first = panelRef.current?.querySelector<HTMLElement>(
+          'button:not([disabled]), [href], input, [tabindex]:not([tabindex="-1"])'
+        );
+        first?.focus();
+      }, 50);
+      return () => clearTimeout(t);
+    } else {
+      fabRef.current?.focus();
+    }
+  }, [open]);
+
+  // Focus trap: keep Tab inside panel while open
+  useEffect(() => {
+    if (!open) return;
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      const panel = panelRef.current;
+      if (!panel) return;
+      const focusable = Array.from(panel.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input, [tabindex]:not([tabindex="-1"])'
+      ));
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    };
+    window.addEventListener('keydown', handleTab);
+    return () => window.removeEventListener('keydown', handleTab);
+  }, [open]);
 
   useEffect(() => {
     const handler = () => setOpenPersistent(true);
@@ -416,22 +457,6 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
   const tips = getTips();
   const completedCount = checklist.filter(c => c.done).length;
 
-  // "By screens" view — group TOUR_STEPS by section (job_seeker only)
-  const sectionNames: Partial<Record<DashboardSection, { he: string; en: string }>> = {
-    'overview':       { he: '🏠 דף הבית',         en: '🏠 Home' },
-    'profile-docs':   { he: '🙋 פרופיל ומסמכים',  en: '🙋 Profile & Docs' },
-    'cv-builder':     { he: '📄 בניית קו"ח',       en: '📄 CV Builder' },
-    'settings':       { he: '⚙️ הגדרות',           en: '⚙️ Settings' },
-    'job-search':     { he: '🔍 חיפוש משרות',      en: '🔍 Job Search' },
-    'companies':      { he: '🏢 ספריית חברות',     en: '🏢 Companies' },
-    'applications':   { he: '💼 מועמדויות',         en: '💼 Applications' },
-    'schedule':       { he: '📅 יומן החיפוש',      en: '📅 Search Journal' },
-    'interview-prep': { he: '🎤 סימולציות',        en: '🎤 Simulations' },
-    'messages':       { he: '💬 הודעות',            en: '💬 Messages' },
-    'feed':           { he: '📰 פיד קהילה',        en: '📰 Community Feed' },
-    'my-stats':       { he: '📊 סטטיסטיקות',       en: '📊 My Stats' },
-  };
-
   // Map each section to its first matching TOUR_STEP index (for spotlight)
   const sectionToFirstStep: Partial<Record<string, number>> = {};
   TOUR_STEPS.forEach((step, idx) => {
@@ -467,7 +492,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
             exit={{ opacity: 0, scale: 0.92 }}
             transition={{ duration: 0.28, ease: 'easeOut' }}
           >
-            <svg className="absolute inset-0 w-full h-full">
+            <svg className="absolute inset-0 w-full h-full" aria-hidden="true" focusable="false">
               <defs>
                 <mask id="fab-spotlight-mask">
                   <rect x="0" y="0" width="100%" height="100%" fill="white" />
@@ -517,6 +542,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
             onSkip={() => setSpotlight(null)}
             isFirst
             isLast
+            lastLabel={isRTL ? 'עבור למסך' : 'Go to screen'}
             icon={matchingStep?.icon}
             sectionLabel={isRTL ? matchingStep?.sectionLabelHe : matchingStep?.sectionLabelEn}
           />
@@ -525,13 +551,15 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
 
       {/* FAB Button - visible on mobile and desktop */}
       <button
+        ref={fabRef}
         onClick={() => setOpenPersistent(true)}
         className={cn(
           'fixed z-40 rounded-full bg-secondary border border-accent/30 shadow-lg flex items-center justify-center transition-all hover:scale-105 hover:border-accent',
-          isMobile ? 'w-12 h-12 bottom-[88px]' : 'w-10 h-10 bottom-6',
+          isMobile ? 'w-12 h-12 bottom-[88px]' : 'w-11 h-11 bottom-6',
           isRTL ? 'right-4' : 'left-4'
         )}
         aria-label={isRTL ? 'מדריך המערכת' : 'System Guide'}
+        title={isRTL ? 'מדריך המערכת' : 'System Guide'}
       >
         <Route className={cn('text-accent', isMobile ? 'w-[22px] h-[22px]' : 'w-5 h-5')} />
       </button>
@@ -548,23 +576,31 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
               onClick={() => { setOpenPersistent(false); setSpotlight(null); setSpotlightRect(null); }}
             />
             <motion.div
-              initial={{ x: isRTL ? '100%' : '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: isRTL ? '100%' : '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              ref={panelRef}
+              initial={{ x: reducedMotion ? 0 : (isRTL ? '100%' : '-100%'), opacity: reducedMotion ? 0 : 1 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: reducedMotion ? 0 : (isRTL ? '100%' : '-100%'), opacity: reducedMotion ? 0 : 1 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300, duration: reducedMotion ? 0.15 : undefined }}
               className={cn(
                 'fixed top-0 z-[9999] h-full bg-background border-e border-border/50',
                 isRTL ? 'right-0' : 'left-0',
                 isMobile ? 'w-full' : 'w-[380px]'
               )}
               dir={isRTL ? 'rtl' : 'ltr'}
+              role="dialog"
+              aria-modal="true"
+              aria-label={isRTL ? 'מדריך המערכת' : 'System Guide'}
             >
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-border">
                 <h2 className="text-lg font-bold flex items-center gap-2">
                   📋 {isRTL ? 'מדריך המערכת' : 'System Guide'}
                 </h2>
-                <button onClick={() => setOpenPersistent(false)} className="text-muted-foreground hover:text-foreground">
+                <button
+                  onClick={() => setOpenPersistent(false)}
+                  className="text-muted-foreground hover:text-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
+                  aria-label={isRTL ? 'סגור מדריך' : 'Close guide'}
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -672,7 +708,10 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                                 {tool.isNew && (
                                   <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 rounded px-1 flex-shrink-0">New</span>
                                 )}
-                                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                                {isRTL
+                                  ? <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                                  : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                                }
                               </button>
                             ))}
                           </div>
@@ -696,7 +735,14 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                         {Math.round((completedCount / checklist.length) * 100)}%
                       </span>
                     </div>
-                    <div className="w-full h-2 rounded-full bg-secondary">
+                    <div
+                      className="w-full h-2 rounded-full bg-secondary"
+                      role="progressbar"
+                      aria-valuenow={completedCount}
+                      aria-valuemin={0}
+                      aria-valuemax={checklist.length}
+                      aria-label={isRTL ? `${completedCount} מתוך ${checklist.length} שלבים הושלמו` : `${completedCount} of ${checklist.length} steps completed`}
+                    >
                       <div
                         className="h-2 rounded-full bg-primary transition-all duration-500"
                         style={{ width: `${(completedCount / checklist.length) * 100}%` }}
@@ -746,7 +792,10 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                                   <div className="w-4 h-4 rounded border border-border flex-shrink-0" />
                                 )}
                                 <span className={item.done ? 'line-through text-sm' : 'text-sm'}>{item.label}</span>
-                                {!item.done && <ChevronRight className="w-4 h-4 ms-auto text-muted-foreground" />}
+                                {!item.done && (isRTL
+                                  ? <ChevronLeft className="w-4 h-4 ms-auto text-muted-foreground" />
+                                  : <ChevronRight className="w-4 h-4 ms-auto text-muted-foreground" />
+                                )}
                               </button>
                             ))}
                           </div>
