@@ -449,7 +449,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                   {/* Toggle */}
                   <div className="flex rounded-lg overflow-hidden border border-border text-sm">
                     <button
-                      onClick={() => setViewMode('tour')}
+                      onClick={(e) => { e.stopPropagation(); setViewMode('tour'); }}
                       className={cn(
                         'flex-1 flex items-center justify-center gap-1.5 py-2 transition-colors',
                         viewMode === 'tour'
@@ -461,7 +461,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                       {isRTL ? 'מסע מודרך' : 'Guided Tour'}
                     </button>
                     <button
-                      onClick={() => setViewMode('screens')}
+                      onClick={(e) => { e.stopPropagation(); setViewMode('screens'); }}
                       className={cn(
                         'flex-1 flex items-center justify-center gap-1.5 py-2 transition-colors border-s border-border',
                         viewMode === 'screens'
@@ -506,7 +506,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
               )}
 
               <ScrollArea className="h-[calc(100%-130px)]">
-                <div className="p-4 space-y-6">
+                <div key={viewMode} className="p-4 space-y-6">
 
                   {/* ── BY SCREENS VIEW ── */}
                   {role === 'job_seeker' && viewMode === 'screens' && (
