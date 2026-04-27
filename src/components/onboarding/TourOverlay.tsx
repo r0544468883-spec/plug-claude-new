@@ -80,10 +80,10 @@ export function TourOverlay({ targetSelector, isActive, onElementFound }: TourOv
       {isActive && (
         <motion.div
           className="fixed inset-0 z-[9998]"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
+          initial={{ opacity: 0, scale: 1.06 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.94 }}
+          transition={{ duration: 0.28, ease: 'easeOut' }}
         >
           {/* Dark overlay with hole — blocks clicks outside spotlight */}
           <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'auto' }}>
@@ -92,16 +92,15 @@ export function TourOverlay({ targetSelector, isActive, onElementFound }: TourOv
                 <rect x="0" y="0" width="100%" height="100%" fill="white" />
                 {spotlightRect && (
                   <motion.rect
-                    initial={{ opacity: 0, scale: 0.8 }}
+                    initial={{ opacity: 0 }}
                     animate={{
                       opacity: 1,
-                      scale: 1,
                       x: spotlightRect.left,
                       y: spotlightRect.top,
                       width: spotlightRect.width,
                       height: spotlightRect.height,
                     }}
-                    transition={{ duration: 0.4, ease: "easeOut" }}
+                    transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
                     rx="12"
                     fill="black"
                   />
@@ -136,7 +135,7 @@ export function TourOverlay({ targetSelector, isActive, onElementFound }: TourOv
           {spotlightRect && (
             <motion.div
               className="absolute border-2 border-primary rounded-xl pointer-events-none"
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.92 }}
               animate={{
                 opacity: 1,
                 scale: 1,

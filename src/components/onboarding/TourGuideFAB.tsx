@@ -411,14 +411,19 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
 
   const launchSpotlight = (tool: ToolItem) => {
     const section = tool.section!;
-    if (onNavigate) onNavigate(section);
     const stepIdx = sectionToFirstStep[section];
     const selector = stepIdx !== undefined ? TOUR_STEPS[stepIdx].targetSelector : '';
-    const label = isRTL ? tool.label : tool.label;
-    const desc = tool.desc;
+
+    // 1. Clear old spotlight immediately (no black flash)
+    setSpotlight(null);
+
+    // 2. Navigate
+    if (onNavigate) onNavigate(section);
+
+    // 3. After page renders, zoom-in new spotlight
     setTimeout(() => {
-      setSpotlight({ label, desc, selector, section });
-    }, 300);
+      setSpotlight({ label: tool.label, desc: tool.desc, selector, section });
+    }, 420);
   };
 
   return (
