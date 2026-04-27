@@ -408,13 +408,13 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
   });
 
   const launchSpotlight = (section: DashboardSection) => {
-    setOpenPersistent(false);
+    // Panel stays open — don't close it
     if (onNavigate) onNavigate(section);
     const stepIdx = sectionToFirstStep[section];
     if (stepIdx !== undefined) {
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('plug:start-tour-at-step', { detail: { stepIndex: stepIdx } }));
-      }, 450);
+      }, 500);
     }
   };
 
@@ -450,7 +450,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
               exit={{ x: isRTL ? '100%' : '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className={cn(
-                'fixed top-0 z-[56] h-full bg-background border-e border-border/50',
+                'fixed top-0 z-[9999] h-full bg-background border-e border-border/50',
                 isRTL ? 'right-0' : 'left-0',
                 isMobile ? 'w-full' : 'w-[380px]'
               )}
