@@ -151,7 +151,6 @@ export function TourTooltip({
           }}
           dir={isHebrew ? 'rtl' : 'ltr'}
           role="dialog"
-          aria-modal="false"
           aria-live="polite"
           aria-label={title}
           initial={{ opacity: 0, y: reducedMotion ? 0 : (placement === 'bottom' ? -20 : 20), scale: reducedMotion ? 1 : 0.9 }}

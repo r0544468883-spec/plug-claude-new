@@ -17,7 +17,7 @@ let _fabViewMode: 'tour' | 'screens' = (() => {
 })();
 let _fabOpen = false;
 let _spotlightKeyCounter = 0;
-let _moduleSpotlight: { key: number; label: string; desc: string; selector: string; section: DashboardSection } | null = null;
+let _moduleSpotlight: { key: number; label: string; desc: string; selector: string; section: DashboardSection; stepIdx?: number; toolCategoryIdx: number; toolIdx: number } | null = null;
 
 interface TourGuideFABProps {
   onNavigate?: (section: DashboardSection) => void;
@@ -38,6 +38,7 @@ interface ToolItem {
   section?: DashboardSection;
   isNew?: boolean;
   action?: () => void; // custom action override
+  tourStepIdx?: number; // index into TOUR_STEPS for spotlight title/desc/selector
 }
 
 interface ToolCategory {
@@ -187,57 +188,57 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
         {
           title: isRTL ? '🚀 מתחילים' : '🚀 Getting Started',
           tools: [
-            { icon: '🙋', label: isRTL ? 'הפרופיל שלי' : 'My Profile', desc: isRTL ? 'ספר לנו מי אתה — ה-AI ישתמש בזה בכל מקום' : 'Tell us who you are — AI uses this everywhere', section: 'profile-docs' as DashboardSection },
-            { icon: '🎯', label: isRTL ? 'יעד הקריירה שלי' : 'Career Goal', desc: isRTL ? 'מה אתה מחפש? חברות חלומות? שכר? ה-AI יזכור' : 'Dream companies, salary, goals — AI will remember', section: 'profile-docs' as DashboardSection },
-            { icon: '🔗', label: isRTL ? 'ייבא מ-LinkedIn' : 'Import from LinkedIn', desc: isRTL ? 'קליק אחד ופרופיל מלא — בלי להקליד כלום' : 'One click and your profile is ready — zero typing', section: 'profile-docs' as DashboardSection },
+            { icon: '🙋', label: isRTL ? 'הפרופיל שלי' : 'My Profile', desc: isRTL ? 'ספר לנו מי אתה — ה-AI ישתמש בזה בכל מקום' : 'Tell us who you are — AI uses this everywhere', section: 'profile-docs' as DashboardSection, tourStepIdx: 1 },
+            { icon: '🎯', label: isRTL ? 'יעד הקריירה שלי' : 'Career Goal', desc: isRTL ? 'מה אתה מחפש? חברות חלומות? שכר? ה-AI יזכור' : 'Dream companies, salary, goals — AI will remember', section: 'profile-docs' as DashboardSection, tourStepIdx: 1 },
+            { icon: '🔗', label: isRTL ? 'ייבא מ-LinkedIn' : 'Import from LinkedIn', desc: isRTL ? 'קליק אחד ופרופיל מלא — בלי להקליד כלום' : 'One click and your profile is ready — zero typing', section: 'profile-docs' as DashboardSection, tourStepIdx: 2 },
           ],
         },
         {
           title: isRTL ? '📄 קורות חיים' : '📄 CV & Resume',
           tools: [
-            { icon: '🖊️', label: isRTL ? 'CV Builder' : 'CV Builder', desc: isRTL ? '10 תבניות מעוצבות + ייצוא PDF בלחיצה' : '10 professional templates + one-click PDF export', section: 'cv-builder' as DashboardSection },
-            { icon: '✨', label: isRTL ? '20 שיפורי AI' : '20 AI Enhancements', desc: isRTL ? 'Bullet rewriter, STAR stories, ATS optimizer — הכל כאן' : 'Bullet rewriter, STAR stories, ATS optimizer — all inside', section: 'cv-builder' as DashboardSection, isNew: true },
-            { icon: '🎯', label: isRTL ? 'התאם לכל משרה' : 'Tailor per Job', desc: isRTL ? 'הדבק תיאור משרה → AI מתאים את הקו"ח בדיוק לתפקיד' : 'Paste job description → AI tailors your CV to fit perfectly', section: 'cv-builder' as DashboardSection, isNew: true },
+            { icon: '🖊️', label: isRTL ? 'CV Builder' : 'CV Builder', desc: isRTL ? '10 תבניות מעוצבות + ייצוא PDF בלחיצה' : '10 professional templates + one-click PDF export', section: 'cv-builder' as DashboardSection, tourStepIdx: 3 },
+            { icon: '✨', label: isRTL ? '20 שיפורי AI' : '20 AI Enhancements', desc: isRTL ? 'Bullet rewriter, STAR stories, ATS optimizer — הכל כאן' : 'Bullet rewriter, STAR stories, ATS optimizer — all inside', section: 'cv-builder' as DashboardSection, isNew: true, tourStepIdx: 4 },
+            { icon: '🎯', label: isRTL ? 'התאם לכל משרה' : 'Tailor per Job', desc: isRTL ? 'הדבק תיאור משרה → AI מתאים את הקו"ח בדיוק לתפקיד' : 'Paste job description → AI tailors your CV to fit perfectly', section: 'cv-builder' as DashboardSection, isNew: true, tourStepIdx: 4 },
           ],
         },
         {
           title: isRTL ? '🔍 מצא משרות' : '🔍 Find Jobs',
           tools: [
-            { icon: '🔍', label: isRTL ? 'חיפוש משרות' : 'Job Search', desc: isRTL ? 'AI Match + פילטרים + סוויפ — כמו Tinder למשרות' : 'AI Match + filters + swipe — like Tinder for jobs', section: 'job-search' as DashboardSection },
-            { icon: '🗺️', label: isRTL ? 'תצוגת מיקומים' : 'Location View', desc: isRTL ? 'ראה איפה המשרות מרוכזות — ת"א, הרצליה, ירושלים...' : 'See where jobs cluster — by city, in one view', section: 'my-matches' as DashboardSection, isNew: true },
-            { icon: '🏢', label: isRTL ? 'ספריית חברות' : 'Company Directory', desc: isRTL ? 'חפש לפי tech stack, גודל, remote — מצא את ה-vibe שלך' : 'Search by tech stack, size, remote — find your vibe', section: 'companies' as DashboardSection, isNew: true },
+            { icon: '🔍', label: isRTL ? 'חיפוש משרות' : 'Job Search', desc: isRTL ? 'AI Match + פילטרים + סוויפ — כמו Tinder למשרות' : 'AI Match + filters + swipe — like Tinder for jobs', section: 'job-search' as DashboardSection, tourStepIdx: 6 },
+            { icon: '🗺️', label: isRTL ? 'תצוגת מיקומים' : 'Location View', desc: isRTL ? 'ראה איפה המשרות מרוכזות — ת"א, הרצליה, ירושלים...' : 'See where jobs cluster — by city, in one view', section: 'my-matches' as DashboardSection, isNew: true, tourStepIdx: 6 },
+            { icon: '🏢', label: isRTL ? 'ספריית חברות' : 'Company Directory', desc: isRTL ? 'חפש לפי tech stack, גודל, remote — מצא את ה-vibe שלך' : 'Search by tech stack, size, remote — find your vibe', section: 'companies' as DashboardSection, isNew: true, tourStepIdx: 7 },
             { icon: '❤️', label: isRTL ? 'משרות שמורות' : 'Saved Jobs', desc: isRTL ? 'שמור לקריאה מאוחר יותר — אל תאבד שום דבר' : 'Save for later — never lose a great job', section: 'saved-jobs' as DashboardSection },
-            { icon: '🔔', label: isRTL ? 'התראות משרות' : 'Job Alerts', desc: isRTL ? 'משרות רלוונטיות ישר לאימייל — בלי לחפש' : 'Relevant jobs straight to email — no searching', section: 'settings' as DashboardSection },
+            { icon: '🔔', label: isRTL ? 'התראות משרות' : 'Job Alerts', desc: isRTL ? 'משרות רלוונטיות ישר לאימייל — בלי לחפש' : 'Relevant jobs straight to email — no searching', section: 'settings' as DashboardSection, tourStepIdx: 5 },
           ],
         },
         {
           title: isRTL ? '💼 המועמדויות שלי' : '💼 My Applications',
           tools: [
-            { icon: '🗂️', label: isRTL ? 'Kanban Board' : 'Kanban Board', desc: isRTL ? 'גרור קלפים בין שלבים — Applied, Interview, Offer, Hired 🎉' : 'Drag cards between stages — Applied, Interview, Offer, Hired 🎉', section: 'applications' as DashboardSection, isNew: true },
-            { icon: '📅', label: isRTL ? 'לוח זמנים' : 'Schedule View', desc: isRTL ? 'כל הראיונות וה-Follow-ups בקלנדר אחד נקי' : 'All interviews and follow-ups in one clean calendar', section: 'applications' as DashboardSection, isNew: true },
-            { icon: '📉', label: isRTL ? 'פידבק דחיות' : 'Rejection Feedback', desc: isRTL ? 'נדחית? סמן למה — ה-AI ילמד ויעזור לשפר' : 'Rejected? Tag the reason — AI learns and helps improve', section: 'applications' as DashboardSection, isNew: true },
-            { icon: '⏱️', label: isRTL ? 'מעקב זמן' : 'Time Tracking', desc: isRTL ? 'כמה שעות השקעת השבוע? אנחנו סופרים בשבילך' : 'How many hours this week? We count for you', section: 'applications' as DashboardSection, isNew: true },
+            { icon: '🗂️', label: isRTL ? 'Kanban Board' : 'Kanban Board', desc: isRTL ? 'גרור קלפים בין שלבים — Applied, Interview, Offer, Hired 🎉' : 'Drag cards between stages — Applied, Interview, Offer, Hired 🎉', section: 'applications' as DashboardSection, isNew: true, tourStepIdx: 10 },
+            { icon: '📅', label: isRTL ? 'לוח זמנים' : 'Schedule View', desc: isRTL ? 'כל הראיונות וה-Follow-ups בקלנדר אחד נקי' : 'All interviews and follow-ups in one clean calendar', section: 'schedule' as DashboardSection, isNew: true, tourStepIdx: 11 },
+            { icon: '📉', label: isRTL ? 'פידבק דחיות' : 'Rejection Feedback', desc: isRTL ? 'נדחית? סמן למה — ה-AI ילמד ויעזור לשפר' : 'Rejected? Tag the reason — AI learns and helps improve', section: 'applications' as DashboardSection, isNew: true, tourStepIdx: 10 },
+            { icon: '⏱️', label: isRTL ? 'מעקב זמן' : 'Time Tracking', desc: isRTL ? 'כמה שעות השקעת השבוע? אנחנו סופרים בשבילך' : 'How many hours this week? We count for you', section: 'my-stats' as DashboardSection, isNew: true, tourStepIdx: 18 },
           ],
         },
         {
           title: isRTL ? '🎤 הכנה לראיון' : '🎤 Interview Prep',
           tools: [
-            { icon: '🎭', label: isRTL ? 'סימולטור ראיון' : 'Interview Simulator', desc: isRTL ? 'תרגול קולי + וידאו לפי חברה ותפקיד — בלי הפתעות' : 'Voice + video practice by company and role — no surprises', section: 'interview-prep' as DashboardSection },
-            { icon: '📋', label: isRTL ? 'בוחן ידע' : 'Assessments', desc: isRTL ? 'מבחנים שמגייסים שולחים — תתאמן מראש' : 'Tests recruiters send — practice in advance', section: 'applications' as DashboardSection },
+            { icon: '🎭', label: isRTL ? 'סימולטור ראיון' : 'Interview Simulator', desc: isRTL ? 'תרגול קולי + וידאו לפי חברה ותפקיד — בלי הפתעות' : 'Voice + video practice by company and role — no surprises', section: 'interview-prep' as DashboardSection, tourStepIdx: 12 },
+            { icon: '📋', label: isRTL ? 'בוחן ידע' : 'Assessments', desc: isRTL ? 'מבחנים שמגייסים שולחים — תתאמן מראש' : 'Tests recruiters send — practice in advance', section: 'applications' as DashboardSection, tourStepIdx: 10 },
           ],
         },
         {
           title: isRTL ? '💬 Plug Chat — הקואצ\'ר שלך' : '💬 Plug Chat — Your Coach',
           tools: [
-            { icon: '⭐', label: isRTL ? '25 פרומפטים מוכנים' : '25 Ready Prompts', desc: isRTL ? 'לחץ על הכוכב בצ\'אט — שאלות מוכנות לכל מצב' : 'Click the star in chat — ready questions for every situation', section: 'chat' as DashboardSection, isNew: true },
-            { icon: '🤖', label: isRTL ? '4 מומחי AI' : '4 AI Specialists', desc: isRTL ? 'Resume Tailor, Interview Coach, Salary Negotiator, Recruiter Outreach' : 'Resume Tailor, Interview Coach, Salary Negotiator, Recruiter Outreach', section: 'chat' as DashboardSection, isNew: true },
+            { icon: '⭐', label: isRTL ? '25 פרומפטים מוכנים' : '25 Ready Prompts', desc: isRTL ? 'לחץ על הכוכב בצ\'אט — שאלות מוכנות לכל מצב' : 'Click the star in chat — ready questions for every situation', section: 'chat' as DashboardSection, isNew: true, tourStepIdx: 9 },
+            { icon: '🤖', label: isRTL ? '4 מומחי AI' : '4 AI Specialists', desc: isRTL ? 'Resume Tailor, Interview Coach, Salary Negotiator, Recruiter Outreach' : 'Resume Tailor, Interview Coach, Salary Negotiator, Recruiter Outreach', section: 'chat' as DashboardSection, isNew: true, tourStepIdx: 9 },
           ],
         },
         {
           title: isRTL ? '🤖 AI Agent — עובד בשבילך' : '🤖 AI Agent — Works for You',
           tools: [
-            { icon: '🚗', label: isRTL ? 'Auto Apply Agent' : 'Auto Apply Agent', desc: isRTL ? 'סורק LinkedIn + AllJobs ומגיש בשבילך — גם כשאתה ישן' : 'Scans LinkedIn + AllJobs and applies — even while you sleep', section: 'overview' as DashboardSection, isNew: true },
-            { icon: '✋', label: isRTL ? 'HITL — אשר לפני הגשה' : 'HITL — Approve Before Apply', desc: isRTL ? 'הסוכן מראה לך כל משרה ומחכה לאישורך — אתה בשליטה' : 'Agent shows each job and waits for your OK — you\'re in control', section: 'overview' as DashboardSection, isNew: true },
+            { icon: '🚗', label: isRTL ? 'Auto Apply Agent' : 'Auto Apply Agent', desc: isRTL ? 'סורק LinkedIn + AllJobs ומגיש בשבילך — גם כשאתה ישן' : 'Scans LinkedIn + AllJobs and applies — even while you sleep', section: 'overview' as DashboardSection, isNew: true, tourStepIdx: 23 },
+            { icon: '✋', label: isRTL ? 'HITL — אשר לפני הגשה' : 'HITL — Approve Before Apply', desc: isRTL ? 'הסוכן מראה לך כל משרה ומחכה לאישורך — אתה בשליטה' : 'Agent shows each job and waits for your OK — you\'re in control', section: 'overview' as DashboardSection, isNew: true, tourStepIdx: 23 },
           ],
         },
         {
@@ -245,17 +246,17 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
           tools: [
             { icon: '🎯', label: 'Missions', desc: isRTL ? 'פרויקטי פרילנס קצרים — הכנסה + ניסיון בזמן החיפוש' : 'Short freelance projects — income + experience while searching', section: 'missions' as DashboardSection },
             { icon: '👥', label: isRTL ? 'קהילות' : 'Communities', desc: isRTL ? 'נטוורקינג עם אנשי מקצוע — קשרים = הזדמנויות' : 'Network with professionals — connections = opportunities', section: 'communities' as DashboardSection },
-            { icon: '📰', label: isRTL ? 'פיד' : 'Feed', desc: isRTL ? 'פוסטים, וובינרים, סקרים — תישאר בלופ' : 'Posts, webinars, polls — stay in the loop', section: 'feed' as DashboardSection },
+            { icon: '📰', label: isRTL ? 'פיד' : 'Feed', desc: isRTL ? 'פוסטים, וובינרים, סקרים — תישאר בלופ' : 'Posts, webinars, polls — stay in the loop', section: 'feed' as DashboardSection, tourStepIdx: 14 },
           ],
         },
         {
           title: isRTL ? '📊 כלים ונתונים' : '📊 Tools & Data',
           tools: [
-            { icon: '⭐', label: 'Vouches', desc: isRTL ? 'מכתבי המלצה ממנהלים — מעלים אותך ב-40% בדירוג' : 'Recommendation letters from managers — boosts ranking 40%', section: 'vouches' as DashboardSection },
-            { icon: '📊', label: isRTL ? 'Skill Gap' : 'Skill Gap', desc: isRTL ? 'מה חסר לך לתפקיד? ה-AI אומר + ממליץ קורסים' : 'What\'s missing for the role? AI tells you + suggests courses', section: 'job-search' as DashboardSection },
-            { icon: '💰', label: isRTL ? 'מידע שכר' : 'Salary Insights', desc: isRTL ? 'כמה מרוויחים בתפקיד הזה? אל תיכנס לראיון בעיוור' : 'What does this role pay? Don\'t go in blind', section: 'job-search' as DashboardSection },
-            { icon: '📈', label: isRTL ? '8 דוחות אישיים' : '8 Personal Reports', desc: isRTL ? 'סטטיסטיקות מלאות על חיפוש העבודה שלך' : 'Full stats on your job search journey', section: 'my-stats' as DashboardSection },
-            { icon: '🔥', label: isRTL ? 'קרדיטים' : 'Credits', desc: isRTL ? '15 יומיים — צבור, הרוויח, שתף' : '15 daily — earn more, share, grow', section: 'credits' as DashboardSection },
+            { icon: '⭐', label: 'Vouches', desc: isRTL ? 'מכתבי המלצה ממנהלים — מעלים אותך ב-40% בדירוג' : 'Recommendation letters from managers — boosts ranking 40%', section: 'vouches' as DashboardSection, tourStepIdx: 16 },
+            { icon: '📊', label: isRTL ? 'Skill Gap' : 'Skill Gap', desc: isRTL ? 'מה חסר לך לתפקיד? ה-AI אומר + ממליץ קורסים' : 'What\'s missing for the role? AI tells you + suggests courses', section: 'job-search' as DashboardSection, tourStepIdx: 6 },
+            { icon: '💰', label: isRTL ? 'מידע שכר' : 'Salary Insights', desc: isRTL ? 'כמה מרוויחים בתפקיד הזה? אל תיכנס לראיון בעיוור' : 'What does this role pay? Don\'t go in blind', section: 'job-search' as DashboardSection, tourStepIdx: 6 },
+            { icon: '📈', label: isRTL ? '8 דוחות אישיים' : '8 Personal Reports', desc: isRTL ? 'סטטיסטיקות מלאות על חיפוש העבודה שלך' : 'Full stats on your job search journey', section: 'my-stats' as DashboardSection, tourStepIdx: 18 },
+            { icon: '🔥', label: isRTL ? 'קרדיטים' : 'Credits', desc: isRTL ? '15 יומיים — צבור, הרוויח, שתף' : '15 daily — earn more, share, grow', section: 'credits' as DashboardSection, tourStepIdx: 21 },
             { icon: '🔗', label: isRTL ? 'תוכנית שותפים' : 'Referral Program', desc: isRTL ? 'הזמן חברים → הרוויח קרדיטים' : 'Invite friends → earn credits', section: 'referrals' as DashboardSection },
           ],
         },
@@ -465,17 +466,33 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
     }
   });
 
-  const launchSpotlight = (tool: ToolItem) => {
+  const launchSpotlight = (tool: ToolItem, ci: number, i: number) => {
     _spotlightKeyCounter++;
     const key = _spotlightKeyCounter;
     const section = tool.section!;
-    const stepIdx = sectionToFirstStep[section];
-    const selector = stepIdx !== undefined ? TOUR_STEPS[stepIdx].targetSelector : '';
 
-    // Clear old rect immediately (new rect will be found by effect after navigation)
+    // Prefer explicit tourStepIdx → use that step's selector + translated texts
+    let selector = '';
+    let label = tool.label;
+    let desc = tool.desc;
+    let stepIdx: number | undefined;
+
+    if (tool.tourStepIdx !== undefined) {
+      stepIdx = tool.tourStepIdx;
+      const step = TOUR_STEPS[stepIdx];
+      selector = step.targetSelector;
+      label = isRTL ? step.titleHe : step.titleEn;
+      desc = isRTL ? step.descriptionHe : step.descriptionEn;
+    } else {
+      const fallbackIdx = sectionToFirstStep[section];
+      if (fallbackIdx !== undefined) {
+        stepIdx = fallbackIdx;
+        selector = TOUR_STEPS[fallbackIdx].targetSelector;
+      }
+    }
+
     setSpotlightRect(null);
-    // Set spotlight immediately — new key forces AnimatePresence zoom-out→zoom-in
-    setSpotlight({ key, label: tool.label, desc: tool.desc, selector, section });
+    setSpotlight({ key, label, desc, selector, section, stepIdx, toolCategoryIdx: ci, toolIdx: i });
     if (onNavigate) onNavigate(section);
   };
 
@@ -528,7 +545,9 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
 
       {/* TourTooltip popup — shown when a feature is spotlighted in "By Screens" mode */}
       {spotlight && viewMode === 'screens' && (() => {
-        const matchingStep = TOUR_STEPS.find(s => s.section === spotlight.section);
+        const step = spotlight.stepIdx !== undefined
+          ? TOUR_STEPS[spotlight.stepIdx]
+          : TOUR_STEPS.find(s => s.section === spotlight.section);
         return (
           <TourTooltip
             key={spotlight.key}
@@ -543,8 +562,8 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
             isFirst
             isLast
             lastLabel={isRTL ? 'עבור למסך' : 'Go to screen'}
-            icon={matchingStep?.icon}
-            sectionLabel={isRTL ? matchingStep?.sectionLabelHe : matchingStep?.sectionLabelEn}
+            icon={step?.icon}
+            sectionLabel={isRTL ? step?.sectionLabelHe : step?.sectionLabelEn}
           />
         );
       })()}
@@ -651,8 +670,10 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                       variant="default"
                       className="w-full gap-2"
                       onClick={() => {
+                        setSpotlight(null);
+                        setSpotlightRect(null);
                         setOpenPersistent(false);
-                        onStartTour();
+                        setTimeout(() => onStartTour(), 350);
                       }}
                     >
                       🗺️ {isRTL ? 'התחל סיור מודרך' : 'Start Guided Tour'}
@@ -668,8 +689,10 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                     variant="default"
                     className="w-full gap-2"
                     onClick={() => {
+                      setSpotlight(null);
+                      setSpotlightRect(null);
                       setOpenPersistent(false);
-                      onStartTour();
+                      setTimeout(() => onStartTour(), 350);
                     }}
                   >
                     🗺️ {isRTL ? 'התחל סיור מודרך' : 'Start Guided Tour'}
@@ -692,15 +715,26 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                         <div key={ci}>
                           <h3 className="font-semibold text-sm mb-2 text-foreground">{category.title}</h3>
                           <div className="space-y-1 ps-2 border-s-2 border-border">
-                            {category.tools.map((tool, i) => (
+                            {category.tools.map((tool, i) => {
+                              const isActiveBtn = spotlight?.toolCategoryIdx === ci && spotlight?.toolIdx === i;
+                              return (
                               <button
                                 key={i}
                                 onClick={() => {
                                   if (tool.action) { tool.action(); setOpenPersistent(false); }
-                                  else if (tool.section) { launchSpotlight(tool); }
+                                  else if (tool.section) { launchSpotlight(tool, ci, i); }
                                 }}
-                                className="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-secondary/50 transition-colors text-start"
+                                className={cn(
+                                  'w-full flex items-center gap-2.5 p-2 rounded-lg transition-colors text-start relative',
+                                  isActiveBtn
+                                    ? 'bg-primary/10 border border-primary/20'
+                                    : 'hover:bg-secondary/50'
+                                )}
                               >
+                                {/* Active indicator bar */}
+                                {isActiveBtn && (
+                                  <div className={cn('absolute top-1 bottom-1 w-0.5 bg-primary rounded-full', isRTL ? 'right-0' : 'left-0')} />
+                                )}
                                 <span className="text-base leading-none flex-shrink-0 w-6 text-center">{tool.icon}</span>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-medium leading-tight truncate">{tool.label}</p>
@@ -709,11 +743,12 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                                   <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 rounded px-1 flex-shrink-0">New</span>
                                 )}
                                 {isRTL
-                                  ? <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                                  : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                                  ? <ChevronLeft className={cn('w-3.5 h-3.5 flex-shrink-0', isActiveBtn ? 'text-primary' : 'text-muted-foreground')} />
+                                  : <ChevronRight className={cn('w-3.5 h-3.5 flex-shrink-0', isActiveBtn ? 'text-primary' : 'text-muted-foreground')} />
                                 }
                               </button>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       ))}
