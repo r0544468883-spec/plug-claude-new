@@ -49,7 +49,21 @@ export const TOUR_STEPS: TourStep[] = [
     sectionLabelEn: 'Step 1: Welcome',
   },
 
-  // ── שלבים 2-3: פרופיל (profile-docs) ───────────────────
+  // ── שלב 2: תוסף (overview) ────────────────────────────
+
+  {
+    section: 'overview',
+    targetSelector: '[data-tour="plug-chat"]',
+    titleHe: 'התוסף של פלאג - עובד בכל מקום 🤖',
+    titleEn: 'PLUG Extension - Works Everywhere 🤖',
+    descriptionHe: 'הורידו את התוסף מהסייד-פאנל. עם התוסף, פלאג עובד ישירות ב-LinkedIn ו-AllJobs - מנתח משרות בזמן גלישה, ממלא טפסים ושומר הכל לדשבורד. הפעילו את הסוכן החכם - הוא סורק, מנתח ומגיש מועמדויות. עם HITL: הסוכן מציג לכם כל משרה ומחכה לאישורכם לפני הגשה.',
+    descriptionEn: 'Download the extension from the side panel. With it, PLUG works directly on LinkedIn & AllJobs - analyzes jobs while browsing, fills forms, saves everything to the dashboard. Activate the AI Agent - it scans, analyzes fit, and submits applications. With HITL: the agent shows you each job and waits for your approval before applying.',
+    icon: Bot,
+    sectionLabelHe: 'שלב 2: התוסף',
+    sectionLabelEn: 'Step 2: Extension',
+  },
+
+  // ── שלבים 3-4: פרופיל (profile-docs) ───────────────────
 
   {
     section: 'profile-docs',
@@ -59,23 +73,23 @@ export const TOUR_STEPS: TourStep[] = [
     descriptionHe: 'העלו קו"ח פה. פלאג ינתח כישורים, ניסיון ותחומים - וישתמש בזה כדי להתאים משרות, לשפר את הפרופיל ולעזור בצ\'אט. שניות ספורות.',
     descriptionEn: 'Upload your CV here. PLUG analyzes your skills, experience, and interests - and uses that to match jobs, improve your profile, and help in chat. Takes seconds.',
     icon: Brain,
-    sectionLabelHe: 'שלב 2: פרופיל',
-    sectionLabelEn: 'Step 2: Profile',
+    sectionLabelHe: 'שלב 3: פרופיל',
+    sectionLabelEn: 'Step 3: Profile',
   },
 
   {
     section: 'profile-docs',
-    targetSelector: '[data-tour="resume-upload"]',
+    targetSelector: '[data-tour="portfolio-links"]',
     titleHe: 'כרטיס אישי - לינק אחד שמספר הכל',
     titleEn: 'Personal Card - One Link That Says It All',
     descriptionHe: 'פלאג יוצר כרטיס עם לינק ייחודי - תמונה, כישורים, ניסיון וקו"ח. שלחו אותו למגייסים ישירות. כניסה דרך "הפרופיל שלי" ← "כרטיס אישי".',
     descriptionEn: 'PLUG creates a card with a unique link - photo, skills, experience, and CV. Send it directly to recruiters. Access via "My Profile" ← "Personal Card".',
     icon: CreditCard,
-    sectionLabelHe: 'שלב 3: כרטיס אישי',
-    sectionLabelEn: 'Step 3: Personal Card',
+    sectionLabelHe: 'שלב 4: כרטיס אישי',
+    sectionLabelEn: 'Step 4: Personal Card',
   },
 
-  // ── שלבים 4-5: בניית קו"ח (cv-builder) ─────────────────
+  // ── שלבים 5-6: בניית קו"ח (cv-builder) ─────────────────
 
   {
     section: 'cv-builder',
@@ -86,23 +100,23 @@ export const TOUR_STEPS: TourStep[] = [
     descriptionEn: 'Pick a template or start from scratch, fill in details, hit "Download PDF". PLUG suggests bullet rewrites and STAR story structure. ✨',
     icon: FileEdit,
     customImage: onboardingNotesImage,
-    sectionLabelHe: 'שלב 4: בניית קו"ח',
-    sectionLabelEn: 'Step 4: CV Builder',
+    sectionLabelHe: 'שלב 5: בניית קו"ח',
+    sectionLabelEn: 'Step 5: CV Builder',
   },
 
   {
     section: 'cv-builder',
-    targetSelector: '[data-tour="cv-builder"]',
+    targetSelector: '[data-tour="cv-preview"]',
     titleHe: 'משפר קו"ח חכם - מותאם לכל משרה',
     titleEn: 'Smart CV Enhancer - Tailored to Each Job',
     descriptionHe: 'הדביקו תיאור משרה ופלאג יתאים את הקו"ח שלכם לתפקיד הספציפי - מנסח מחדש bullet points, מוסיף מילות מפתח לATS, ומוציא ציון התאמה. כניסה דרך "שפר קו"ח" בבונה.',
     descriptionEn: 'Paste a job description and PLUG tailors your CV to that specific role - rewrites bullet points, adds ATS keywords, and gives a match score. Access via "Enhance CV" in the builder.',
     icon: Sparkles,
-    sectionLabelHe: 'שלב 5: שיפור קו"ח',
-    sectionLabelEn: 'Step 5: CV Enhancer',
+    sectionLabelHe: 'שלב 6: שיפור קו"ח',
+    sectionLabelEn: 'Step 6: CV Enhancer',
   },
 
-  // ── שלב 6: הגדרות (settings) ────────────────────────────
+  // ── שלב 7: הגדרות (settings) ────────────────────────────
 
   {
     section: 'settings',
@@ -112,11 +126,11 @@ export const TOUR_STEPS: TourStep[] = [
     descriptionHe: 'הגדירו סוג משרה, מיקום, תחום ושכר מצופה. כאן גם שולטים על נראות הפרופיל למגייסים ומחברים Gmail לסנכרון אוטומטי של תקשורת.',
     descriptionEn: 'Set job type, location, field, and expected salary. Also control profile visibility to recruiters and connect Gmail for automatic communication sync.',
     icon: SlidersHorizontal,
-    sectionLabelHe: 'שלב 6: הגדרות',
-    sectionLabelEn: 'Step 6: Settings',
+    sectionLabelHe: 'שלב 7: הגדרות',
+    sectionLabelEn: 'Step 7: Settings',
   },
 
-  // ── שלב 7: חיפוש משרות (job-search) ────────────────────
+  // ── שלב 8: חיפוש משרות (job-search) ────────────────────
 
   {
     section: 'job-search',
@@ -126,11 +140,11 @@ export const TOUR_STEPS: TourStep[] = [
     descriptionHe: 'סננו לפי מיקום, קטגוריה ושכר. לחצו "מתאים לי" לסינון פלאג. כפתור המפה מציג איפה המשרות מרוכזות - שלא תחמיצו כלום בעיר שלכם. ציון 80%+ = תגישו עכשיו.',
     descriptionEn: 'Filter by location, category, and salary. Click "Match Me" for PLUG filtering. The map button shows where jobs cluster - so you don\'t miss anything in your city. 80%+ score = apply now.',
     icon: Search,
-    sectionLabelHe: 'שלב 7: חיפוש משרות',
-    sectionLabelEn: 'Step 7: Job Search',
+    sectionLabelHe: 'שלב 8: חיפוש משרות',
+    sectionLabelEn: 'Step 8: Job Search',
   },
 
-  // ── שלב 8: ספריית חברות (companies) ────────────────────
+  // ── שלב 9: ספריית חברות (companies) ────────────────────
 
   {
     section: 'companies',
@@ -140,11 +154,11 @@ export const TOUR_STEPS: TourStep[] = [
     descriptionHe: 'גלריית חברות עם פילטר לפי tech stack, גודל, תחום ומדיניות remote. לחיצה על חברה מציגה משרות פתוחות, אנשי קשר ותרבות ארגונית. כניסה דרך "חברות" בתפריט.',
     descriptionEn: 'Company gallery with filters by tech stack, size, industry, and remote policy. Click a company to see open roles, contacts, and culture. Access via "Companies" in the menu.',
     icon: Building2,
-    sectionLabelHe: 'שלב 8: ספריית חברות',
-    sectionLabelEn: 'Step 8: Company Directory',
+    sectionLabelHe: 'שלב 9: ספריית חברות',
+    sectionLabelEn: 'Step 9: Company Directory',
   },
 
-  // ── שלבים 9-10: overview ────────────────────────────────
+  // ── שלבים 10-11: overview ────────────────────────────────
 
   {
     section: 'overview',
@@ -154,23 +168,23 @@ export const TOUR_STEPS: TourStep[] = [
     descriptionHe: 'ממשק מהיר - שמאל לדחיה, ימין לשמירה. מושלם ל-5 דקות בתור לקפה.',
     descriptionEn: 'Fast swipe interface - left to skip, right to save. Perfect for 5 minutes in line for coffee.',
     icon: Zap,
-    sectionLabelHe: 'שלב 9: ספרינט',
-    sectionLabelEn: 'Step 9: Sprint',
+    sectionLabelHe: 'שלב 10: ספרינט',
+    sectionLabelEn: 'Step 10: Sprint',
   },
 
   {
     section: 'overview',
     targetSelector: '[data-tour="plug-chat"]',
-    titleHe: 'Plug Chat - 25 פרומפטים + 4 מומחי פלאג',
-    titleEn: 'Plug Chat - 25 Prompts + 4 PLUG Specialists',
-    descriptionHe: 'פלאג יודע את כל ההגשות שלכם. יש 25 פרומפטים מוכנים - לחצו על הכוכב בצ\'אט. ויש 4 מומחי פלאג: Resume Tailor, Interview Coach, Salary Negotiator, Recruiter Outreach. פשוט לשאול.',
-    descriptionEn: 'PLUG knows all your applications. There are 25 ready prompts - click the star in chat. And 4 PLUG specialists: Resume Tailor, Interview Coach, Salary Negotiator, Recruiter Outreach. Just ask.',
+    titleHe: 'הצ\'אט החכם של פלאג',
+    titleEn: 'PLUG Smart Chat',
+    descriptionHe: 'פלאג יודע את כל ההגשות שלכם. יש פרומפטים מוכנים - לחצו על הכוכב בצ\'אט. ויש מומחי פלאג: Resume Tailor, Interview Coach, Salary Negotiator, Recruiter Outreach. פשוט לשאול.',
+    descriptionEn: 'PLUG knows all your applications. There are ready prompts - click the star in chat. And PLUG specialists: Resume Tailor, Interview Coach, Salary Negotiator, Recruiter Outreach. Just ask.',
     icon: MessageCircle,
-    sectionLabelHe: 'שלב 10: Plug Chat',
-    sectionLabelEn: 'Step 10: Plug Chat',
+    sectionLabelHe: 'שלב 11: פלאג צ\'אט',
+    sectionLabelEn: 'Step 11: PLUG Chat',
   },
 
-  // ── שלב 11: מועמדויות (applications) ───────────────────
+  // ── שלב 12: מועמדויות (applications) ───────────────────
 
   {
     section: 'applications',
@@ -180,11 +194,11 @@ export const TOUR_STEPS: TourStep[] = [
     descriptionHe: 'הדביקו לינק למשרה - פלאג שולף את כל הפרטים. הציגו את המועמדויות כ-Kanban (גררו קלפים בין שלבים) או כקלנדר. נדחתם? סמנו את הסיבה - פלאג לומד ועוזר לשפר.',
     descriptionEn: 'Paste a job link - PLUG extracts all details. View your applications as a Kanban board (drag cards between stages) or as a calendar. Rejected? Tag the reason - PLUG learns and helps improve.',
     icon: LayoutDashboard,
-    sectionLabelHe: 'שלב 11: מועמדויות',
-    sectionLabelEn: 'Step 11: Applications',
+    sectionLabelHe: 'שלב 12: מועמדויות',
+    sectionLabelEn: 'Step 12: Applications',
   },
 
-  // ── שלב 12: יומן (schedule) ─────────────────────────────
+  // ── שלב 13: יומן (schedule) ─────────────────────────────
 
   {
     section: 'schedule',
@@ -194,11 +208,11 @@ export const TOUR_STEPS: TourStep[] = [
     descriptionHe: 'יומן שמרכז ראיונות, follow-ups, תזכורות ומשימות. רואים את כל מה שתוכנן לשבוע הקרוב, מסמנים משימות כבוצעו ועוקבים אחרי תשובות מחברות. אפשר לחבר ל-Google Calendar.',
     descriptionEn: 'Journal that centralizes interviews, follow-ups, reminders, and tasks. See everything planned for the coming week, mark tasks done, and track responses from companies. Connect to Google Calendar.',
     icon: CalendarDays,
-    sectionLabelHe: 'שלב 12: יומן החיפוש',
-    sectionLabelEn: 'Step 12: Search Journal',
+    sectionLabelHe: 'שלב 13: יומן החיפוש',
+    sectionLabelEn: 'Step 13: Search Journal',
   },
 
-  // ── שלב 13: סימולציות (interview-prep) ──────────────────
+  // ── שלב 14: סימולציות (interview-prep) ──────────────────
 
   {
     section: 'interview-prep',
@@ -208,11 +222,11 @@ export const TOUR_STEPS: TourStep[] = [
     descriptionHe: 'לחצו "התחל תרגול" לסימולציית ראיון עם פלאג. השאלות מותאמות לחברה ולתפקיד הספציפי. עונים בקול או בטקסט ומקבלים פידבק מיידי.',
     descriptionEn: 'Click "Start Practice" for an interview simulation with PLUG. Questions are tailored to the specific company and role. Answer by voice or text and get instant feedback.',
     icon: Mic,
-    sectionLabelHe: 'שלב 13: סימולציות',
-    sectionLabelEn: 'Step 13: Simulations',
+    sectionLabelHe: 'שלב 14: סימולציות',
+    sectionLabelEn: 'Step 14: Simulations',
   },
 
-  // ── שלב 14: הודעות (messages) ───────────────────────────
+  // ── שלב 15: הודעות (messages) ───────────────────────────
 
   {
     section: 'messages',
@@ -222,11 +236,11 @@ export const TOUR_STEPS: TourStep[] = [
     descriptionHe: 'מגייס מתעניין? ההודעה מגיעה לכאן. עונים, מצרפים קבצים ומנהלים את כל התקשורת במקום אחד - בלי לחפש ב-Gmail.',
     descriptionEn: 'Recruiter interested? The message lands here. Reply, attach files, manage all communication in one place - no digging through Gmail.',
     icon: MessageSquare,
-    sectionLabelHe: 'שלב 14: הודעות',
-    sectionLabelEn: 'Step 14: Messages',
+    sectionLabelHe: 'שלב 15: הודעות',
+    sectionLabelEn: 'Step 15: Messages',
   },
 
-  // ── שלב 15: פיד (feed) ──────────────────────────────────
+  // ── שלב 16: פיד (feed) ──────────────────────────────────
 
   {
     section: 'feed',
@@ -236,16 +250,16 @@ export const TOUR_STEPS: TourStep[] = [
     descriptionHe: 'מגייסים ואנשי מקצוע משתפים משרות, טיפים ותובנות. פרסמו, הגיבו, הצטרפו לדיונים - ובנו נוכחות מקצועית שמגייסים מבחינים בה.',
     descriptionEn: 'Recruiters and pros share jobs, tips, and insights. Post, comment, join discussions - build a professional presence recruiters actually notice.',
     icon: Users,
-    sectionLabelHe: 'שלב 15: קהילה',
-    sectionLabelEn: 'Step 15: Community',
+    sectionLabelHe: 'שלב 16: קהילה',
+    sectionLabelEn: 'Step 16: Community',
   },
 
-  // ── שלבים 16-24: פיצ\'רים (overview) ────────────────────
+  // ── שלבים 17-24: פיצ\'רים ────────────────────────────────
 
   {
     section: 'overview',
     targetSelector: '[data-tour="connections-widget"]',
-    titleHe: 'קשרים-הזדמנויות',
+    titleHe: 'קשרים = הזדמנויות',
     titleEn: 'Connections = Opportunities',
     descriptionHe: 'כאן מוצגים הקשרים שלכם - מגייסים, קולגות וחברות. לחיצה על "הרשת שלי" בתפריט מאפשרת לנהל, לחפש ולהתחבר לאנשי מקצוע רלוונטיים. רוב ההצעות מגיעות דרך קשרים - לא דרך מודעות.',
     descriptionEn: 'Your connections live here - recruiters, colleagues, and companies. Click "My Network" to manage and connect with the right people. Most offers come through connections - not job ads.',
@@ -292,7 +306,7 @@ export const TOUR_STEPS: TourStep[] = [
 
   {
     section: 'overview',
-    targetSelector: '[data-tour="stats-row"]',
+    targetSelector: '[data-tour="plug-tip"]',
     titleHe: 'נראות ו"הסודות שלי"',
     titleEn: 'Visibility & "My Secrets"',
     descriptionHe: '• "גלוי למגייסים" - הגדרה שמאפשרת למגייסים למצוא אתכם\n• "הסודות שלי" - תובנות פלאג על חברות מ-LinkedIn: מה הן עושות, אנשי קשר, ורמת ההתאמה שלכם',
@@ -304,7 +318,7 @@ export const TOUR_STEPS: TourStep[] = [
 
   {
     section: 'overview',
-    targetSelector: '[data-tour="stats-row"]',
+    targetSelector: '[data-tour="content-hub"]',
     titleHe: 'לוח הרעיונות - עצבו את פלאג',
     titleEn: 'Ideas Board - Shape PLUG',
     descriptionHe: 'יש רעיון לפיצ\'ר? פרסמו בלוח הרעיונות, הצביעו על רעיונות של אחרים, ויחד נבנה את עתיד הפלטפורמה. כניסה דרך "לוח הרעיונות" בתפריט.',
@@ -336,18 +350,6 @@ export const TOUR_STEPS: TourStep[] = [
     icon: Bell,
     sectionLabelHe: 'פיצ\'רים: טיפים',
     sectionLabelEn: 'Features: Tips',
-  },
-
-  {
-    section: 'overview',
-    targetSelector: '[data-tour="plug-chat"]',
-    titleHe: 'תוסף כרום + AI Agent - פלאג עובד בכל מקום 🤖',
-    titleEn: 'Chrome Extension + AI Agent - PLUG Works Everywhere 🤖',
-    descriptionHe: 'הורידו את התוסף מהסייד-פאנל. עם התוסף, פלאג עובד ישירות ב-LinkedIn ו-AllJobs - מנתח משרות בזמן גלישה, ממלא טפסים ושומר הכל לדשבורד. הפעילו את ה-AI Agent - הוא סורק, מנתח ומגיש מועמדויות. עם HITL: הסוכן מציג לכם כל משרה ומחכה לאישורכם לפני הגשה.',
-    descriptionEn: 'Download the extension from the side panel. With it, PLUG works directly on LinkedIn & AllJobs - analyzes jobs while browsing, fills forms, saves everything to the dashboard. Activate the AI Agent - it scans, analyzes fit, and submits applications. With HITL: the agent shows you each job and waits for your approval before applying.',
-    icon: Bot,
-    sectionLabelHe: 'פיצ\'רים: תוסף וAgent',
-    sectionLabelEn: 'Features: Extension and Agent',
   },
 ];
 

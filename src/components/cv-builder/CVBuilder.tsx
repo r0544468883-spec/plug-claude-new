@@ -687,7 +687,9 @@ export const CVBuilder = () => {
           <ResizableHandle withHandle />
           
           <ResizablePanel defaultSize={60} minSize={40}>
-            <CVPreviewPanel data={cvData} onChange={handleDataChange} onOpenAIDesign={() => setShowAIDesignDialog(true)} />
+            <div data-tour="cv-preview" className="h-full">
+              <CVPreviewPanel data={cvData} onChange={handleDataChange} onOpenAIDesign={() => setShowAIDesignDialog(true)} />
+            </div>
           </ResizablePanel>
         </ResizablePanelGroup>
       )}
