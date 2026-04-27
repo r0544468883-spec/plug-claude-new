@@ -522,55 +522,40 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
               <ScrollArea className="h-[calc(100%-130px)]">
                 <div key={viewMode} className="p-4 space-y-6">
 
-                  {/* ── BY SCREENS VIEW ── */}
+                  {/* ── BY SCREENS VIEW — uses toolCategories (correct sections) ── */}
                   {role === 'job_seeker' && viewMode === 'screens' && (
-                    <div className="space-y-5">
+                    <div className="space-y-4">
                       <p className="text-xs text-muted-foreground">
                         {isRTL
-                          ? 'כל הפיצ\'רים לפי מסך - לחצו על מסך כדי לנווט אליו'
-                          : 'All features by screen — click a screen to navigate'}
+                          ? 'לחצו על פיצ\'ר כדי לנווט ישירות אליו'
+                          : 'Click any feature to navigate directly to it'}
                       </p>
-                      {sectionOrder.map((section) => {
-                        const name = sectionNames[section];
-                        const steps = stepsBySection[section];
-                        return (
-                          <div key={section}>
-                            <button
-                              onClick={() => { if (onNavigate) { onNavigate(section); setOpenPersistent(false); } }}
-                              className="w-full flex items-center justify-between mb-2 group"
-                            >
-                              <h3 className="font-semibold text-sm">
-                                {name ? (isRTL ? name.he : name.en) : section}
-                              </h3>
-                              <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                            </button>
-                            <div className="space-y-1 ps-2 border-s-2 border-border">
-                              {steps.map((step) => {
-                                const Icon = step.icon;
-                                return (
-                                  <button
-                                    key={step.stepIndex}
-                                    onClick={() => { if (onNavigate) { onNavigate(step.section); setOpenPersistent(false); } }}
-                                    className="w-full flex items-start gap-2.5 p-2 rounded-lg hover:bg-secondary/50 transition-colors text-start"
-                                  >
-                                    <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                      <Icon className="w-3.5 h-3.5 text-primary" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium leading-tight">
-                                        {isRTL ? step.titleHe : step.titleEn}
-                                      </p>
-                                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">
-                                        {isRTL ? step.descriptionHe : step.descriptionEn}
-                                      </p>
-                                    </div>
-                                  </button>
-                                );
-                              })}
-                            </div>
+                      {toolCategories.map((category, ci) => (
+                        <div key={ci}>
+                          <h3 className="font-semibold text-sm mb-2 text-foreground">{category.title}</h3>
+                          <div className="space-y-1 ps-2 border-s-2 border-border">
+                            {category.tools.map((tool, i) => (
+                              <button
+                                key={i}
+                                onClick={() => {
+                                  if (tool.action) { tool.action(); setOpenPersistent(false); }
+                                  else if (tool.section && onNavigate) { onNavigate(tool.section); setOpenPersistent(false); }
+                                }}
+                                className="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-secondary/50 transition-colors text-start"
+                              >
+                                <span className="text-base leading-none flex-shrink-0 w-6 text-center">{tool.icon}</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium leading-tight truncate">{tool.label}</p>
+                                </div>
+                                {tool.isNew && (
+                                  <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 rounded px-1 flex-shrink-0">New</span>
+                                )}
+                                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                              </button>
+                            ))}
                           </div>
-                        );
-                      })}
+                        </div>
+                      ))}
                     </div>
                   )}
 
