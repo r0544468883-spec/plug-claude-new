@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Route, X, ChevronRight, Check, ChevronDown, Map, Monitor } from 'lucide-react';
+import { Route, X, ChevronRight, Check, ChevronDown, Map, Monitor, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { DashboardSection } from '@/components/dashboard/DashboardLayout';
 import { TOUR_STEPS, type TourStep } from './JobSeekerTour';
+import { TourOverlay } from './TourOverlay';
 
 // Module-level variables: survive component remounts within the same session
 let _fabViewMode: 'tour' | 'screens' = (() => {
@@ -51,6 +52,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
   const setOpenPersistent = (v: boolean) => { _fabOpen = v; setOpen(v); };
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [, forceRender] = useState(0);
+  const [spotlight, setSpotlight] = useState<{ label: string; desc: string; selector: string; section: DashboardSection } | null>(null);
 
   // viewMode lives entirely in the module-level variable — no useState
   const viewMode = _fabViewMode;
@@ -407,19 +409,26 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
     }
   });
 
-  const launchSpotlight = (section: DashboardSection) => {
-    // Panel stays open — don't close it
+  const launchSpotlight = (tool: ToolItem) => {
+    const section = tool.section!;
     if (onNavigate) onNavigate(section);
     const stepIdx = sectionToFirstStep[section];
-    if (stepIdx !== undefined) {
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('plug:start-tour-at-step', { detail: { stepIndex: stepIdx } }));
-      }, 500);
-    }
+    const selector = stepIdx !== undefined ? TOUR_STEPS[stepIdx].targetSelector : '';
+    const label = isRTL ? tool.label : tool.label;
+    const desc = tool.desc;
+    setTimeout(() => {
+      setSpotlight({ label, desc, selector, section });
+    }, 300);
   };
 
   return (
     <>
+      {/* Spotlight overlay — dims the page, panel stays above at z-9999 */}
+      <TourOverlay
+        targetSelector={spotlight?.selector ?? ''}
+        isActive={!!spotlight}
+      />
+
       {/* FAB Button - visible on mobile and desktop */}
       <button
         onClick={() => setOpenPersistent(true)}
@@ -442,7 +451,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black/40 z-[55]"
-              onClick={() => setOpenPersistent(false)}
+              onClick={() => { setOpenPersistent(false); setSpotlight(null); }}
             />
             <motion.div
               initial={{ x: isRTL ? '100%' : '-100%' }}
@@ -465,6 +474,32 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                   <X className="w-5 h-5" />
                 </button>
               </div>
+
+              {/* Spotlight description card — shown when a feature is highlighted */}
+              {spotlight && viewMode === 'screens' && (
+                <div className="px-4 py-3 border-b border-border bg-primary/5 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground leading-tight">{spotlight.label}</p>
+                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{spotlight.desc}</p>
+                    </div>
+                    <button
+                      onClick={() => setSpotlight(null)}
+                      className="text-muted-foreground hover:text-foreground flex-shrink-0 mt-0.5"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="w-full gap-2"
+                    onClick={() => { if (onNavigate) onNavigate(spotlight.section); setSpotlight(null); }}
+                  >
+                    {isRTL ? 'עבור למסך' : 'Go to screen'}
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              )}
 
               {/* View mode toggle + guided tour button (job_seeker only) */}
               {role === 'job_seeker' && (
@@ -547,7 +582,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
                                 key={i}
                                 onClick={() => {
                                   if (tool.action) { tool.action(); setOpenPersistent(false); }
-                                  else if (tool.section) { launchSpotlight(tool.section); }
+                                  else if (tool.section) { launchSpotlight(tool); }
                                 }}
                                 className="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-secondary/50 transition-colors text-start"
                               >
