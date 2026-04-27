@@ -32,7 +32,7 @@ export function MobileBottomBar({ currentSection, onSectionChange }: MobileBotto
         { icon: Search, label: isRTL ? 'משרות' : 'Jobs', section: 'job-search' },
         { icon: Sparkles, label: 'Plug', section: 'chat', isCenter: true },
         { icon: FileText, label: isRTL ? 'קו"ח' : 'CV', section: 'cv-builder' },
-        { icon: User, label: isRTL ? 'פרופיל' : 'Profile', section: 'profile-docs' },
+        { icon: User, label: isRTL ? 'פרופיל' : 'Profile', section: 'profile-settings' },
       ];
     }
     if (role === 'freelance_hr' || role === 'inhouse_hr') {

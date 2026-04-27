@@ -313,12 +313,12 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
 
         {/* Visible to HR Banner for job seekers */}
         <VisibleToHRBanner />
-        {/* Tour Guide + Sign out */}
+        {/* Tour Guide + Language + Sign out */}
         <div className="p-4 border-t border-sidebar-border space-y-1">
           {onStartTour && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="w-full justify-start gap-2 text-muted-foreground hover:text-accent"
               onClick={onStartTour}
             >
@@ -326,9 +326,14 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
               {isRTL ? 'מדריך המערכת' : 'System Guide'}
             </Button>
           )}
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          {/* Language toggle - visible in sidebar on mobile (hidden in top bar) */}
+          <div className="sm:hidden flex items-center justify-between px-3 py-1.5">
+            <span className="text-sm text-muted-foreground">{isRTL ? 'שפה' : 'Language'}</span>
+            <LanguageToggle />
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
             className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive"
             onClick={signOut}
           >
@@ -359,9 +364,10 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
             )}
             
             {/* Mobile menu button */}
-            <button 
+            <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-muted-foreground hover:text-foreground"
+              className="lg:hidden p-2 -ms-2 rounded-lg text-foreground hover:bg-muted active:bg-muted/80"
+              aria-label={isRTL ? 'תפריט ניווט' : 'Navigation menu'}
             >
               <Menu className="w-6 h-6" />
             </button>
@@ -369,54 +375,54 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
           
           <div className="flex-1 lg:flex-initial" />
           
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-1 sm:gap-4">
             {/* Credit HUD */}
             <CreditHUD />
-            
+
             {/* Realtime Message Badge */}
             <NavTooltip content={direction === 'rtl' ? 'תיבת הודעות - צפה בשיחות ושלח הודעות' : 'Inbox - View conversations and send messages'} side="bottom">
               <span>
                 <MessageBadge onClick={() => onSectionChange('messages')} />
               </span>
             </NavTooltip>
-            
-            {/* Global Give Vouch button */}
-            <NavTooltip content={direction === 'rtl' ? 'תן המלצה (Vouch) - המלץ על אנשי קשר מקצועיים' : 'Give Vouch - Recommend professional contacts'} side="bottom">
-              <span>
-                <GiveVouchDialog 
-                  trigger={
-                    <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
-                      <Heart className="h-5 w-5" />
-                    </Button>
-                  }
-                />
-              </span>
-            </NavTooltip>
-            
+
             <NavTooltip content={direction === 'rtl' ? 'התראות - עדכונים חשובים ופעילות' : 'Notifications - Important updates and activity'} side="bottom">
               <span>
                 <NotificationBell />
               </span>
             </NavTooltip>
 
-            
-            <NavTooltip content={direction === 'rtl' ? 'החלף שפה - עברית/אנגלית' : 'Language Toggle - Hebrew/English'} side="bottom">
-              <span>
-                <LanguageToggle />
-              </span>
-            </NavTooltip>
+            {/* Desktop-only: Vouch, Language, Logout (available in sidebar on mobile) */}
+            <div className="hidden sm:flex items-center gap-4">
+              <NavTooltip content={direction === 'rtl' ? 'תן המלצה (Vouch) - המלץ על אנשי קשר מקצועיים' : 'Give Vouch - Recommend professional contacts'} side="bottom">
+                <span>
+                  <GiveVouchDialog
+                    trigger={
+                      <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
+                        <Heart className="h-5 w-5" />
+                      </Button>
+                    }
+                  />
+                </span>
+              </NavTooltip>
 
-            {/* Prominent Logout Button */}
-            <NavTooltip content={direction === 'rtl' ? 'התנתק מהמערכת' : 'Sign out'} side="bottom">
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={signOut}
-                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-              >
-                <LogOut className="h-5 w-5" />
-              </Button>
-            </NavTooltip>
+              <NavTooltip content={direction === 'rtl' ? 'החלף שפה - עברית/אנגלית' : 'Language Toggle - Hebrew/English'} side="bottom">
+                <span>
+                  <LanguageToggle />
+                </span>
+              </NavTooltip>
+
+              <NavTooltip content={direction === 'rtl' ? 'התנתק מהמערכת' : 'Sign out'} side="bottom">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={signOut}
+                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                >
+                  <LogOut className="h-5 w-5" />
+                </Button>
+              </NavTooltip>
+            </div>
           </div>
         </header>
 
