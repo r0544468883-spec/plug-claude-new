@@ -1,21 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Route, X, ChevronRight, Check, ChevronDown, Map, Monitor, ArrowLeft } from 'lucide-react';
+import { Route, X, ChevronRight, Check, ChevronDown, Map, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { DashboardSection } from '@/components/dashboard/DashboardLayout';
-import { TOUR_STEPS, type TourStep } from './JobSeekerTour';
-import { TourOverlay } from './TourOverlay';
+import { TOUR_STEPS } from './JobSeekerTour';
 
 // Module-level variables: survive component remounts within the same session
 let _fabViewMode: 'tour' | 'screens' = (() => {
   try { return (localStorage.getItem('plug_tour_view') as 'tour' | 'screens') || 'tour'; } catch { return 'tour'; }
 })();
 let _fabOpen = false;
+let _spotlightKeyCounter = 0;
+let _moduleSpotlight: { key: number; label: string; desc: string; selector: string; section: DashboardSection } | null = null;
 
 interface TourGuideFABProps {
   onNavigate?: (section: DashboardSection) => void;
@@ -52,7 +53,36 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
   const setOpenPersistent = (v: boolean) => { _fabOpen = v; setOpen(v); };
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [, forceRender] = useState(0);
-  const [spotlight, setSpotlight] = useState<{ label: string; desc: string; selector: string; section: DashboardSection } | null>(null);
+  const [spotlight, _setSpotlightState] = useState(_moduleSpotlight);
+  const [spotlightRect, setSpotlightRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
+
+  const setSpotlight = (v: typeof _moduleSpotlight) => { _moduleSpotlight = v; _setSpotlightState(v); };
+
+  // On mount: restore spotlight if navigation caused a remount
+  useEffect(() => {
+    if (_moduleSpotlight) _setSpotlightState(_moduleSpotlight);
+  }, []);
+
+  // Find the target element in the DOM and compute its rect
+  useEffect(() => {
+    if (!spotlight?.selector) { setSpotlightRect(null); return; }
+    let cancelled = false;
+    let attempts = 0;
+    const tryFind = () => {
+      if (cancelled) return;
+      const el = document.querySelector(spotlight.selector);
+      if (el) {
+        const r = el.getBoundingClientRect();
+        const pad = 12;
+        setSpotlightRect({ top: r.top - pad, left: r.left - pad, width: r.width + pad * 2, height: r.height + pad * 2 });
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else if (attempts++ < 8) {
+        setTimeout(tryFind, 200 + attempts * 100);
+      }
+    };
+    const t = setTimeout(tryFind, 420);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [spotlight?.selector, spotlight?.key]);
 
   // viewMode lives entirely in the module-level variable — no useState
   const viewMode = _fabViewMode;
@@ -410,29 +440,65 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
   });
 
   const launchSpotlight = (tool: ToolItem) => {
+    _spotlightKeyCounter++;
+    const key = _spotlightKeyCounter;
     const section = tool.section!;
     const stepIdx = sectionToFirstStep[section];
     const selector = stepIdx !== undefined ? TOUR_STEPS[stepIdx].targetSelector : '';
 
-    // 1. Clear old spotlight immediately (no black flash)
-    setSpotlight(null);
-
-    // 2. Navigate
+    // Clear old rect immediately (new rect will be found by effect after navigation)
+    setSpotlightRect(null);
+    // Set spotlight immediately — new key forces AnimatePresence zoom-out→zoom-in
+    setSpotlight({ key, label: tool.label, desc: tool.desc, selector, section });
     if (onNavigate) onNavigate(section);
-
-    // 3. After page renders, zoom-in new spotlight
-    setTimeout(() => {
-      setSpotlight({ label: tool.label, desc: tool.desc, selector, section });
-    }, 420);
   };
 
   return (
     <>
-      {/* Spotlight overlay — dims the page, panel stays above at z-9999 */}
-      <TourOverlay
-        targetSelector={spotlight?.selector ?? ''}
-        isActive={!!spotlight}
-      />
+      {/* Spotlight overlay — dims the page with spotlight hole. pointer-events:none so panel stays clickable */}
+      <AnimatePresence>
+        {spotlight && (
+          <motion.div
+            key={spotlight.key}
+            className="fixed inset-0 z-[9998] pointer-events-none"
+            initial={{ opacity: 0, scale: 1.08 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.92 }}
+            transition={{ duration: 0.28, ease: 'easeOut' }}
+          >
+            <svg className="absolute inset-0 w-full h-full">
+              <defs>
+                <mask id="fab-spotlight-mask">
+                  <rect x="0" y="0" width="100%" height="100%" fill="white" />
+                  {spotlightRect && (
+                    <rect
+                      x={spotlightRect.left}
+                      y={spotlightRect.top}
+                      width={spotlightRect.width}
+                      height={spotlightRect.height}
+                      rx="12"
+                      fill="black"
+                    />
+                  )}
+                </mask>
+              </defs>
+              <rect x="0" y="0" width="100%" height="100%" fill="rgba(0,0,0,0.6)" mask="url(#fab-spotlight-mask)" />
+            </svg>
+            {spotlightRect && (
+              <div
+                className="absolute border-2 border-primary rounded-xl"
+                style={{
+                  top: spotlightRect.top,
+                  left: spotlightRect.left,
+                  width: spotlightRect.width,
+                  height: spotlightRect.height,
+                  boxShadow: '0 0 32px hsl(var(--primary) / 0.55)',
+                }}
+              />
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* FAB Button - visible on mobile and desktop */}
       <button
@@ -456,7 +522,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black/40 z-[55]"
-              onClick={() => { setOpenPersistent(false); setSpotlight(null); }}
+              onClick={() => { setOpenPersistent(false); setSpotlight(null); setSpotlightRect(null); }}
             />
             <motion.div
               initial={{ x: isRTL ? '100%' : '-100%' }}
