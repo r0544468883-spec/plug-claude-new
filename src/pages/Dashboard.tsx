@@ -213,20 +213,10 @@ export default function Dashboard() {
         .select('id, status, current_stage')
         .eq('candidate_id', user.id);
 
-      // Get upcoming interviews (interview_reminders with future dates)
-      const { data: interviews } = await supabase
-        .from('interview_reminders')
-        .select('id, application_id, interview_date')
-        .gte('interview_date', new Date().toISOString());
-
-      // Filter interviews for user's applications
-      const applicationIds = applications?.map(a => a.id) || [];
-      const userInterviews = interviews?.filter(i => applicationIds.includes(i.application_id)) || [];
-
       return {
         totalApplications: applications?.length || 0,
         activeApplications: applications?.filter(a => a.status === 'active').length || 0,
-        interviews: userInterviews.length,
+        interviews: 0,
       };
     },
     enabled: !!user?.id && role === 'job_seeker',

@@ -98,9 +98,10 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, con
         .eq('candidate_id', user.id);
       
       if (!apps || apps.length === 0) return [];
-      
-      const appIds = apps.map(a => a.id);
-      
+
+      // Limit to 10 most recent app IDs to avoid URL-too-long 400 errors
+      const appIds = apps.map(a => a.id).slice(-10);
+
       const { data } = await supabase
         .from('interview_reminders')
         .select('*')

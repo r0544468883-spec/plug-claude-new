@@ -102,11 +102,8 @@ export function useTourTips() {
         .select('status')
         .eq('candidate_id', user.id);
 
-      // Fetch upcoming interviews
-      const { data: interviews } = await supabase
-        .from('interview_reminders')
-        .select('id')
-        .gte('interview_date', new Date().toISOString());
+      // Skip interview_reminders query (no user_id column, would need .in() with all app IDs)
+      const interviews: { id: string }[] = [];
 
       // Fetch vouches
       const { data: vouches } = await supabase
