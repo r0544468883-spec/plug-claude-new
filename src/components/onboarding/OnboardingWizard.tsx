@@ -191,7 +191,20 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [fullName, setFullName] = useState((profile as any)?.full_name || '');
   const [phone, setPhone] = useState((profile as any)?.phone || '');
   const [tagline, setTagline] = useState((profile as any)?.personal_tagline || '');
-  const [cvUploaded, setCvUploaded] = useState(!!((profile as any)?.cv_data && Object.keys((profile as any).cv_data || {}).length > 0));
+  const [cvUploaded, setCvUploaded] = useState(false);
+
+  // Check if user already has a resume in documents table
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase
+      .from('documents')
+      .select('id')
+      .eq('owner_id', user.id)
+      .eq('doc_type', 'cv')
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setCvUploaded(true); });
+  }, [user?.id]);
   const [preferredFields, setPreferredFields] = useState<string[]>((profile as any)?.preferred_fields || []);
   const [preferredRoles, setPreferredRoles] = useState<string[]>((profile as any)?.preferred_roles || []);
   const [experienceYears, setExperienceYears] = useState<string>(String((profile as any)?.experience_years || ''));
