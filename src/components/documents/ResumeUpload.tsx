@@ -349,6 +349,9 @@ export function ResumeUpload({ onSuccess, compact = false }: ResumeUploadProps) 
           <Button variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()} className="h-7 px-2" title={isRTL ? 'החלף' : 'Replace'}>
             <RefreshCw className="w-3 h-3" />
           </Button>
+          <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending} className="h-7 px-2 text-destructive hover:text-destructive" title={isRTL ? 'מחק' : 'Delete'}>
+            <Trash2 className="w-3 h-3" />
+          </Button>
           <input
             ref={fileInputRef}
             type="file"
