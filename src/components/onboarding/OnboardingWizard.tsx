@@ -149,8 +149,10 @@ function CVAnalysisTransition({ userId, isHebrew, onComplete, onDataFound }: {
     const startedAt = Date.now();
     const poll = async () => {
       if (doneRef.current) return;
+      const elapsed = Math.round((Date.now() - startedAt) / 1000);
+      console.log(`[CV-TERMINAL] Polling... elapsed=${elapsed}s`);
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('documents')
           .select('ai_summary')
           .eq('owner_id', userId)
@@ -159,6 +161,7 @@ function CVAnalysisTransition({ userId, isHebrew, onComplete, onDataFound }: {
           .limit(1)
           .maybeSingle();
 
+        console.log('[CV-TERMINAL] Poll result:', { found: !!data?.ai_summary, error });
         if (data?.ai_summary) {
           doneRef.current = true;
           const s = data.ai_summary as any;
@@ -338,6 +341,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   // Check if user already has a resume — and pre-populate fields from existing analysis
   useEffect(() => {
     if (!user?.id) return;
+    console.log('[CV-AUTOFILL] Checking for existing CV, userId:', user.id);
     supabase
       .from('documents')
       .select('id, ai_summary')
@@ -345,11 +349,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       .eq('doc_type', 'cv')
       .limit(1)
       .maybeSingle()
-      .then(({ data }) => {
-        if (!data) return;
+      .then(({ data, error }) => {
+        console.log('[CV-AUTOFILL] Query result:', { data: !!data, hasAiSummary: !!(data?.ai_summary), error });
+        if (error) { console.error('[CV-AUTOFILL] DB error:', error); return; }
+        if (!data) { console.log('[CV-AUTOFILL] No CV document found'); return; }
         setCvUploaded(true);
         const s = data.ai_summary as any;
-        if (!s) return;
+        if (!s) { console.log('[CV-AUTOFILL] CV found but ai_summary is null — analysis not done yet'); return; }
+        console.log('[CV-AUTOFILL] ai_summary found:', { personalInfo: s?.personalInfo, recentRole: s?.experience?.recentRole, skills: s?.skills?.technical?.slice(0,5) });
         const info = s?.personalInfo;
         if (info?.name)      setFullName(info.name);
         if (info?.phone)     setPhone(info.phone);
@@ -464,6 +471,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   // Called by CVAnalysisTransition when a fresh analysis arrives — always overwrite
   const handleCVDataFound = useCallback((s: any) => {
+    console.log('[CV-AUTOFILL] handleCVDataFound called:', { personalInfo: s?.personalInfo, recentRole: s?.experience?.recentRole, skills: s?.skills?.technical?.slice(0,5) });
     const info = s?.personalInfo;
     if (info?.name)      setFullName(info.name);
     if (info?.phone)     setPhone(info.phone);
