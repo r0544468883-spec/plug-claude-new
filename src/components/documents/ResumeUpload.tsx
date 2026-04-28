@@ -321,18 +321,30 @@ export function ResumeUpload({ onSuccess, compact = false }: ResumeUploadProps) 
   // Compact mode for WelcomeCard
   if (compact) {
     if (existingResume) {
+      const handleDownload = async () => {
+        const { data, error } = await supabase.storage
+          .from('resumes')
+          .createSignedUrl(existingResume.file_path, 60);
+        if (error || !data?.signedUrl) {
+          toast.error(isRTL ? 'שגיאה בהורדת הקובץ' : 'Download error');
+          return;
+        }
+        const a = document.createElement('a');
+        a.href = data.signedUrl;
+        a.download = existingResume.file_name;
+        a.click();
+      };
+
       return (
         <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/10 border border-primary/20">
           <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
           <span className="text-sm text-foreground truncate flex-1">
             {existingResume.file_name}
           </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            className="h-7 px-2"
-          >
+          <Button variant="ghost" size="sm" onClick={handleDownload} className="h-7 px-2" title={isRTL ? 'הורד' : 'Download'}>
+            <Download className="w-3 h-3" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()} className="h-7 px-2" title={isRTL ? 'החלף' : 'Replace'}>
             <RefreshCw className="w-3 h-3" />
           </Button>
         </div>
