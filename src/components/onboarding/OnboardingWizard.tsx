@@ -270,6 +270,31 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     const next = STEP_ORDER[idx + 1];
 
     if (currentStep === 'cv' && cvUploaded) {
+      // Fetch ai_summary during transition and pre-fill form fields
+      if (user?.id) {
+        supabase
+          .from('documents')
+          .select('ai_summary')
+          .eq('owner_id', user.id)
+          .eq('doc_type', 'cv')
+          .not('ai_summary', 'is', null)
+          .limit(1)
+          .maybeSingle()
+          .then(({ data }) => {
+            const info = (data?.ai_summary as any)?.personalInfo;
+            if (info) {
+              if (info.name && !fullName) setFullName(info.name);
+              if (info.phone && !phone) setPhone(info.phone);
+              if (info.location && !city) setCity(info.location.split(',')[0].trim());
+            }
+            const expYears = (data?.ai_summary as any)?.experience?.totalYears;
+            if (expYears && !experienceYears) setExperienceYears(String(expYears));
+            const extractedSkills: string[] = [
+              ...((data?.ai_summary as any)?.skills?.technical || []),
+            ].slice(0, 10);
+            if (extractedSkills.length > 0 && skills.length === 0) setSkills(extractedSkills);
+          });
+      }
       goToStep(next, isHebrew
         ? ['מנתח את קורות החיים...', 'שואב פרטים...', 'מוכן!']
         : ['Analyzing your CV...', 'Extracting details...', 'Ready!']);
