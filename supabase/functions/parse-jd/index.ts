@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { CURRENT_AI_MODEL, CURRENT_AI_MODEL_VERSION } from "../_shared/ai-models.ts";
+import { sha256Hex } from "../_shared/ai-cache.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,6 +25,30 @@ serve(async (req) => {
     if (!CLAUDE_API_KEY) return ok({ error: "AI not configured" });
 
     const rawText = [title, requirements, description].filter(Boolean).join("\n\n").slice(0, 4000);
+    const inputHash = await sha256Hex(rawText);
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Cache-first: skip Claude call if the same JD text was already parsed
+    // by the current model. The `fire-and-forget` call sites (PostJobForm,
+    // ClientProfilePage) re-trigger parse-jd on every submit — this guard
+    // collapses those duplicates.
+    const { data: existing } = await supabase
+      .from("jobs")
+      .select("parsed_jd, parsed_jd_hash, parsed_jd_model")
+      .eq("id", jobId)
+      .single();
+
+    if (
+      existing?.parsed_jd &&
+      existing?.parsed_jd_hash === inputHash &&
+      existing?.parsed_jd_model === CURRENT_AI_MODEL_VERSION
+    ) {
+      return ok({ parsed_jd: existing.parsed_jd, cache_hit: true });
+    }
 
     const prompt = `נתח את תיאור המשרה הבא והחזר JSON מנורמל בלבד, ללא markdown.
 
@@ -50,7 +76,7 @@ ${rawText}
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
+        model: CURRENT_AI_MODEL,
         max_tokens: 512,
         messages: [{ role: "user", content: prompt }],
       }),
@@ -65,20 +91,18 @@ ${rawText}
 
     const parsedJd = JSON.parse(jsonMatch[0]);
 
-    // Save to jobs table
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
     const { error } = await supabase
       .from("jobs")
-      .update({ parsed_jd: parsedJd })
+      .update({
+        parsed_jd: parsedJd,
+        parsed_jd_hash: inputHash,
+        parsed_jd_model: CURRENT_AI_MODEL_VERSION,
+      })
       .eq("id", jobId);
 
     if (error) return ok({ error: error.message });
 
-    return ok({ parsed_jd: parsedJd });
+    return ok({ parsed_jd: parsedJd, cache_hit: false });
   } catch (e) {
     return ok({ error: String(e) });
   }

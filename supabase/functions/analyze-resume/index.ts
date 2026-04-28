@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
+import { CURRENT_AI_MODEL_VERSION } from "../_shared/ai-models.ts";
+import { sha256Hex } from "../_shared/ai-cache.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -298,6 +300,30 @@ Before responding, verify:
     const [dataPart, base64Data] = fileContent.split(",");
     const mimeType = dataPart?.split(":")[1]?.split(";")[0] || "application/pdf";
 
+    // Cache-first: skip Claude call if this exact file content was already
+    // analyzed by the current model. Users frequently re-upload the same CV.
+    let contentHash: string | null = null;
+    if (documentId) {
+      contentHash = await sha256Hex(base64Data);
+      const { data: cachedDoc } = await supabaseAdmin
+        .from("documents")
+        .select("ai_summary, content_hash, ai_summary_model")
+        .eq("id", documentId)
+        .single();
+
+      if (
+        cachedDoc?.ai_summary &&
+        cachedDoc?.content_hash === contentHash &&
+        cachedDoc?.ai_summary_model === CURRENT_AI_MODEL_VERSION
+      ) {
+        console.log("analyze-resume cache hit for document:", documentId);
+        return new Response(
+          JSON.stringify({ success: true, analysis: cachedDoc.ai_summary, cache_hit: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Build Claude content block based on file type
     let fileContentBlock: unknown;
     if (mimeType === "application/pdf") {
@@ -326,7 +352,7 @@ Before responding, verify:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6",
+        model: "claude-haiku-4-5-20251001",
         system: systemPrompt + "\n\nIMPORTANT: Return ONLY valid JSON. No markdown, no code blocks.",
         messages: [
           {
@@ -398,7 +424,11 @@ Before responding, verify:
     if (documentId) {
       const { error: updateError } = await supabaseAdmin
         .from("documents")
-        .update({ ai_summary: analysis })
+        .update({
+          ai_summary: analysis,
+          content_hash: contentHash,
+          ai_summary_model: CURRENT_AI_MODEL_VERSION,
+        })
         .eq("id", documentId)
         .eq("owner_id", authenticatedUserId); // Double-check ownership
 
@@ -409,7 +439,7 @@ Before responding, verify:
       }
     }
 
-    return new Response(JSON.stringify({ success: true, analysis }), {
+    return new Response(JSON.stringify({ success: true, analysis, cache_hit: false }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {

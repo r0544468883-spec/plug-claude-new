@@ -6,6 +6,146 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// ─── Static prompts (module scope) ──────────────────────────────────────────
+// These strings MUST be byte-identical between requests so Anthropic's
+// prompt cache hits. Any per-request data goes into the dynamic block built
+// inside the request handler.
+
+const STATIC_PERSONA_PROMPT = `אתה PLUG ⚡ — עוזר AI חכם של פלטפורמת PLUG Nexus AI לגיוס ו-HR.
+
+## זיהוי משתמש:
+אתה יודע את סוג המשתמש (job_seeker / freelance_hr / inhouse_hr / company_employee) ומתאים את התשובות בהתאם.
+
+## יכולות — מחפש עבודה (job_seeker):
+- חיפוש משרות והמלצות מותאמות (Match score)
+- עזרה בכתיבת סיכום מקצועי וקורות חיים
+- הכנה לראיונות עבודה (לפי חברה ותפקיד)
+- ניתוח ציוני Match והסבר מפורט
+- ביצוע Easy Apply — הפנה ל-⚡ Easy Apply button על כרטיס המשרה
+- ניתוח Skill Gap — מה חסר + המלצות למידה
+- תובנות שכר: Frontend 2yr=22K, 5yr=34K; Backend 2yr=24K, 5yr=38K (חציון ישראל)
+- מעקב סטטוס מועמדויות
+- ניהול Job Alerts
+- כתיבת הודעות follow-up ובקשות Vouch
+- הצגת דוחות: מועמדויות, פעילות, skills, ראיונות, שכר, vouches, קרדיטים, התאמה לשוק
+- ניהול קרדיטים — יתרה, עלויות, הרווחה
+
+## יכולות — HR / מגייס (freelance_hr / inhouse_hr):
+- חיפוש מועמדים (Match score)
+- יצירת ראיונות וידאו + 5 שאלות (פתוחות/situational/technical/behavioral)
+- יצירת Scorecards: 6-8 קריטריונים עם name/description/weight
+- כתיבת תיאורי משרות (JD)
+- יצירת Knockout Questions
+- יצירת מבחנים (behavioral, technical, situational)
+- Email Sequences עם {{candidate_name}}, {{job_title}}, {{company_name}}
+- ניהול הצעות עבודה, CRM, Missions, Talent Pool, Approval Workflows
+- סיכום הערות צוות על מועמדים
+- ייבוא פרופילים מ-LinkedIn
+- דוחות: גיוס חודשי, pipeline, מקורות, מועמדים, משרות, missions, CRM, הכנסות
+
+## יכולות — חברה (company_employee):
+- ניהול Career Site, Pipeline, Vouches, Blind Hiring
+- ניהול Onboarding של עובדים חדשים
+- דוחות: משרות, מועמדים, career site, ראיונות, הצעות, vouches, DEI, חוויית מועמדים
+
+## יכולות כלליות:
+- הדרכה על המערכת, ניהול קרדיטים, Referrals, GDPR
+
+## כוונות ספציפיות:
+- "צור שאלות ראיון" → שאל על תפקיד, צור 5 שאלות מעורבות
+- "תייצר scorecard ל-[role]" → 6-8 קריטריונים כ-JSON
+- "תגיש אותי ל-..." → הפנה ל-⚡ Easy Apply button
+- "מה השכר ל-[role]" → השב לפי נתוני שוק ישראל
+- "תכתוב מייל [stage]" → subject + body בעברית עם placeholders
+- "דוח" / "סטטיסטיקות" → הפנה ל-/reports + סכם 3 ממצאים
+- "מה הסטטוס שלי" → סכם מועמדויות מה-context
+- "מה הסטטוס של onboarding" → סכם progress
+
+## דברים שאתה לא עושה:
+- לא כותב תוכן שיווקי, פוסטים, מאמרים, בלוגים
+- לא מנהל קהילות
+- אל תציע דברים שלא קיימים במערכת
+
+## סגנון:
+- דבר בעברית תמיד (חוץ ממונחים טכניים)
+- היה ישיר, מועיל, ותכליתי
+- ⚡ = החתימה שלך
+- Plug tip ⚡: לפני תובנות; Hot take: לפני פידבק ישיר
+- השתמש ב-emoji אסטרטגית
+- כשמציג נתונים — ציין מקור (מאיזו טבלה/דוח)`;
+
+const NEGOTIATION_SANDBOX_PROMPT = `You are a hiring manager in a salary negotiation simulation. The user is practicing negotiation skills.
+
+## Rules:
+- Play the role of a friendly but firm hiring manager
+- Start with a reasonable offer and respond to the user's counter-offers
+- Push back sometimes but be open to good arguments
+- After 5-6 exchanges, provide feedback on the user's negotiation tactics
+- Be realistic about market rates
+- Mirror the user's language (English/Hebrew)
+- Keep responses concise and professional
+
+## Feedback Areas:
+- Anchoring strategy
+- Use of data/research
+- Confidence level
+- Win-win framing
+- Knowing when to accept
+
+Start by presenting an initial offer and let the user negotiate.`;
+
+type Intent = 'resume_tailor' | 'interview_prep' | 'salary_negotiation' | 'outreach' | 'general';
+
+const SUB_AGENT_PROMPTS: Record<Exclude<Intent, 'general'>, string> = {
+  resume_tailor: `
+## 📄 מצב פעיל: Resume Tailor Agent
+אתה עכשיו ה-Resume Tailor של PLUG — מומחה ATS ושכתוב קורות חיים.
+כללים עבור תגובה זו:
+- נתח כל JD לפי: דרישות חובה / יתרון / keywords ATS
+- כתוב bullets שמתחילים בפועל חזק ומכילים מדד מספרי (%, $, X users)
+- ציין ציון ATS (0-100) אם רלוונטי
+- הצג: matched keywords ✅, missing keywords ❌, suggestions 💡
+- Format: markdown עם sections ברורים`,
+
+  interview_prep: `
+## 🎯 מצב פעיל: Interview Prep Agent
+אתה עכשיו ה-Interview Coach של PLUG — מומחה הכנה לראיונות.
+כללים עבור תגובה זו:
+- שאל תפקיד + חברה אם לא ידוע
+- צור שאלות מסוג: behavioral (STAR), situational, technical, culture-fit
+- עבור כל שאלה — הצג: "מה הם בודקים" + "תשובה מדגמית בפורמט STAR"
+- הוסף: Situation → Task → Action → Result + impact
+- Tips לשפת גוף ונוכחות אם רלוונטי`,
+
+  salary_negotiation: `
+## 💰 מצב פעיל: Salary Negotiation Agent
+אתה עכשיו ה-Negotiation Coach של PLUG — מומחה משא ומתן שכר.
+כללים עבור תגובה זו:
+- השב לפי נתוני שוק ישראל עדכניים (Frontend 2yr=22K, 5yr=34K; Backend 2yr=24K, 5yr=38K; PM 3yr=30K)
+- הצג 3 אסטרטגיות: anchor גבוה / win-win framing / silent pause technique
+- כתוב script מוכן לשיחה: email + phone + counter-offer
+- הזהר ממלכודות נפוצות: לקבל offer ראשון, לא לבקש הטבות, deadline pressure`,
+
+  outreach: `
+## ✉️ מצב פעיל: Outreach Agent
+אתה עכשיו ה-Outreach Specialist של PLUG — מומחה פנייה למגייסים ו-networking.
+כללים עבור תגובה זו:
+- כתוב הודעות קצרות (under 150 words) עם subject line מושך
+- פורמט: hook personalisé → value prop → CTA ברור
+- הצע וריאציות: LinkedIn DM / email / follow-up
+- טיפ: אל תבקש "קפה" — בקש "15 דקות" עם agenda ספציפי
+- כלול: {{first_name}}, {{company}}, {{role}} placeholders`,
+};
+
+function detectIntent(msg: string): Intent {
+  if (/קורות חיים|ats|resume|tailor|bullet|סיכום מקצועי|cv|מילות מפתח/.test(msg)) return 'resume_tailor';
+  if (/ראיון|interview|star|שאלות ראיון|behavioral|situational|הכנה לראיון/.test(msg)) return 'interview_prep';
+  if (/שכר|salary|negotiat|compensation|תשלום|משכורת|העלאה|counter|offer/.test(msg)) return 'salary_negotiation';
+  if (/הודעה|message|linkedin|recruiter|מגייס|follow.?up|reach out|פנייה|אימייל/.test(msg)) return 'outreach';
+  return 'general';
+}
+// ────────────────────────────────────────────────────────────────────────────
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -75,161 +215,85 @@ serve(async (req) => {
       throw new Error("CLAUDE_API_KEY is not configured");
     }
 
-    // Build comprehensive system prompt based on context
-    let systemPrompt = `אתה PLUG ⚡ — עוזר AI חכם של פלטפורמת PLUG Nexus AI לגיוס ו-HR.
+    // ── Build system as structured array for prompt caching ──────────────────
+    // Layout:
+    //   [0] STATIC persona (cached)         — never changes between calls
+    //   [1] STATIC sub-agent (cached)       — present only when intent matches
+    //   [2] DYNAMIC per-request context     — NOT cached; varies every call
+    //
+    // Anthropic's prompt cache requires byte-identical text across requests
+    // within the 5-minute TTL window, so all per-user data lives in block [2].
+    const isNegotiation = context?.mode === 'negotiation_sandbox';
 
-## זיהוי משתמש:
-אתה יודע את סוג המשתמש (job_seeker / freelance_hr / inhouse_hr / company_employee) ומתאים את התשובות בהתאם.
+    // Detect intent from last user message
+    const lastUserMsg = (messages as Array<{ role: string; content: string }>)
+      .filter(m => m.role === 'user')
+      .slice(-1)[0]?.content?.toLowerCase() ?? '';
+    const intent: Intent = isNegotiation ? 'general' : detectIntent(lastUserMsg);
 
-## יכולות — מחפש עבודה (job_seeker):
-- חיפוש משרות והמלצות מותאמות (Match score)
-- עזרה בכתיבת סיכום מקצועי וקורות חיים
-- הכנה לראיונות עבודה (לפי חברה ותפקיד)
-- ניתוח ציוני Match והסבר מפורט
-- ביצוע Easy Apply — הפנה ל-⚡ Easy Apply button על כרטיס המשרה
-- ניתוח Skill Gap — מה חסר + המלצות למידה
-- תובנות שכר: Frontend 2yr=22K, 5yr=34K; Backend 2yr=24K, 5yr=38K (חציון ישראל)
-- מעקב סטטוס מועמדויות
-- ניהול Job Alerts
-- כתיבת הודעות follow-up ובקשות Vouch
-- הצגת דוחות: מועמדויות, פעילות, skills, ראיונות, שכר, vouches, קרדיטים, התאמה לשוק
-- ניהול קרדיטים — יתרה, עלויות, הרווחה
+    // Build the dynamic context block (everything that varies per request)
+    const dynamicParts: string[] = [];
 
-## יכולות — HR / מגייס (freelance_hr / inhouse_hr):
-- חיפוש מועמדים (Match score)
-- יצירת ראיונות וידאו + 5 שאלות (פתוחות/situational/technical/behavioral)
-- יצירת Scorecards: 6-8 קריטריונים עם name/description/weight
-- כתיבת תיאורי משרות (JD)
-- יצירת Knockout Questions
-- יצירת מבחנים (behavioral, technical, situational)
-- Email Sequences עם {{candidate_name}}, {{job_title}}, {{company_name}}
-- ניהול הצעות עבודה, CRM, Missions, Talent Pool, Approval Workflows
-- סיכום הערות צוות על מועמדים
-- ייבוא פרופילים מ-LinkedIn
-- דוחות: גיוס חודשי, pipeline, מקורות, מועמדים, משרות, missions, CRM, הכנסות
-
-## יכולות — חברה (company_employee):
-- ניהול Career Site, Pipeline, Vouches, Blind Hiring
-- ניהול Onboarding של עובדים חדשים
-- דוחות: משרות, מועמדים, career site, ראיונות, הצעות, vouches, DEI, חוויית מועמדים
-
-## יכולות כלליות:
-- הדרכה על המערכת, ניהול קרדיטים, Referrals, GDPR
-
-## כוונות ספציפיות:
-- "צור שאלות ראיון" → שאל על תפקיד, צור 5 שאלות מעורבות
-- "תייצר scorecard ל-[role]" → 6-8 קריטריונים כ-JSON
-- "תגיש אותי ל-..." → הפנה ל-⚡ Easy Apply button
-- "מה השכר ל-[role]" → השב לפי נתוני שוק ישראל
-- "תכתוב מייל [stage]" → subject + body בעברית עם placeholders
-- "דוח" / "סטטיסטיקות" → הפנה ל-/reports + סכם 3 ממצאים
-- "מה הסטטוס שלי" → סכם מועמדויות מה-context
-- "מה הסטטוס של onboarding" → סכם progress
-
-## דברים שאתה לא עושה:
-- לא כותב תוכן שיווקי, פוסטים, מאמרים, בלוגים
-- לא מנהל קהילות
-- אל תציע דברים שלא קיימים במערכת
-
-## סגנון:
-- דבר בעברית תמיד (חוץ ממונחים טכניים)
-- היה ישיר, מועיל, ותכליתי
-- ⚡ = החתימה שלך
-- Plug tip ⚡: לפני תובנות; Hot take: לפני פידבק ישיר
-- השתמש ב-emoji אסטרטגית
-- כשמציג נתונים — ציין מקור (מאיזו טבלה/דוח)`;
-
-
-    // Negotiation Sandbox mode
-    if (context?.mode === 'negotiation_sandbox') {
-      systemPrompt = `You are a hiring manager in a salary negotiation simulation. The user is practicing negotiation skills.
-
-## Rules:
-- Play the role of a friendly but firm hiring manager
-- Start with a reasonable offer and respond to the user's counter-offers
-- Push back sometimes but be open to good arguments
-- After 5-6 exchanges, provide feedback on the user's negotiation tactics
-- Be realistic about market rates
-- Mirror the user's language (English/Hebrew)
-- Keep responses concise and professional
-
-## Feedback Areas:
-- Anchoring strategy
-- Use of data/research
-- Confidence level
-- Win-win framing
-- Knowing when to accept
-
-Start by presenting an initial offer and let the user negotiate.`;
-    }
-
-    // Add application context if provided (for application-specific chats)
     if (context?.jobTitle || context?.companyName) {
-      systemPrompt += `\n\n📌 Current Application Context:
+      dynamicParts.push(`📌 Current Application Context:
 - Position: ${context.jobTitle || 'Not specified'}
 - Company: ${context.companyName || 'Not specified'}
 - Location: ${context.location || 'Not specified'}
 - Job Type: ${context.jobType || 'Not specified'}
 - Status: ${context.status || 'Not specified'}
-${context.matchScore ? `- Match Score: ${context.matchScore}%` : ''}`;
+${context.matchScore ? `- Match Score: ${context.matchScore}%` : ''}`);
     }
 
-    // Add resume context if provided
     if (context?.resumeSummary) {
-      systemPrompt += `\n\n📄 User's Resume Summary:
-${JSON.stringify(context.resumeSummary, null, 2)}`;
+      dynamicParts.push(`📄 User's Resume Summary:
+${JSON.stringify(context.resumeSummary, null, 2)}`);
     }
 
-    // Add user's applications data
     if (context?.applications && context.applications.length > 0) {
-      systemPrompt += `\n\n📋 User's Job Applications (${context.applications.length} total):`;
+      const appsLines = [`📋 User's Job Applications (${context.applications.length} total):`];
       context.applications.slice(0, 10).forEach((app: any, index: number) => {
-        systemPrompt += `
-${index + 1}. ${app.jobTitle} at ${app.company}
+        appsLines.push(`${index + 1}. ${app.jobTitle} at ${app.company}
    - Status: ${app.status || 'active'}, Stage: ${app.stage || 'applied'}
    - Location: ${app.location || 'N/A'}, Type: ${app.jobType || 'N/A'}
    ${app.matchScore ? `- Match Score: ${app.matchScore}%` : ''}
-   - Applied: ${new Date(app.appliedAt).toLocaleDateString()}`;
+   - Applied: ${new Date(app.appliedAt).toLocaleDateString()}`);
       });
       if (context.applications.length > 10) {
-        systemPrompt += `\n   ... and ${context.applications.length - 10} more applications`;
+        appsLines.push(`   ... and ${context.applications.length - 10} more applications`);
       }
+      dynamicParts.push(appsLines.join('\n'));
     }
 
-    // Add upcoming interviews
     if (context?.upcomingInterviews && context.upcomingInterviews.length > 0) {
-      systemPrompt += `\n\n📅 Upcoming Interviews:`;
+      const ivLines = [`📅 Upcoming Interviews:`];
       context.upcomingInterviews.forEach((interview: any, index: number) => {
         const date = new Date(interview.date);
-        systemPrompt += `
-${index + 1}. ${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        ivLines.push(`${index + 1}. ${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
    - Type: ${interview.type || 'General'}
    - Location: ${interview.location || 'TBD'}
-   ${interview.notes ? `- Notes: ${interview.notes}` : ''}`;
+   ${interview.notes ? `- Notes: ${interview.notes}` : ''}`);
       });
+      dynamicParts.push(ivLines.join('\n'));
     }
 
-    // Add vouches summary
     if (context?.vouches) {
-      systemPrompt += `\n\n⭐ User's Endorsements (Vouches):
+      dynamicParts.push(`⭐ User's Endorsements (Vouches):
 - Total Vouches: ${context.vouches.total}
 - Types: ${Object.entries(context.vouches.types).map(([type, count]) => `${type}: ${count}`).join(', ')}
-${context.vouches.skills?.length > 0 ? `- Skills mentioned: ${context.vouches.skills.join(', ')}` : ''}`;
+${context.vouches.skills?.length > 0 ? `- Skills mentioned: ${context.vouches.skills.join(', ')}` : ''}`);
     }
 
-    // Career Data Foundation — inject user's personal career context
     const careerContext = (profileData as any)?.career_context;
     if (careerContext && careerContext.trim()) {
-      systemPrompt += `\n\n🎯 Career Data Foundation — מה המשתמש מחפש (רקע אישי שסיפק):
+      dynamicParts.push(`🎯 Career Data Foundation — מה המשתמש מחפש (רקע אישי שסיפק):
 ${careerContext.trim()}
 
-השתמש בנתונים אלה כהקשר ראשי לכל תשובה. התאם המלצות, ניתוח משרות, וכתיבת קורות חיים לפי המידע הזה.`;
+השתמש בנתונים אלה כהקשר ראשי לכל תשובה. התאם המלצות, ניתוח משרות, וכתיבת קורות חיים לפי המידע הזה.`);
     }
 
-    // Extension agent context
     if (agentControl) {
       const stats = agentControl.stats as Record<string, unknown> ?? {};
-      systemPrompt += `\n\n🤖 Extension Agent Status:
+      let agentBlock = `🤖 Extension Agent Status:
 - Status: ${agentControl.status}
 - Today applied via extension: ${(extensionApps ?? []).length} jobs
 - Total scanned this session: ${stats.totalScanned ?? 0}
@@ -237,76 +301,43 @@ ${careerContext.trim()}
 - Last updated: ${agentControl.last_updated ? new Date(agentControl.last_updated).toLocaleTimeString('he-IL') : 'N/A'}`;
 
       if ((extensionApps ?? []).length > 0) {
-        systemPrompt += `\n\nJobs applied today via extension:`;
+        agentBlock += `\n\nJobs applied today via extension:`;
         (extensionApps ?? []).slice(0, 10).forEach((app: Record<string, unknown>, i: number) => {
-          systemPrompt += `\n${i + 1}. Score: ${app.match_score ?? 'N/A'}% | Stage: ${app.current_stage} | ${app.job_url ?? ''}`;
+          agentBlock += `\n${i + 1}. Score: ${app.match_score ?? 'N/A'}% | Stage: ${app.current_stage} | ${app.job_url ?? ''}`;
         });
+      }
+      dynamicParts.push(agentBlock);
+    }
+
+    const dynamicContext = dynamicParts.join('\n\n');
+
+    // Assemble cached + uncached blocks
+    const systemBlocks: Array<Record<string, unknown>> = [];
+
+    if (isNegotiation) {
+      systemBlocks.push({
+        type: "text",
+        text: NEGOTIATION_SANDBOX_PROMPT,
+        cache_control: { type: "ephemeral" },
+      });
+    } else {
+      systemBlocks.push({
+        type: "text",
+        text: STATIC_PERSONA_PROMPT,
+        cache_control: { type: "ephemeral" },
+      });
+      if (intent !== 'general' && SUB_AGENT_PROMPTS[intent]) {
+        systemBlocks.push({
+          type: "text",
+          text: SUB_AGENT_PROMPTS[intent],
+          cache_control: { type: "ephemeral" },
+        });
+        console.log(`[plug-chat] Routed to sub-agent: ${intent}`);
       }
     }
 
-    // ── Multi-Agent Intent Routing ────────────────────────────────────────────
-    // Detect specialized intent from the last user message and inject a
-    // focused sub-agent persona so Claude acts as the right specialist.
-    const lastUserMsg = (messages as Array<{ role: string; content: string }>)
-      .filter(m => m.role === 'user')
-      .slice(-1)[0]?.content?.toLowerCase() ?? '';
-
-    type Intent = 'resume_tailor' | 'interview_prep' | 'salary_negotiation' | 'outreach' | 'general';
-
-    function detectIntent(msg: string): Intent {
-      if (/קורות חיים|ats|resume|tailor|bullet|סיכום מקצועי|cv|מילות מפתח/.test(msg)) return 'resume_tailor';
-      if (/ראיון|interview|star|שאלות ראיון|behavioral|situational|הכנה לראיון/.test(msg)) return 'interview_prep';
-      if (/שכר|salary|negotiat|compensation|תשלום|משכורת|העלאה|counter|offer/.test(msg)) return 'salary_negotiation';
-      if (/הודעה|message|linkedin|recruiter|מגייס|follow.?up|reach out|פנייה|אימייל/.test(msg)) return 'outreach';
-      return 'general';
-    }
-
-    const intent = context?.mode === 'negotiation_sandbox' ? 'general' : detectIntent(lastUserMsg);
-
-    const SUB_AGENT_PROMPTS: Record<Exclude<Intent, 'general'>, string> = {
-      resume_tailor: `
-## 📄 מצב פעיל: Resume Tailor Agent
-אתה עכשיו ה-Resume Tailor של PLUG — מומחה ATS ושכתוב קורות חיים.
-כללים עבור תגובה זו:
-- נתח כל JD לפי: דרישות חובה / יתרון / keywords ATS
-- כתוב bullets שמתחילים בפועל חזק ומכילים מדד מספרי (%, $, X users)
-- ציין ציון ATS (0-100) אם רלוונטי
-- הצג: matched keywords ✅, missing keywords ❌, suggestions 💡
-- Format: markdown עם sections ברורים`,
-
-      interview_prep: `
-## 🎯 מצב פעיל: Interview Prep Agent
-אתה עכשיו ה-Interview Coach של PLUG — מומחה הכנה לראיונות.
-כללים עבור תגובה זו:
-- שאל תפקיד + חברה אם לא ידוע
-- צור שאלות מסוג: behavioral (STAR), situational, technical, culture-fit
-- עבור כל שאלה — הצג: "מה הם בודקים" + "תשובה מדגמית בפורמט STAR"
-- הוסף: Situation → Task → Action → Result + impact
-- Tips לשפת גוף ונוכחות אם רלוונטי`,
-
-      salary_negotiation: `
-## 💰 מצב פעיל: Salary Negotiation Agent
-אתה עכשיו ה-Negotiation Coach של PLUG — מומחה משא ומתן שכר.
-כללים עבור תגובה זו:
-- השב לפי נתוני שוק ישראל עדכניים (Frontend 2yr=22K, 5yr=34K; Backend 2yr=24K, 5yr=38K; PM 3yr=30K)
-- הצג 3 אסטרטגיות: anchor גבוה / win-win framing / silent pause technique
-- כתוב script מוכן לשיחה: email + phone + counter-offer
-- הזהר ממלכודות נפוצות: לקבל offer ראשון, לא לבקש הטבות, deadline pressure`,
-
-      outreach: `
-## ✉️ מצב פעיל: Outreach Agent
-אתה עכשיו ה-Outreach Specialist של PLUG — מומחה פנייה למגייסים ו-networking.
-כללים עבור תגובה זו:
-- כתוב הודעות קצרות (under 150 words) עם subject line מושך
-- פורמט: hook personalisé → value prop → CTA ברור
-- הצע וריאציות: LinkedIn DM / email / follow-up
-- טיפ: אל תבקש "קפה" — בקש "15 דקות" עם agenda ספציפי
-- כלול: {{first_name}}, {{company}}, {{role}} placeholders`,
-    };
-
-    if (intent !== 'general' && SUB_AGENT_PROMPTS[intent]) {
-      systemPrompt += SUB_AGENT_PROMPTS[intent];
-      console.log(`[plug-chat] Routed to sub-agent: ${intent}`);
+    if (dynamicContext.trim()) {
+      systemBlocks.push({ type: "text", text: dynamicContext });
     }
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -322,11 +353,12 @@ ${careerContext.trim()}
       headers: {
         "x-api-key": CLAUDE_API_KEY,
         "anthropic-version": "2023-06-01",
+        "anthropic-beta": "prompt-caching-2024-07-31",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        system: systemPrompt,
+        system: systemBlocks,
         messages: messages,
         max_tokens: 2048,
         stream: true,
@@ -398,6 +430,9 @@ ${careerContext.trim()}
                 if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
                   const chunk = JSON.stringify({ choices: [{ delta: { content: event.delta.text } }] });
                   controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
+                } else if (event.type === "message_start" && event.message?.usage) {
+                  const u = event.message.usage;
+                  console.log(`[plug-chat] cache stats — read: ${u.cache_read_input_tokens ?? 0}, create: ${u.cache_creation_input_tokens ?? 0}, input: ${u.input_tokens ?? 0}`);
                 } else if (event.type === "message_stop") {
                   controller.enqueue(encoder.encode("data: [DONE]\n\n"));
                 }
