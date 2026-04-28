@@ -135,12 +135,16 @@ export default function Dashboard() {
   const [cvChatCollapsed, setCvChatCollapsed] = useState(false);
 
   // Onboarding wizard — show on first login for job seekers
-  const [showOnboardingWizard, setShowOnboardingWizard] = useState(() => {
-    if (role !== 'job_seeker') return false;
+  // Must use useEffect because role loads async from DB
+  const [showOnboardingWizard, setShowOnboardingWizard] = useState(false);
+  useEffect(() => {
+    if (role !== 'job_seeker') return;
     const done = localStorage.getItem('plug-onboarding-done') === 'true';
     const profileDone = (profile as any)?.onboarding_completed === true;
-    return !done && !profileDone;
-  });
+    if (!done && !profileDone) {
+      setShowOnboardingWizard(true);
+    }
+  }, [role, profile]);
 
   const isRTL = language === 'he';
 
