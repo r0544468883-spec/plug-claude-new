@@ -390,9 +390,13 @@ Before responding, verify:
     
     let analysis;
     try {
-      analysis = JSON.parse(analysisContent);
-      console.log("Parsed analysis - has positions:", !!analysis?.experience?.positions, "count:", analysis?.experience?.positions?.length || 0);
-      console.log("Parsed analysis - has institutions:", !!analysis?.education?.institutions, "count:", analysis?.education?.institutions?.length || 0);
+      // Strip markdown code fences if Claude wrapped the JSON (e.g. ```json ... ```)
+      const cleaned = (analysisContent || '')
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/\s*```$/i, '')
+        .trim();
+      analysis = JSON.parse(cleaned);
+      console.log("Parsed analysis - personalInfo:", !!analysis?.personalInfo, "positions:", analysis?.experience?.positions?.length || 0);
     } catch (parseErr) {
       console.error("JSON parse error:", parseErr);
       // If JSON parsing fails, create a basic structure
