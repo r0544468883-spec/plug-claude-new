@@ -111,11 +111,11 @@ export default function CandidateProfile() {
       if (!profile) return null;
 
       const [fieldsResult, rolesResult, expResult] = await Promise.all([
-        profile.preferred_fields?.length 
-          ? supabase.from('job_fields').select('id, name_en, name_he').in('id', profile.preferred_fields)
+        profile.preferred_fields?.length
+          ? supabase.from('job_fields').select('id, name_en, name_he, slug').in('slug', profile.preferred_fields)
           : { data: [] },
         profile.preferred_roles?.length
-          ? supabase.from('job_roles').select('id, name_en, name_he').in('id', profile.preferred_roles)
+          ? supabase.from('job_roles').select('id, name_en, name_he, slug').in('slug', profile.preferred_roles)
           : { data: [] },
         profile.preferred_experience_level_id
           ? supabase.from('experience_levels').select('id, name_en, name_he').eq('id', profile.preferred_experience_level_id).maybeSingle()

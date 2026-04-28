@@ -37,6 +37,9 @@ const htmlPage = (success: boolean, error?: string) => `<!DOCTYPE html>
     <p class="hint">חלון זה יסגר אוטומטית בעוד <span id="t">5</span> שניות</p>
   </div>
   <script>
+    if (window.opener) {
+      try { window.opener.postMessage({ type: 'PLUG_OAUTH_SUCCESS', provider: 'linkedin' }, '*'); } catch(e) {}
+    }
     let n=5; const el=document.getElementById('t');
     const iv=setInterval(()=>{ n--; if(el) el.textContent=n; if(n<=0){clearInterval(iv);window.close();} },1000);
   </script>

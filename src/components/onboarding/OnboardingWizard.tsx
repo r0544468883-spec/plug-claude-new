@@ -13,7 +13,7 @@ import { ResumeUpload } from '@/components/documents/ResumeUpload';
 import { useTypingEffect } from '@/hooks/useTypingEffect';
 import {
   Check, X, Rocket, Link2, Mail, Calendar, Bell, Shield, Loader2,
-  CheckCircle2, ChevronDown, Zap, Chrome,
+  CheckCircle2, ChevronDown, Zap, Chrome, MapPin,
 } from 'lucide-react';
 import { JOB_FIELDS, JOB_ROLES, EXPERIENCE_LEVELS, getRolesByField } from '@/lib/job-taxonomy';
 
@@ -473,6 +473,20 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [calendarDone, setCalendarDone] = useState(false);
   const [linkedinDone, setLinkedinDone] = useState(false);
   const [pushDone, setPushDone] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(false);
+
+  // Listen for OAuth success messages from popup windows
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (!e.data || e.data.type !== 'PLUG_OAUTH_SUCCESS') return;
+      const { provider } = e.data;
+      if (provider === 'gmail') { setGmailDone(true); toast.success(isHebrew ? 'Gmail חובר בהצלחה!' : 'Gmail connected!'); }
+      else if (provider === 'linkedin') { setLinkedinDone(true); toast.success(isHebrew ? 'LinkedIn חובר בהצלחה!' : 'LinkedIn connected!'); }
+      else if (provider === 'calendar') { setCalendarDone(true); toast.success(isHebrew ? 'יומן Google חובר בהצלחה!' : 'Google Calendar connected!'); }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [isHebrew]);
 
   const availableRoles = useMemo(() => {
     if (preferredFields.length === 0) return [];
@@ -619,7 +633,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       localStorage.setItem('plug-onboarding-done', 'true');
       toast.success(isHebrew ? 'הפרופיל עודכן בהצלחה!' : 'Profile updated!');
       onComplete();
-    } catch {
+    } catch (err) {
+      console.error('[OnboardingWizard] handleFinish error:', err);
       toast.error(isHebrew ? 'שגיאה בשמירה, נסו שוב' : 'Error saving, try again');
     } finally {
       setSaving(false);
@@ -676,6 +691,30 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     } catch {
       toast.error(isHebrew ? 'שגיאה בהפעלת התראות' : 'Failed to enable notifications');
     }
+  };
+
+  const detectCity = () => {
+    if (!navigator.geolocation) return;
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json&accept-language=he`,
+            { headers: { 'User-Agent': 'PLUG-App/1.0' } }
+          );
+          const data = await res.json();
+          const cityName = data.address?.city || data.address?.town || data.address?.village || data.address?.county || '';
+          if (cityName) setCity(cityName);
+        } catch {
+          // silent
+        } finally {
+          setGpsLoading(false);
+        }
+      },
+      () => setGpsLoading(false),
+      { timeout: 8000 }
+    );
   };
 
   const addSkill = () => {
@@ -813,8 +852,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           <div className="max-w-lg mx-auto px-4">
             <PlugMessage
               text={isHebrew
-                ? 'מעולה! איך קוראים לך? 😊\nהשם, הטלפון והכותרת ימולאו אוטומטית בטפסי הגשה.'
-                : 'Great! What\'s your name? 😊\nName, phone and headline will auto-fill in application forms.'}
+                ? `מעולה! איך קוראים לך? 😊\nהשם, הטלפון והכותרת יימולאו אוטומטית בטפסי הגשה.`
+                : "Great! What's your name? 😊\nName, phone and headline will auto-fill in application forms."}
               speed={30}
               onComplete={onMessageReady}
             />
@@ -1014,7 +1053,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           <div className="max-w-lg mx-auto px-4">
             <PlugMessage
               text={isHebrew
-                ? 'כמעט סיימנו! 🏠\nאיפה אתה גר, כמה מוכן לנסוע, ומה הציפיות?'
+                ? `כמעט סיימנו! 🏠\nאיפה ${gender === 'female' ? 'את גרה' : 'אתה גר'}, כמה ${gender === 'female' ? 'מוכנה' : 'מוכן'} לנסוע, ומה הציפיות?`
                 : 'Almost done! 🏠\nWhere do you live, how far will you commute, and what are your expectations?'}
               speed={28}
               onComplete={onMessageReady}
@@ -1025,12 +1064,23 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   {/* City */}
                   <div>
                     <p className="text-xs text-muted-foreground mb-1.5 font-medium">{isHebrew ? 'עיר מגורים:' : 'City of residence:'}</p>
-                    <Input value={city} onChange={e => setCity(e.target.value)} placeholder={isHebrew ? 'למשל: תל אביב' : 'e.g. Tel Aviv'} className="onb-input" />
+                    <div className="flex gap-2">
+                      <Input value={city} onChange={e => setCity(e.target.value)} placeholder={isHebrew ? 'למשל: תל אביב' : 'e.g. Tel Aviv'} className="onb-input flex-1" />
+                      <button
+                        type="button"
+                        onClick={detectCity}
+                        disabled={gpsLoading}
+                        title={isHebrew ? 'זהה מיקום אוטומטית' : 'Detect location'}
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg border border-border/40 bg-background/40 hover:border-primary/50 hover:text-primary transition-colors disabled:opacity-50"
+                      >
+                        {gpsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Commute distance */}
                   <div>
-                    <p className="text-xs text-muted-foreground mb-2 font-medium">{isHebrew ? 'כמה מוכן לנסוע לעבודה?' : 'How far will you commute?'}</p>
+                    <p className="text-xs text-muted-foreground mb-2 font-medium">{isHebrew ? `כמה ${gender === 'female' ? 'מוכנה' : 'מוכן'} לנסוע לעבודה?` : 'How far will you commute?'}</p>
                     <div className="flex flex-wrap gap-2">
                       {COMMUTE_DISTANCES.map(d => (
                         <ChipBtn key={d.value} label={isHebrew ? d.he : d.en} selected={commuteDistance === d.value}
@@ -1058,11 +1108,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     <p className="text-xs text-muted-foreground mb-2 font-medium">{isHebrew ? 'מה המצב שלך?' : "What's your status?"}</p>
                     <div className="space-y-2">
                       {([
-                        { value: 'active' as const, he: 'מחפש/ת באופן אקטיבי', en: 'Actively searching', emoji: '🔥' },
-                        { value: 'open' as const, he: 'פתוח/ה להצעות', en: 'Open to offers', emoji: '👀' },
-                        { value: 'exploring' as const, he: 'סתם בודק/ת מה יש', en: 'Just exploring', emoji: '🧭' },
+                        { value: 'active' as const, he_m: 'מחפש באופן אקטיבי', he_f: 'מחפשת באופן אקטיבי', en: 'Actively searching', emoji: '🔥' },
+                        { value: 'open' as const, he_m: 'פתוח להצעות', he_f: 'פתוחה להצעות', en: 'Open to offers', emoji: '👀' },
+                        { value: 'exploring' as const, he_m: 'סתם בודק מה יש', he_f: 'סתם בודקת מה יש', en: 'Just exploring', emoji: '🧭' },
                       ]).map(opt => (
-                        <OptionButton key={opt.value} label={isHebrew ? opt.he : opt.en} emoji={opt.emoji}
+                        <OptionButton key={opt.value} label={isHebrew ? (gender === 'female' ? opt.he_f : opt.he_m) : opt.en} emoji={opt.emoji}
                           selected={searchGoal === opt.value} onClick={() => setSearchGoal(opt.value)} />
                       ))}
                     </div>
