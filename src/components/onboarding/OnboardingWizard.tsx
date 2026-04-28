@@ -394,10 +394,16 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             if (signedData?.signedUrl) {
               fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-resume`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session.access_token}`,
+                  'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+                },
                 body: JSON.stringify({ fileUrl: signedData.signedUrl, fileName: data.file_name, documentId: data.id }),
-              }).then(() => console.log('[CV-AUTOFILL] Re-analysis triggered'))
-                .catch(e => console.error('[CV-AUTOFILL] Re-analysis failed:', e));
+              }).then(async (res) => {
+                const body = await res.json().catch(() => ({}));
+                console.log('[CV-AUTOFILL] Re-analysis response:', res.status, body);
+              }).catch(e => console.error('[CV-AUTOFILL] Re-analysis failed:', e));
             }
           }
           return;
