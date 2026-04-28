@@ -429,6 +429,66 @@ html[dir="rtl"], html[dir="rtl"] body {
   animation: onb-spin-slow 3s linear infinite;
 }
 
+/* DataVision-style animated background blobs */
+@keyframes onb-blob-1 {
+  0%   { transform: translate(0px, 0px) scale(1); }
+  33%  { transform: translate(60px, -40px) scale(1.08); }
+  66%  { transform: translate(-30px, 50px) scale(0.96); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+@keyframes onb-blob-2 {
+  0%   { transform: translate(0px, 0px) scale(1); }
+  33%  { transform: translate(-50px, 30px) scale(1.06); }
+  66%  { transform: translate(40px, -60px) scale(0.94); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+@keyframes onb-blob-3 {
+  0%   { transform: translate(0px, 0px) scale(1); }
+  50%  { transform: translate(30px, 40px) scale(1.1); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+.onb-bg-blob-mint {
+  width: 600px;
+  height: 500px;
+  border-radius: 50%;
+  background: hsl(156 100% 50% / 0.12);
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+  animation: onb-blob-1 12s ease-in-out infinite;
+}
+.onb-bg-blob-purple {
+  width: 550px;
+  height: 450px;
+  border-radius: 50%;
+  background: hsl(270 91% 65% / 0.10);
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+  animation: onb-blob-2 15s ease-in-out infinite;
+}
+.onb-bg-blob-mint-sm {
+  width: 350px;
+  height: 300px;
+  border-radius: 50%;
+  background: hsl(156 100% 50% / 0.07);
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 0;
+  animation: onb-blob-3 9s ease-in-out infinite;
+}
+
+/* Cyber grid overlay */
+.onb-cyber-grid {
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(hsl(156 100% 50% / 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(156 100% 50% / 0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
 /* Progress bar gradient fill */
 .onb-progress-fill {
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -451,4 +511,76 @@ html[dir="rtl"], html[dir="rtl"] body {
 .onb-input:focus {
   border-color: hsl(156 100% 50% / 0.5) !important;
   box-shadow: 0 0 15px hsl(156 100% 50% / 0.1) !important;
+}
+
+/* ════════════════════════════════════════════════════
+   DataVision-style animated background
+   ════════════════════════════════════════════════════ */
+
+/* Cyber grid overlay */
+.onb-cyber-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(hsl(156 100% 50% / 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(156 100% 50% / 0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  z-index: 0;
+}
+
+/* Animated blob 1 — mint, top-right */
+@keyframes onb-blob-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(-60px, 40px) scale(1.1); }
+  66%       { transform: translate(40px, -30px) scale(0.95); }
+}
+
+/* Animated blob 2 — purple, bottom-left */
+@keyframes onb-blob-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(50px, -50px) scale(1.08); }
+  66%       { transform: translate(-40px, 30px) scale(0.92); }
+}
+
+/* Animated blob 3 — mint, center */
+@keyframes onb-blob-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%       { transform: translate(30px, 40px) scale(1.05); }
+}
+
+.onb-bg-blob-mint {
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 50%;
+  filter: blur(80px);
+  background: hsl(156 100% 50% / 0.12);
+  width: 600px;
+  height: 500px;
+  animation: onb-blob-1 12s ease-in-out infinite;
+}
+
+.onb-bg-blob-purple {
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 50%;
+  filter: blur(80px);
+  background: hsl(270 91% 65% / 0.1);
+  width: 550px;
+  height: 450px;
+  animation: onb-blob-2 15s ease-in-out infinite;
+}
+
+.onb-bg-blob-mint-sm {
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 50%;
+  filter: blur(60px);
+  background: hsl(156 100% 50% / 0.07);
+  width: 350px;
+  height: 300px;
+  animation: onb-blob-3 9s ease-in-out infinite;
 }

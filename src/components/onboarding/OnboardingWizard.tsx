@@ -51,9 +51,9 @@ interface OnboardingWizardProps {
   onComplete: () => void;
 }
 
-type StepId = 'welcome' | 'cv' | 'name' | 'fields' | 'experience' | 'links' | 'details' | 'gmail' | 'done';
+type StepId = 'welcome' | 'gender' | 'cv' | 'name' | 'fields' | 'experience' | 'links' | 'details' | 'gmail' | 'done';
 
-const STEP_ORDER: StepId[] = ['welcome', 'cv', 'name', 'fields', 'experience', 'links', 'details', 'gmail', 'done'];
+const STEP_ORDER: StepId[] = ['welcome', 'gender', 'cv', 'name', 'fields', 'experience', 'links', 'details', 'gmail', 'done'];
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
@@ -358,6 +358,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // ── Form state ──
+  const [gender, setGender] = useState<'male' | 'female' | 'prefer_not' | ''>('');
   const [fullName, setFullName] = useState((profile as any)?.full_name || '');
   const [phone, setPhone] = useState((profile as any)?.phone || '');
   const [tagline, setTagline] = useState((profile as any)?.personal_tagline || '');
@@ -557,6 +558,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
       const updates: Record<string, any> = {
         full_name: fullName.trim(),
+        gender: gender || null,
         phone: phone.trim() || null,
         personal_tagline: tagline.trim() || null,
         preferred_fields: preferredFields,
@@ -684,9 +686,45 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   </span>
                 </div>
                 <div className="flex justify-center mt-6">
-                  <Button onClick={() => goToStep('cv')} size="lg" className="min-h-[52px] gap-2 rounded-full px-8 text-base font-semibold hover:shadow-[0_0_30px_hsl(156_100%_50%/0.3)]">
+                  <Button onClick={handleNext} size="lg" className="min-h-[52px] gap-2 rounded-full px-8 text-base font-semibold hover:shadow-[0_0_30px_hsl(156_100%_50%/0.3)]">
                     {isHebrew ? 'בואו נתחיל!' : "Let's start!"} <Rocket className="w-5 h-5" />
                   </Button>
+                </div>
+              </motion.div>
+            )}
+          </div>
+        );
+
+      // ── Gender ──
+      case 'gender':
+        return (
+          <div className="max-w-lg mx-auto px-4">
+            <PlugMessage
+              text={isHebrew
+                ? 'שאלה אחת לפני שנתחיל 👋\nמה המגדר שלך?\n(עוזר לנו לפנות אליך נכון בטפסי הגשת מועמדות)'
+                : 'One quick thing 👋\nWhat is your gender?\n(Helps us address you correctly in application forms)'}
+              speed={30}
+              onComplete={onMessageReady}
+            />
+            {messageReady && (
+              <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }} className="mt-4">
+                <div className="space-y-2">
+                  {([
+                    { value: 'male' as const, he: 'זכר', en: 'Male', emoji: '👨' },
+                    { value: 'female' as const, he: 'נקבה', en: 'Female', emoji: '👩' },
+                    { value: 'prefer_not' as const, he: 'מעדיף/ה לא לומר', en: 'Prefer not to say', emoji: '🤐' },
+                  ]).map(opt => (
+                    <OptionButton
+                      key={opt.value}
+                      label={isHebrew ? opt.he : opt.en}
+                      emoji={opt.emoji}
+                      selected={gender === opt.value}
+                      onClick={() => {
+                        setGender(opt.value);
+                        setTimeout(handleNext, 400);
+                      }}
+                    />
+                  ))}
                 </div>
               </motion.div>
             )}
@@ -1111,9 +1149,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       </AnimatePresence>
 
       <div className="fixed inset-0 z-[100] flex flex-col overflow-hidden" dir={isHebrew ? 'rtl' : 'ltr'} style={{ background: 'hsl(220 47% 5.5%)' }}>
-        {/* Ambient glows */}
-        <div className="onb-glow-mint w-[700px] h-[500px] -top-40 -right-40 opacity-70" />
-        <div className="onb-glow-purple w-[600px] h-[400px] -bottom-40 -left-40 opacity-60" />
+        {/* DataVision animated background */}
+        <div className="onb-cyber-grid absolute inset-0" />
+        <div className="onb-bg-blob-mint absolute" style={{ top: '-120px', right: '-120px' }} />
+        <div className="onb-bg-blob-purple absolute" style={{ bottom: '-120px', left: '-120px' }} />
+        <div className="onb-bg-blob-mint-sm absolute" style={{ top: '45%', left: '35%' }} />
 
         {/* Header */}
         <div className="relative z-20 flex items-center justify-between px-5 py-3.5 border-b border-border/20"
