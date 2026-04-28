@@ -486,7 +486,7 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
 
   if (isLoading) {
     return (
-      <div className="space-y-4 p-2" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="space-y-4 p-2" dir={isRTL ? 'rtl' : 'ltr'} data-tour="applications-page">
         <div className="flex items-center gap-3">
           <Skeleton className="h-7 w-48" />
           <Skeleton className="h-7 w-20" />
@@ -521,7 +521,7 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
         {/* Add Application — Sheet */}
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+            <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" data-tour="add-application-btn">
               <Plus className="w-3.5 h-3.5" />
               {isRTL ? 'הוסף מועמדות' : 'Add Application'}
             </Button>

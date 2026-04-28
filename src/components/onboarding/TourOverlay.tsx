@@ -33,9 +33,11 @@ export function TourOverlay({ targetSelector, isActive, onElementFound }: TourOv
       });
 
       // Scroll element into view only once per selector (avoid scroll loop)
+      // On mobile, use 'center' so the tooltip has room above/below the element
       if (!hasScrolledRef.current) {
         hasScrolledRef.current = true;
-        element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        const isMobileVp = window.innerWidth < 768;
+        element.scrollIntoView({ behavior: 'smooth', block: isMobileVp ? 'center' : 'nearest' });
       }
       onElementFound?.(true);
     } else {

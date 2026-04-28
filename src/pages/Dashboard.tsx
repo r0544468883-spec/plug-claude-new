@@ -24,6 +24,7 @@ import { JobSeekerTour } from '@/components/onboarding/JobSeekerTour';
 import { RecruiterTour } from '@/components/onboarding/RecruiterTour';
 import { DailyWelcome } from '@/components/onboarding/DailyWelcome';
 import { TourGuideFAB } from '@/components/onboarding/TourGuideFAB';
+import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
 // SmartTriggers removed - notifications now handled by NotificationBell
 import { MobileBottomBar } from '@/components/navigation/MobileBottomBar';
 import { AchievementsPanel } from '@/components/gamification/AchievementsPanel';
@@ -132,6 +133,14 @@ export default function Dashboard() {
     localStorage.getItem('plug-focus-dismissed') !== 'true'
   );
   const [cvChatCollapsed, setCvChatCollapsed] = useState(false);
+
+  // Onboarding wizard — show on first login for job seekers
+  const [showOnboardingWizard, setShowOnboardingWizard] = useState(() => {
+    if (role !== 'job_seeker') return false;
+    const done = localStorage.getItem('plug-onboarding-done') === 'true';
+    const profileDone = (profile as any)?.onboarding_completed === true;
+    return !done && !profileDone;
+  });
 
   const isRTL = language === 'he';
 
@@ -667,10 +676,15 @@ export default function Dashboard() {
         onNavigate={setCurrentSection}
       />
 
-      {/* Daily Welcome (first visit of the day) */}
-      <DailyWelcome />
+      {/* Onboarding Wizard — first login for job seekers */}
+      {showOnboardingWizard && (
+        <OnboardingWizard onComplete={() => setShowOnboardingWizard(false)} />
+      )}
 
-      
+      {/* Daily Welcome (first visit of the day) — skip if wizard is showing */}
+      {!showOnboardingWizard && <DailyWelcome />}
+
+
       {renderSectionContent()}
 
       {/* Resume Upload Dialog */}
