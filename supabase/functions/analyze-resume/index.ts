@@ -204,7 +204,7 @@ serve(async (req) => {
 ## MANDATORY EXTRACTION REQUIREMENTS
 
 You MUST extract the following:
-1. Personal information (name, email, phone, location)
+1. Personal information (name, email, phone, location, professional headline, and ALL social/portfolio URLs found in the CV)
 2. COMPLETE work history - extract EVERY job position separately with full details
 3. COMPLETE education history - extract EVERY institution separately
 4. All skills categorized by type
@@ -234,7 +234,11 @@ Example: If someone worked at Google, then Microsoft, then Apple - create 3 sepa
     "name": "Full Name",
     "email": "email@example.com",
     "phone": "+1234567890",
-    "location": "City, Country"
+    "location": "City, Country",
+    "headline": "Professional headline or current job title from the CV header",
+    "linkedin": "https://linkedin.com/in/... (full URL if found, else null)",
+    "github": "https://github.com/... (full URL if found, else null)",
+    "portfolio": "https://... (personal website/portfolio URL if found, else null)"
   },
   "skills": {
     "technical": ["JavaScript", "Python", "React"],

@@ -165,15 +165,18 @@ function CVAnalysisTransition({ userId, isHebrew, onComplete, onDataFound }: {
           const info = s?.personalInfo;
           const dataLines: Array<{ text: string; type: 'info' | 'success' | 'purple' | 'bold' }> = [];
 
-          if (info?.name)     dataLines.push({ text: `✓ ${isHebrew ? 'שם' : 'Name'}: ${info.name}`, type: 'success' });
-          if (info?.phone)    dataLines.push({ text: `✓ ${isHebrew ? 'טלפון' : 'Phone'}: ${info.phone}`, type: 'success' });
-          if (info?.location) dataLines.push({ text: `✓ ${isHebrew ? 'מיקום' : 'Location'}: ${info.location}`, type: 'success' });
+          if (info?.name)       dataLines.push({ text: `✓ ${isHebrew ? 'שם' : 'Name'}: ${info.name}`, type: 'success' });
+          if (info?.phone)      dataLines.push({ text: `✓ ${isHebrew ? 'טלפון' : 'Phone'}: ${info.phone}`, type: 'success' });
+          if (info?.location)   dataLines.push({ text: `✓ ${isHebrew ? 'מיקום' : 'Location'}: ${info.location}`, type: 'success' });
+          const headline = info?.headline || s?.experience?.recentRole;
+          if (headline)         dataLines.push({ text: `✓ ${isHebrew ? 'כותרת' : 'Headline'}: ${headline}`, type: 'success' });
           const yrs = s?.experience?.totalYears;
-          if (yrs)            dataLines.push({ text: `✓ ${isHebrew ? 'ניסיון' : 'Experience'}: ${yrs} ${isHebrew ? 'שנים' : 'yrs'}`, type: 'success' });
-          const role = s?.experience?.recentRole;
-          if (role)           dataLines.push({ text: `✓ ${isHebrew ? 'תפקיד' : 'Role'}: ${role}`, type: 'success' });
+          if (yrs)              dataLines.push({ text: `✓ ${isHebrew ? 'ניסיון' : 'Experience'}: ${yrs} ${isHebrew ? 'שנים' : 'yrs'}`, type: 'success' });
+          if (info?.linkedin)   dataLines.push({ text: `✓ LinkedIn ${isHebrew ? 'נמצא' : 'found'} 🔗`, type: 'success' });
+          if (info?.github)     dataLines.push({ text: `✓ GitHub ${isHebrew ? 'נמצא' : 'found'} 🔗`, type: 'success' });
+          if (info?.portfolio)  dataLines.push({ text: `✓ ${isHebrew ? 'אתר אישי נמצא' : 'Portfolio found'} 🔗`, type: 'success' });
           const tech = (s?.skills?.technical || []).slice(0, 5);
-          if (tech.length)    dataLines.push({ text: `⚡ ${tech.join(' · ')}`, type: 'purple' });
+          if (tech.length)      dataLines.push({ text: `⚡ ${tech.join(' · ')}`, type: 'purple' });
           dataLines.push({ text: isHebrew ? '🎉 הכל מוכן! ממלא פרטים...' : '🎉 Done! Filling in details...', type: 'bold' });
 
           dataLines.forEach((line, i) => {
@@ -423,13 +426,52 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   // Called by CVAnalysisTransition when ai_summary is ready
   const handleCVDataFound = useCallback((s: any) => {
     const info = s?.personalInfo;
-    if (info?.name)     setFullName(prev => prev || info.name);
-    if (info?.phone)    setPhone(prev => prev || info.phone);
-    if (info?.location) setCity(prev => prev || info.location.split(',')[0].trim());
+    if (info?.name)     setFullName((prev: string) => prev || info.name);
+    if (info?.phone)    setPhone((prev: string) => prev || info.phone);
+    if (info?.location) setCity((prev: string) => prev || info.location.split(',')[0].trim());
+
+    // Headline: prefer explicit headline, fall back to recentRole
+    const headline = info?.headline || s?.experience?.recentRole;
+    if (headline)       setTagline((prev: string) => prev || headline);
+
+    // Links
+    if (info?.linkedin)  setLinkedinUrl((prev: string) => prev || info.linkedin);
+    if (info?.github)    setGithubUrl((prev: string) => prev || info.github);
+    if (info?.portfolio) setPortfolioUrl((prev: string) => prev || info.portfolio);
+
+    // Experience years
     const yrs = s?.experience?.totalYears;
-    if (yrs)            setExperienceYears(prev => prev || String(yrs));
+    if (yrs)            setExperienceYears((prev: string) => prev || String(yrs));
+
+    // Skills
     const tech: string[] = (s?.skills?.technical || []).slice(0, 10);
-    if (tech.length)    setSkills(prev => prev.length ? prev : tech);
+    if (tech.length)    setSkills((prev: string[]) => prev.length ? prev : tech);
+
+    // Infer job fields from suggestedRoles + recentRole
+    const FIELD_KEYWORDS: Record<string, string[]> = {
+      tech: ['developer', 'engineer', 'software', 'frontend', 'backend', 'fullstack', 'devops', 'qa', 'mobile', 'cloud', 'ml', 'ai', 'data', 'cyber', 'security', 'architect', 'מפתח', 'מהנדס', 'תוכנה'],
+      data: ['data', 'analyst', 'analytics', 'bi', 'insights', 'statistics', 'דאטה', 'אנליטיקה', 'אנליסט'],
+      design: ['designer', 'ux', 'ui', 'product designer', 'graphic', 'creative', 'מעצב', 'עיצוב'],
+      management: ['manager', 'director', 'vp', 'ceo', 'cto', 'head of', 'product manager', 'pm', 'מנהל', 'ניהול'],
+      marketing: ['marketing', 'growth', 'seo', 'content', 'brand', 'digital', 'שיווק', 'פרסום'],
+      sales: ['sales', 'account', 'business development', 'bd', 'מכירות', 'פיתוח עסקי'],
+      hr: ['hr', 'recruiter', 'talent', 'people', 'human resources', 'גיוס', 'משאבי אנוש'],
+      finance: ['finance', 'accountant', 'cfo', 'financial', 'controller', 'כספים', 'חשבונאות'],
+    };
+
+    const allRoles = [
+      ...(s?.suggestedRoles || []),
+      s?.experience?.recentRole,
+      ...(s?.experience?.positions || []).map((p: any) => p.role),
+    ].filter(Boolean).map((r: string) => r.toLowerCase());
+
+    const matchedFields: string[] = [];
+    for (const [fieldSlug, keywords] of Object.entries(FIELD_KEYWORDS)) {
+      if (allRoles.some(role => keywords.some(kw => role.includes(kw)))) {
+        matchedFields.push(fieldSlug);
+      }
+    }
+    if (matchedFields.length) setPreferredFields((prev: string[]) => prev.length ? prev : matchedFields.slice(0, 3));
   }, []);
 
   // Called when CVAnalysisTransition finishes
