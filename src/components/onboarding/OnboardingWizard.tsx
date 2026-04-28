@@ -110,6 +110,144 @@ function TransitionScreen({ texts, onComplete }: { texts: string[]; onComplete: 
   );
 }
 
+// CV Analysis Transition — terminal-style live readout with DB polling
+function CVAnalysisTransition({ userId, isHebrew, onComplete, onDataFound }: {
+  userId: string;
+  isHebrew: boolean;
+  onComplete: () => void;
+  onDataFound: (summary: any) => void;
+}) {
+  const [lines, setLines] = useState<Array<{ text: string; type: 'info' | 'success' | 'purple' | 'bold' }>>([]);
+  const doneRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+  const onDataFoundRef = useRef(onDataFound);
+  useEffect(() => { onCompleteRef.current = onComplete; onDataFoundRef.current = onDataFound; });
+
+  useEffect(() => {
+    const addLine = (text: string, type: 'info' | 'success' | 'purple' | 'bold', delay: number) =>
+      setTimeout(() => setLines(prev => [...prev, { text, type }]), delay);
+
+    // Phase 1 — scanning messages while waiting for API
+    const p1 = isHebrew ? [
+      '📄 פותח את קורות החיים...',
+      '🔍 עובר שורה שורה...',
+      '💼 מחפש ניסיון מקצועי...',
+      '⚡ מזהה כישורים טכניים...',
+      '🧠 מנתח השכלה והסמכות...',
+      '🌍 בודק שפות...',
+    ] : [
+      '📄 Opening your CV...',
+      '🔍 Scanning line by line...',
+      '💼 Extracting work history...',
+      '⚡ Identifying technical skills...',
+      '🧠 Analyzing education...',
+      '🌍 Checking languages...',
+    ];
+    p1.forEach((text, i) => addLine(text, i % 2 === 0 ? 'info' : 'purple', i * 900));
+
+    // Poll DB for ai_summary
+    const startedAt = Date.now();
+    const poll = async () => {
+      if (doneRef.current) return;
+      try {
+        const { data } = await supabase
+          .from('documents')
+          .select('ai_summary')
+          .eq('owner_id', userId)
+          .eq('doc_type', 'cv')
+          .not('ai_summary', 'is', null)
+          .limit(1)
+          .maybeSingle();
+
+        if (data?.ai_summary) {
+          doneRef.current = true;
+          const s = data.ai_summary as any;
+          const info = s?.personalInfo;
+          const dataLines: Array<{ text: string; type: 'info' | 'success' | 'purple' | 'bold' }> = [];
+
+          if (info?.name)     dataLines.push({ text: `✓ ${isHebrew ? 'שם' : 'Name'}: ${info.name}`, type: 'success' });
+          if (info?.phone)    dataLines.push({ text: `✓ ${isHebrew ? 'טלפון' : 'Phone'}: ${info.phone}`, type: 'success' });
+          if (info?.location) dataLines.push({ text: `✓ ${isHebrew ? 'מיקום' : 'Location'}: ${info.location}`, type: 'success' });
+          const yrs = s?.experience?.totalYears;
+          if (yrs)            dataLines.push({ text: `✓ ${isHebrew ? 'ניסיון' : 'Experience'}: ${yrs} ${isHebrew ? 'שנים' : 'yrs'}`, type: 'success' });
+          const role = s?.experience?.recentRole;
+          if (role)           dataLines.push({ text: `✓ ${isHebrew ? 'תפקיד' : 'Role'}: ${role}`, type: 'success' });
+          const tech = (s?.skills?.technical || []).slice(0, 5);
+          if (tech.length)    dataLines.push({ text: `⚡ ${tech.join(' · ')}`, type: 'purple' });
+          dataLines.push({ text: isHebrew ? '🎉 הכל מוכן! ממלא פרטים...' : '🎉 Done! Filling in details...', type: 'bold' });
+
+          dataLines.forEach((line, i) => {
+            setTimeout(() => {
+              setLines(prev => [...prev, line]);
+              if (i === dataLines.length - 1) {
+                setTimeout(() => { onDataFoundRef.current(s); onCompleteRef.current(); }, 900);
+              }
+            }, 300 + i * 450);
+          });
+          return;
+        }
+      } catch {}
+
+      if (Date.now() - startedAt > 30000) {
+        doneRef.current = true;
+        setLines(prev => [...prev, { text: isHebrew ? '⚠️ ממשיך בלי ניתוח...' : '⚠️ Timed out, continuing...', type: 'info' }]);
+        setTimeout(onCompleteRef.current, 1000);
+        return;
+      }
+      setTimeout(poll, 2500);
+    };
+    setTimeout(poll, 2500);
+  }, [userId, isHebrew]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 flex items-center justify-center z-[101]"
+      style={{ background: 'hsl(220 47% 5.5%)' }}
+    >
+      <div className="onb-glow-mint w-full h-full top-0 left-0 onb-animate-pulse-glow" />
+      <div className="onb-glow-purple w-full h-full bottom-0 right-0 onb-animate-pulse-glow" style={{ animationDelay: '1s' }} />
+      <div className="relative z-10 w-full max-w-md px-4">
+        {/* Terminal chrome */}
+        <div className="rounded-t-xl px-4 py-2.5 flex items-center gap-2" style={{ background: 'hsl(220 40% 12%)' }}>
+          <div className="w-3 h-3 rounded-full" style={{ background: 'hsl(0 80% 60%)' }} />
+          <div className="w-3 h-3 rounded-full" style={{ background: 'hsl(45 90% 60%)' }} />
+          <div className="w-3 h-3 rounded-full" style={{ background: 'hsl(130 70% 50%)' }} />
+          <span className="text-xs text-muted-foreground ms-2 font-mono tracking-wide">plug-cv-analyzer</span>
+        </div>
+        {/* Terminal body */}
+        <div className="rounded-b-xl p-5 font-mono text-sm min-h-[220px] max-h-[60vh] overflow-y-auto"
+          style={{ background: 'hsl(220 40% 7%)' }}>
+          <div className="space-y-2">
+            <AnimatePresence>
+              {lines.map((line, i) => (
+                <motion.div key={i}
+                  initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.25 }}
+                  className={`flex items-start gap-2 ${
+                    line.type === 'success' ? 'text-primary' :
+                    line.type === 'purple'  ? 'text-[hsl(270_91%_75%)]' :
+                    line.type === 'bold'    ? 'text-primary font-bold text-base' :
+                    'text-muted-foreground'
+                  }`}
+                >
+                  <span className="shrink-0 opacity-50">{isHebrew ? '←' : '>'}</span>
+                  <span>{line.text}</span>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+          {/* Blinking cursor */}
+          <motion.span
+            animate={{ opacity: [1, 0] }} transition={{ duration: 0.7, repeat: Infinity }}
+            className="inline-block w-2 h-4 mt-2 rounded-sm"
+            style={{ background: 'hsl(var(--primary))' }}
+          />
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 // Typing message bubble
 const PlugMessage = memo(function PlugMessage({ text, speed = 35, onComplete }: {
   text: string; speed?: number; onComplete?: () => void;
@@ -184,6 +322,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [saving, setSaving] = useState(false);
   const [showTransition, setShowTransition] = useState(false);
   const [transitionTexts, setTransitionTexts] = useState<string[]>([]);
+  const [showCVAnalysis, setShowCVAnalysis] = useState(false);
   const [messageReady, setMessageReady] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -270,34 +409,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     const next = STEP_ORDER[idx + 1];
 
     if (currentStep === 'cv' && cvUploaded) {
-      // Fetch ai_summary during transition and pre-fill form fields
-      if (user?.id) {
-        supabase
-          .from('documents')
-          .select('ai_summary')
-          .eq('owner_id', user.id)
-          .eq('doc_type', 'cv')
-          .not('ai_summary', 'is', null)
-          .limit(1)
-          .maybeSingle()
-          .then(({ data }) => {
-            const info = (data?.ai_summary as any)?.personalInfo;
-            if (info) {
-              if (info.name && !fullName) setFullName(info.name);
-              if (info.phone && !phone) setPhone(info.phone);
-              if (info.location && !city) setCity(info.location.split(',')[0].trim());
-            }
-            const expYears = (data?.ai_summary as any)?.experience?.totalYears;
-            if (expYears && !experienceYears) setExperienceYears(String(expYears));
-            const extractedSkills: string[] = [
-              ...((data?.ai_summary as any)?.skills?.technical || []),
-            ].slice(0, 10);
-            if (extractedSkills.length > 0 && skills.length === 0) setSkills(extractedSkills);
-          });
-      }
-      goToStep(next, isHebrew
-        ? ['מנתח את קורות החיים...', 'שואב פרטים...', 'מוכן!']
-        : ['Analyzing your CV...', 'Extracting details...', 'Ready!']);
+      // Show CVAnalysisTransition — polls DB and reveals extracted data live
+      setShowCVAnalysis(true);
     } else if (currentStep === 'details') {
       goToStep(next, isHebrew
         ? ['בונה את הפרופיל שלך...', 'מכין את התוסף...', 'כמעט שם!']
@@ -305,7 +418,27 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     } else {
       goToStep(next);
     }
-  }, [currentStep, cvUploaded, goToStep, isHebrew]);
+  }, [currentStep, cvUploaded, goToStep, isHebrew, setShowCVAnalysis]);
+
+  // Called by CVAnalysisTransition when ai_summary is ready
+  const handleCVDataFound = useCallback((s: any) => {
+    const info = s?.personalInfo;
+    if (info?.name)     setFullName(prev => prev || info.name);
+    if (info?.phone)    setPhone(prev => prev || info.phone);
+    if (info?.location) setCity(prev => prev || info.location.split(',')[0].trim());
+    const yrs = s?.experience?.totalYears;
+    if (yrs)            setExperienceYears(prev => prev || String(yrs));
+    const tech: string[] = (s?.skills?.technical || []).slice(0, 10);
+    if (tech.length)    setSkills(prev => prev.length ? prev : tech);
+  }, []);
+
+  // Called when CVAnalysisTransition finishes
+  const handleCVAnalysisDone = useCallback(() => {
+    setShowCVAnalysis(false);
+    const nextIdx = STEP_ORDER.indexOf('cv') + 1;
+    setCurrentStep(STEP_ORDER[nextIdx]);
+    setMessageReady(false);
+  }, []);
 
   // ── Save ──
   const handleFinish = async () => {
@@ -858,6 +991,17 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       <AnimatePresence>
         {showTransition && (
           <TransitionScreen texts={transitionTexts} onComplete={() => transitionCallbackRef.current?.()} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showCVAnalysis && user?.id && (
+          <CVAnalysisTransition
+            userId={user.id}
+            isHebrew={isHebrew}
+            onDataFound={handleCVDataFound}
+            onComplete={handleCVAnalysisDone}
+          />
         )}
       </AnimatePresence>
 
