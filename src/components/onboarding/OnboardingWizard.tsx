@@ -335,17 +335,56 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [tagline, setTagline] = useState((profile as any)?.personal_tagline || '');
   const [cvUploaded, setCvUploaded] = useState(false);
 
-  // Check if user already has a resume in documents table
+  // Check if user already has a resume — and pre-populate fields from existing analysis
   useEffect(() => {
     if (!user?.id) return;
     supabase
       .from('documents')
-      .select('id')
+      .select('id, ai_summary')
       .eq('owner_id', user.id)
       .eq('doc_type', 'cv')
       .limit(1)
       .maybeSingle()
-      .then(({ data }) => { if (data) setCvUploaded(true); });
+      .then(({ data }) => {
+        if (!data) return;
+        setCvUploaded(true);
+        const s = data.ai_summary as any;
+        if (!s) return;
+        const info = s?.personalInfo;
+        if (info?.name)      setFullName(info.name);
+        if (info?.phone)     setPhone(info.phone);
+        if (info?.location)  setCity(info.location.split(',')[0].trim());
+        const headline = info?.headline || s?.experience?.recentRole;
+        if (headline)        setTagline(headline);
+        if (info?.linkedin)  setLinkedinUrl(info.linkedin);
+        if (info?.github)    setGithubUrl(info.github);
+        if (info?.portfolio) setPortfolioUrl(info.portfolio);
+        const yrs = s?.experience?.totalYears;
+        if (yrs)             setExperienceYears(String(yrs));
+        const tech: string[] = (s?.skills?.technical || []).slice(0, 10);
+        if (tech.length)     setSkills(tech);
+        // Infer job fields
+        const FIELD_KEYWORDS: Record<string, string[]> = {
+          tech: ['developer','engineer','software','frontend','backend','fullstack','devops','qa','mobile','cloud','ml','ai','cyber','architect','מפתח','מהנדס','תוכנה'],
+          data: ['data','analyst','analytics','bi','דאטה','אנליטיקה'],
+          design: ['designer','ux','ui','graphic','creative','מעצב','עיצוב'],
+          management: ['manager','director','vp','ceo','cto','product manager','pm','מנהל'],
+          marketing: ['marketing','growth','seo','content','brand','שיווק'],
+          sales: ['sales','account','business development','מכירות'],
+          hr: ['hr','recruiter','talent','human resources','גיוס'],
+          finance: ['finance','accountant','financial','controller','כספים'],
+        };
+        const allRoles = [
+          ...(s?.suggestedRoles || []),
+          s?.experience?.recentRole,
+          ...(s?.experience?.positions || []).map((p: any) => p.role),
+        ].filter(Boolean).map((r: string) => r.toLowerCase());
+        const matched = Object.entries(FIELD_KEYWORDS)
+          .filter(([, kws]) => allRoles.some(r => kws.some(kw => r.includes(kw))))
+          .map(([slug]) => slug)
+          .slice(0, 3);
+        if (matched.length) setPreferredFields(matched);
+      });
   }, [user?.id]);
   const [preferredFields, setPreferredFields] = useState<string[]>((profile as any)?.preferred_fields || []);
   const [preferredRoles, setPreferredRoles] = useState<string[]>((profile as any)?.preferred_roles || []);
@@ -423,55 +462,40 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     }
   }, [currentStep, cvUploaded, goToStep, isHebrew, setShowCVAnalysis]);
 
-  // Called by CVAnalysisTransition when ai_summary is ready
+  // Called by CVAnalysisTransition when a fresh analysis arrives — always overwrite
   const handleCVDataFound = useCallback((s: any) => {
     const info = s?.personalInfo;
-    if (info?.name)     setFullName((prev: string) => prev || info.name);
-    if (info?.phone)    setPhone((prev: string) => prev || info.phone);
-    if (info?.location) setCity((prev: string) => prev || info.location.split(',')[0].trim());
-
-    // Headline: prefer explicit headline, fall back to recentRole
+    if (info?.name)      setFullName(info.name);
+    if (info?.phone)     setPhone(info.phone);
+    if (info?.location)  setCity(info.location.split(',')[0].trim());
     const headline = info?.headline || s?.experience?.recentRole;
-    if (headline)       setTagline((prev: string) => prev || headline);
-
-    // Links
-    if (info?.linkedin)  setLinkedinUrl((prev: string) => prev || info.linkedin);
-    if (info?.github)    setGithubUrl((prev: string) => prev || info.github);
-    if (info?.portfolio) setPortfolioUrl((prev: string) => prev || info.portfolio);
-
-    // Experience years
+    if (headline)        setTagline(headline);
+    if (info?.linkedin)  setLinkedinUrl(info.linkedin);
+    if (info?.github)    setGithubUrl(info.github);
+    if (info?.portfolio) setPortfolioUrl(info.portfolio);
     const yrs = s?.experience?.totalYears;
-    if (yrs)            setExperienceYears((prev: string) => prev || String(yrs));
-
-    // Skills
+    if (yrs)             setExperienceYears(String(yrs));
     const tech: string[] = (s?.skills?.technical || []).slice(0, 10);
-    if (tech.length)    setSkills((prev: string[]) => prev.length ? prev : tech);
-
-    // Infer job fields from suggestedRoles + recentRole
+    if (tech.length)     setSkills(tech);
     const FIELD_KEYWORDS: Record<string, string[]> = {
-      tech: ['developer', 'engineer', 'software', 'frontend', 'backend', 'fullstack', 'devops', 'qa', 'mobile', 'cloud', 'ml', 'ai', 'data', 'cyber', 'security', 'architect', 'מפתח', 'מהנדס', 'תוכנה'],
-      data: ['data', 'analyst', 'analytics', 'bi', 'insights', 'statistics', 'דאטה', 'אנליטיקה', 'אנליסט'],
-      design: ['designer', 'ux', 'ui', 'product designer', 'graphic', 'creative', 'מעצב', 'עיצוב'],
-      management: ['manager', 'director', 'vp', 'ceo', 'cto', 'head of', 'product manager', 'pm', 'מנהל', 'ניהול'],
-      marketing: ['marketing', 'growth', 'seo', 'content', 'brand', 'digital', 'שיווק', 'פרסום'],
-      sales: ['sales', 'account', 'business development', 'bd', 'מכירות', 'פיתוח עסקי'],
-      hr: ['hr', 'recruiter', 'talent', 'people', 'human resources', 'גיוס', 'משאבי אנוש'],
-      finance: ['finance', 'accountant', 'cfo', 'financial', 'controller', 'כספים', 'חשבונאות'],
+      tech: ['developer','engineer','software','frontend','backend','fullstack','devops','qa','mobile','cloud','ml','ai','data','cyber','architect','מפתח','מהנדס','תוכנה'],
+      data: ['data','analyst','analytics','bi','insights','דאטה','אנליטיקה'],
+      design: ['designer','ux','ui','graphic','creative','מעצב','עיצוב'],
+      management: ['manager','director','vp','ceo','cto','product manager','pm','מנהל'],
+      marketing: ['marketing','growth','seo','content','brand','שיווק'],
+      sales: ['sales','account','business development','מכירות'],
+      hr: ['hr','recruiter','talent','human resources','גיוס'],
+      finance: ['finance','accountant','financial','controller','כספים'],
     };
-
     const allRoles = [
       ...(s?.suggestedRoles || []),
       s?.experience?.recentRole,
       ...(s?.experience?.positions || []).map((p: any) => p.role),
     ].filter(Boolean).map((r: string) => r.toLowerCase());
-
-    const matchedFields: string[] = [];
-    for (const [fieldSlug, keywords] of Object.entries(FIELD_KEYWORDS)) {
-      if (allRoles.some(role => keywords.some(kw => role.includes(kw)))) {
-        matchedFields.push(fieldSlug);
-      }
-    }
-    if (matchedFields.length) setPreferredFields((prev: string[]) => prev.length ? prev : matchedFields.slice(0, 3));
+    const matched = Object.entries(FIELD_KEYWORDS)
+      .filter(([, kws]) => allRoles.some(r => kws.some(kw => r.includes(kw))))
+      .map(([slug]) => slug).slice(0, 3);
+    if (matched.length) setPreferredFields(matched);
   }, []);
 
   // Called when CVAnalysisTransition finishes
