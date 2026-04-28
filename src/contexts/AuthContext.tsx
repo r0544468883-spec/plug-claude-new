@@ -123,8 +123,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!error && data) {
       setProfile(data as unknown as Profile);
 
-      // Sync Google avatar if profile has no avatar yet
-      if (!data.avatar_url) {
+      // Sync Google avatar if profile has no avatar yet (treat empty string same as null)
+      if (!data.avatar_url?.trim()) {
         const { data: { user: authUser } } = await supabase.auth.getUser();
         const googleAvatar = authUser?.user_metadata?.avatar_url || authUser?.user_metadata?.picture;
         if (googleAvatar) {
