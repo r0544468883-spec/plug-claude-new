@@ -15,7 +15,32 @@ import {
   Check, X, Rocket, Link2, Mail, Calendar, Bell, Shield, Loader2,
   CheckCircle2, ChevronDown, Zap, Chrome,
 } from 'lucide-react';
-import { JOB_FIELDS, EXPERIENCE_LEVELS, getRolesByField } from '@/lib/job-taxonomy';
+import { JOB_FIELDS, JOB_ROLES, EXPERIENCE_LEVELS, getRolesByField } from '@/lib/job-taxonomy';
+
+// Snap totalYears to nearest EXPERIENCE_LEVELS years_min
+function snapToExperienceLevel(totalYears: number): string {
+  for (let i = EXPERIENCE_LEVELS.length - 1; i >= 0; i--) {
+    if (totalYears >= EXPERIENCE_LEVELS[i].years_min) return String(EXPERIENCE_LEVELS[i].years_min);
+  }
+  return '0';
+}
+
+// Match free-text role names to JOB_ROLES slugs
+function matchRoleSlugs(roleNames: string[]): string[] {
+  const results: string[] = [];
+  for (const name of roleNames) {
+    const lower = name.toLowerCase();
+    const match = JOB_ROLES.find(r =>
+      r.name_en.toLowerCase().includes(lower) ||
+      lower.includes(r.name_en.toLowerCase()) ||
+      r.name_he.includes(name) ||
+      name.includes(r.name_he)
+    );
+    if (match && !results.includes(match.slug)) results.push(match.slug);
+    if (results.length >= 5) break;
+  }
+  return results;
+}
 
 // ════════════════════════════════════════════════════
 //  OnboardingWizard — Premium chat-like flow
@@ -367,10 +392,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         if (info?.github)    setGithubUrl(info.github);
         if (info?.portfolio) setPortfolioUrl(info.portfolio);
         const yrs = s?.experience?.totalYears;
-        if (yrs)             setExperienceYears(String(yrs));
+        if (yrs)             setExperienceYears(snapToExperienceLevel(Number(yrs)));
         const tech: string[] = (s?.skills?.technical || []).slice(0, 10);
         if (tech.length)     setSkills(tech);
-        // Infer job fields
+        // Infer job fields from role keywords
         const FIELD_KEYWORDS: Record<string, string[]> = {
           tech: ['developer','engineer','software','frontend','backend','fullstack','devops','qa','mobile','cloud','ml','ai','cyber','architect','מפתח','מהנדס','תוכנה'],
           data: ['data','analyst','analytics','bi','דאטה','אנליטיקה'],
@@ -381,16 +406,19 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           hr: ['hr','recruiter','talent','human resources','גיוס'],
           finance: ['finance','accountant','financial','controller','כספים'],
         };
-        const allRoles = [
+        const allRoleNames: string[] = [
           ...(s?.suggestedRoles || []),
           s?.experience?.recentRole,
           ...(s?.experience?.positions || []).map((p: any) => p.role),
-        ].filter(Boolean).map((r: string) => r.toLowerCase());
+        ].filter(Boolean);
+        const allRolesLower = allRoleNames.map((r: string) => r.toLowerCase());
         const matched = Object.entries(FIELD_KEYWORDS)
-          .filter(([, kws]) => allRoles.some(r => kws.some(kw => r.includes(kw))))
-          .map(([slug]) => slug)
-          .slice(0, 3);
+          .filter(([, kws]) => allRolesLower.some(r => kws.some(kw => r.includes(kw))))
+          .map(([slug]) => slug).slice(0, 3);
         if (matched.length) setPreferredFields(matched);
+        // Match specific role slugs
+        const roleSlugMatches = matchRoleSlugs(allRoleNames);
+        if (roleSlugMatches.length) setPreferredRoles(roleSlugMatches);
       });
   }, [user?.id]);
   const [preferredFields, setPreferredFields] = useState<string[]>((profile as any)?.preferred_fields || []);
@@ -482,7 +510,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     if (info?.github)    setGithubUrl(info.github);
     if (info?.portfolio) setPortfolioUrl(info.portfolio);
     const yrs = s?.experience?.totalYears;
-    if (yrs)             setExperienceYears(String(yrs));
+    if (yrs)             setExperienceYears(snapToExperienceLevel(Number(yrs)));
     const tech: string[] = (s?.skills?.technical || []).slice(0, 10);
     if (tech.length)     setSkills(tech);
     const FIELD_KEYWORDS: Record<string, string[]> = {
@@ -495,15 +523,18 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       hr: ['hr','recruiter','talent','human resources','גיוס'],
       finance: ['finance','accountant','financial','controller','כספים'],
     };
-    const allRoles = [
+    const allRoleNames: string[] = [
       ...(s?.suggestedRoles || []),
       s?.experience?.recentRole,
       ...(s?.experience?.positions || []).map((p: any) => p.role),
-    ].filter(Boolean).map((r: string) => r.toLowerCase());
+    ].filter(Boolean);
+    const allRolesLower = allRoleNames.map((r: string) => r.toLowerCase());
     const matched = Object.entries(FIELD_KEYWORDS)
-      .filter(([, kws]) => allRoles.some(r => kws.some(kw => r.includes(kw))))
+      .filter(([, kws]) => allRolesLower.some(r => kws.some(kw => r.includes(kw))))
       .map(([slug]) => slug).slice(0, 3);
     if (matched.length) setPreferredFields(matched);
+    const roleSlugMatches = matchRoleSlugs(allRoleNames);
+    if (roleSlugMatches.length) setPreferredRoles(roleSlugMatches);
   }, []);
 
   // Called when CVAnalysisTransition finishes

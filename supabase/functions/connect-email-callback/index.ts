@@ -9,6 +9,79 @@ const SUPABASE_URL         = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const APP_URL              = Deno.env.get("APP_URL") || "http://localhost:8081";
 
+const htmlPage = (success: boolean, provider: string, error?: string) => `<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>${success ? "חיבור הצליח" : "שגיאה בחיבור"}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: hsl(220 47% 5.5%);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .card {
+      background: hsl(220 40% 8%);
+      border: 1px solid ${success ? "hsl(156 100% 50% / 0.3)" : "hsl(0 84% 60% / 0.3)"};
+      border-radius: 1.5rem;
+      padding: 2.5rem 3rem;
+      max-width: 420px;
+      width: 90%;
+      box-shadow: 0 0 40px ${success ? "hsl(156 100% 50% / 0.1)" : "hsl(0 84% 60% / 0.1)"};
+    }
+    .icon { font-size: 3.5rem; margin-bottom: 1rem; }
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.75rem; color: ${success ? "hsl(156 100% 50%)" : "hsl(0 84% 60%)"}; }
+    p { color: hsl(215 20% 65%); line-height: 1.6; margin-bottom: 1.5rem; }
+    .hint { font-size: 0.85rem; color: hsl(215 20% 45%); margin-top: 1rem; }
+    .btn {
+      display: inline-block;
+      background: hsl(156 100% 50%);
+      color: hsl(220 47% 5.5%);
+      font-weight: 700;
+      padding: 0.75rem 2rem;
+      border-radius: 9999px;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      text-decoration: none;
+    }
+    .provider { color: hsl(270 91% 75%); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">${success ? "✅" : "❌"}</div>
+    <h1>${success ? "החיבור הצליח!" : "שגיאה בחיבור"}</h1>
+    <p>
+      ${success
+        ? `<span class="provider">${provider === "gmail" ? "Gmail" : "Outlook"}</span> חובר בהצלחה לחשבון ה-PLUG שלך.<br/>עכשיו PLUG יכול לסרוק את תיבת הדואר שלך ולעזור לך לעקוב אחר מועמדויות.`
+        : `לא הצלחנו לחבר את החשבון שלך${error ? `: ${error}` : ""}. אנא נסה שוב.`
+      }
+    </p>
+    <button class="btn" onclick="window.close()">חזור לאפליקציה ←</button>
+    <p class="hint">חלון זה יסגר אוטומטית בעוד <span id="t">5</span> שניות</p>
+  </div>
+  <script>
+    let n = 5;
+    const el = document.getElementById('t');
+    const iv = setInterval(() => { n--; if(el) el.textContent = n; if(n <= 0) { clearInterval(iv); window.close(); } }, 1000);
+  </script>
+</body>
+</html>`;
+
+const htmlResponse = (success: boolean, provider: string, error?: string) =>
+  new Response(htmlPage(success, provider, error), {
+    headers: { "Content-Type": "text/html; charset=utf-8" },
+    status: 200,
+  });
+
 const REDIRECT_URI = `${SUPABASE_URL}/functions/v1/connect-email-callback`;
 
 serve(async (req) => {
@@ -18,15 +91,15 @@ serve(async (req) => {
   const err   = url.searchParams.get("error");
 
   if (err) {
-    return Response.redirect(`${APP_URL}?email_error=${encodeURIComponent(err)}`, 302);
+    return htmlResponse(false, "", err || "unknown");
   }
   if (!code || !state) {
-    return Response.redirect(`${APP_URL}?email_error=missing_params`, 302);
+    return htmlResponse(false, "", "missing_params");
   }
 
   const [userId, provider] = state.split(":");
   if (!userId || !provider || !["gmail", "outlook"].includes(provider)) {
-    return Response.redirect(`${APP_URL}?email_error=invalid_state`, 302);
+    return htmlResponse(false, "", "invalid_state");
   }
 
   let tokenData: {
@@ -54,7 +127,7 @@ serve(async (req) => {
       if (!tokenRes.ok) {
         const detail = await tokenRes.text();
         console.error("Gmail token exchange failed:", detail);
-        return Response.redirect(`${APP_URL}?email_error=token_exchange_failed`, 302);
+        return htmlResponse(false, provider || "", "token_exchange_failed");
       }
 
       tokenData = await tokenRes.json();
@@ -89,7 +162,7 @@ serve(async (req) => {
       if (!tokenRes.ok) {
         const detail = await tokenRes.text();
         console.error("Outlook token exchange failed:", detail);
-        return Response.redirect(`${APP_URL}?email_error=token_exchange_failed`, 302);
+        return htmlResponse(false, provider || "", "token_exchange_failed");
       }
 
       tokenData = await tokenRes.json();
@@ -105,7 +178,7 @@ serve(async (req) => {
     }
   } catch (e) {
     console.error("OAuth error:", e);
-    return Response.redirect(`${APP_URL}?email_error=oauth_failed`, 302);
+    return htmlResponse(false, provider || "", "oauth_failed");
   }
 
   // Store tokens in email_oauth_tokens
@@ -130,7 +203,7 @@ serve(async (req) => {
 
   if (dbErr) {
     console.error("DB error:", dbErr);
-    return Response.redirect(`${APP_URL}?email_error=db_error`, 302);
+    return htmlResponse(false, provider || "", "db_error");
   }
 
   // Initialize sync state
@@ -141,5 +214,5 @@ serve(async (req) => {
       { onConflict: "user_id" }
     );
 
-  return Response.redirect(`${APP_URL}?email_connected=true&provider=${provider}`, 302);
+  return htmlResponse(true, provider);
 });
