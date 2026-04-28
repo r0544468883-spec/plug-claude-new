@@ -258,3 +258,197 @@ html[dir="rtl"], html[dir="rtl"] body {
     40% { transform: translateY(-8px); }
   }
 }
+
+/* ════════════════════════════════════════════════════
+   Onboarding Wizard — DataVision-level design system
+   ════════════════════════════════════════════════════ */
+
+@layer components {
+  /* Glass morphism card for onboarding */
+  .onb-glass-card {
+    @apply relative overflow-hidden rounded-2xl;
+    background: linear-gradient(
+      135deg,
+      hsl(220 40% 8% / 0.9) 0%,
+      hsl(220 40% 6% / 0.85) 100%
+    );
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border: 1px solid hsl(217 32% 25% / 0.4);
+    box-shadow:
+      0 8px 32px hsl(156 100% 50% / 0.08),
+      inset 0 1px 0 hsl(0 0% 100% / 0.04);
+  }
+
+  .onb-glass-card-active {
+    border: 2px solid hsl(var(--primary) / 0.5);
+    box-shadow:
+      0 0 40px hsl(156 100% 50% / 0.15),
+      0 8px 32px hsl(270 91% 65% / 0.1),
+      inset 0 1px 0 hsl(0 0% 100% / 0.06);
+  }
+
+  /* Quiz-style option button */
+  .onb-option {
+    @apply relative overflow-hidden rounded-xl px-5 py-3.5 text-start transition-all duration-300 cursor-pointer w-full;
+    background: linear-gradient(
+      135deg,
+      hsl(220 40% 10% / 0.8) 0%,
+      hsl(220 40% 8% / 0.7) 100%
+    );
+    border: 1px solid hsl(217 32% 25% / 0.5);
+  }
+
+  .onb-option:hover {
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 20px hsl(156 100% 50% / 0.15);
+  }
+
+  [dir="rtl"] .onb-option:hover {
+    transform: translateX(4px);
+  }
+  [dir="ltr"] .onb-option:hover {
+    transform: translateX(-4px);
+  }
+
+  .onb-option.selected {
+    border-color: hsl(var(--primary));
+    background: linear-gradient(
+      135deg,
+      hsl(156 100% 50% / 0.12) 0%,
+      hsl(220 40% 12% / 0.9) 100%
+    );
+    box-shadow: 0 0 30px hsl(156 100% 50% / 0.2);
+  }
+
+  /* Chip button for onboarding */
+  .onb-chip {
+    @apply inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm transition-all duration-200 cursor-pointer border;
+    background: hsl(220 40% 10% / 0.7);
+    border-color: hsl(217 32% 25% / 0.5);
+    min-height: 40px;
+  }
+
+  .onb-chip:hover {
+    border-color: hsl(var(--primary) / 0.6);
+    background: hsl(156 100% 50% / 0.05);
+  }
+
+  .onb-chip.selected {
+    background: hsl(156 100% 50% / 0.15);
+    border-color: hsl(var(--primary));
+    color: hsl(var(--primary));
+    box-shadow: 0 0 12px hsl(156 100% 50% / 0.15);
+  }
+}
+
+/* Ambient glow effects — PLUG colors */
+.onb-glow-mint {
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse 600px 400px at center,
+    hsl(156 100% 50% / 0.1) 0%,
+    transparent 70%
+  );
+}
+
+.onb-glow-purple {
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse 500px 350px at center,
+    hsl(270 91% 65% / 0.08) 0%,
+    transparent 70%
+  );
+}
+
+/* Onboarding animations */
+@keyframes onb-slide-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes onb-slide-in {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+[dir="rtl"] .onb-slide-in {
+  animation-name: onb-slide-in-rtl;
+}
+
+@keyframes onb-slide-in-rtl {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes onb-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes onb-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes onb-pulse-glow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes onb-spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.onb-animate-slide-up {
+  animation: onb-slide-up 0.6s ease-out forwards;
+}
+
+.onb-animate-slide-in {
+  animation: onb-slide-in 0.5s ease-out forwards;
+}
+
+.onb-animate-fade-in {
+  animation: onb-fade-in 0.4s ease-out forwards;
+}
+
+.onb-animate-float {
+  animation: onb-float 3s ease-in-out infinite;
+}
+
+.onb-animate-pulse-glow {
+  animation: onb-pulse-glow 2s ease-in-out infinite;
+}
+
+.onb-animate-spin-slow {
+  animation: onb-spin-slow 3s linear infinite;
+}
+
+/* Progress bar gradient fill */
+.onb-progress-fill {
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(90deg, hsl(156 100% 50%), hsl(270 91% 65%));
+}
+
+/* Text glow — PLUG mint */
+.onb-text-glow {
+  text-shadow:
+    0 0 10px hsl(156 100% 50% / 0.5),
+    0 0 30px hsl(156 100% 50% / 0.3);
+}
+
+/* Input style for onboarding */
+.onb-input {
+  background: hsl(220 40% 10% / 0.6) !important;
+  border-color: hsl(217 32% 25% / 0.5) !important;
+}
+
+.onb-input:focus {
+  border-color: hsl(156 100% 50% / 0.5) !important;
+  box-shadow: 0 0 15px hsl(156 100% 50% / 0.1) !important;
+}
