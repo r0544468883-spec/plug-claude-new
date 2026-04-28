@@ -359,6 +359,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [messageReady, setMessageReady] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const existingCvDocRef = useRef<{ id: string; filePath: string; fileName: string } | null>(null);
+  const handleCVDataFoundRef = useRef<(s: any) => void>(() => {});
 
   // ── Form state ──
   const [gender, setGender] = useState<'male' | 'female' | 'prefer_not' | ''>('');
@@ -403,6 +404,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               }).then(async (res) => {
                 const body = await res.json().catch(() => ({}));
                 console.log('[CV-AUTOFILL] Re-analysis response:', res.status, body);
+                if (res.ok && body.analysis?.personalInfo) {
+                  console.log('[CV-AUTOFILL] Applying fresh analysis to form');
+                  handleCVDataFoundRef.current(body.analysis);
+                }
               }).catch(e => console.error('[CV-AUTOFILL] Re-analysis failed:', e));
             }
           }
@@ -564,6 +569,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     const roleSlugMatches = matchRoleSlugs(allRoleNames);
     if (roleSlugMatches.length) setPreferredRoles(roleSlugMatches);
   }, []);
+
+  // Keep ref in sync so the mount re-analysis fetch can call it even after CVAnalysisTransition ran
+  useEffect(() => { handleCVDataFoundRef.current = handleCVDataFound; });
 
   // Called when CVAnalysisTransition finishes
   const handleCVAnalysisDone = useCallback(() => {
