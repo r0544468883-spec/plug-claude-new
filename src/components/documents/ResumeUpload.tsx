@@ -332,7 +332,9 @@ export function ResumeUpload({ onSuccess, compact = false }: ResumeUploadProps) 
         const a = document.createElement('a');
         a.href = data.signedUrl;
         a.download = existingResume.file_name;
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
       };
 
       return (
@@ -347,6 +349,13 @@ export function ResumeUpload({ onSuccess, compact = false }: ResumeUploadProps) 
           <Button variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()} className="h-7 px-2" title={isRTL ? 'החלף' : 'Replace'}>
             <RefreshCw className="w-3 h-3" />
           </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.doc,.docx,.xls,.xlsx"
+            onChange={handleInputChange}
+            className="hidden"
+          />
         </div>
       );
     }
