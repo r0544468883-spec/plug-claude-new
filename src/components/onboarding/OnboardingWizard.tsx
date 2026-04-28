@@ -358,6 +358,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [showCVAnalysis, setShowCVAnalysis] = useState(false);
   const [messageReady, setMessageReady] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const existingCvDocRef = useRef<{ id: string; filePath: string; fileName: string } | null>(null);
 
   // ── Form state ──
   const [gender, setGender] = useState<'male' | 'female' | 'prefer_not' | ''>('');
@@ -372,18 +373,35 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     console.log('[CV-AUTOFILL] Checking for existing CV, userId:', user.id);
     supabase
       .from('documents')
-      .select('id, ai_summary')
+      .select('id, ai_summary, file_path, file_name')
       .eq('owner_id', user.id)
       .eq('doc_type', 'cv')
       .limit(1)
       .maybeSingle()
-      .then(({ data, error }) => {
+      .then(async ({ data, error }) => {
         console.log('[CV-AUTOFILL] Query result:', { data: !!data, hasAiSummary: !!(data?.ai_summary), error });
         if (error) { console.error('[CV-AUTOFILL] DB error:', error); return; }
         if (!data) { console.log('[CV-AUTOFILL] No CV document found'); return; }
         setCvUploaded(true);
+        existingCvDocRef.current = { id: data.id, filePath: data.file_path, fileName: data.file_name };
         const s = data.ai_summary as any;
-        if (!s) { console.log('[CV-AUTOFILL] CV found but ai_summary is null — analysis not done yet'); return; }
+        if (!s) {
+          console.log('[CV-AUTOFILL] CV found but ai_summary is null — triggering re-analysis');
+          // Trigger analysis automatically so CVAnalysisTransition will find it
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token && data.file_path) {
+            const { data: signedData } = await supabase.storage.from('resumes').createSignedUrl(data.file_path, 300);
+            if (signedData?.signedUrl) {
+              fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-resume`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                body: JSON.stringify({ fileUrl: signedData.signedUrl, fileName: data.file_name, documentId: data.id }),
+              }).then(() => console.log('[CV-AUTOFILL] Re-analysis triggered'))
+                .catch(e => console.error('[CV-AUTOFILL] Re-analysis failed:', e));
+            }
+          }
+          return;
+        }
         console.log('[CV-AUTOFILL] ai_summary found:', { personalInfo: s?.personalInfo, recentRole: s?.experience?.recentRole, skills: s?.skills?.technical?.slice(0,5) });
         const info = s?.personalInfo;
         if (info?.name)      setFullName(info.name);
