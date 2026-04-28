@@ -338,20 +338,22 @@ export function ResumeUpload({ onSuccess, compact = false }: ResumeUploadProps) 
       };
 
       return (
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/10 border border-primary/20">
+        <div className="flex flex-wrap items-center gap-2 p-2 rounded-lg bg-primary/10 border border-primary/20">
           <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
-          <span className="text-sm text-foreground truncate flex-1">
+          <span className="text-sm text-foreground truncate min-w-0 flex-1">
             {existingResume.file_name}
           </span>
-          <Button variant="ghost" size="sm" onClick={handleDownload} className="h-7 px-2" title={isRTL ? 'הורד' : 'Download'}>
-            <Download className="w-3 h-3" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()} className="h-7 px-2" title={isRTL ? 'החלף' : 'Replace'}>
-            <RefreshCw className="w-3 h-3" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending} className="h-7 px-2 text-destructive hover:text-destructive" title={isRTL ? 'מחק' : 'Delete'}>
-            <Trash2 className="w-3 h-3" />
-          </Button>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <Button variant="ghost" size="sm" onClick={handleDownload} className="h-7 w-7 p-0" title={isRTL ? 'הורד' : 'Download'}>
+              <Download className="w-3.5 h-3.5" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()} className="h-7 w-7 p-0" title={isRTL ? 'החלף' : 'Replace'}>
+              <RefreshCw className="w-3.5 h-3.5" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending} className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" title={isRTL ? 'מחק' : 'Delete'}>
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
           <input
             ref={fileInputRef}
             type="file"
