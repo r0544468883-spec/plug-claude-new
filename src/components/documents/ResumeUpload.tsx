@@ -193,13 +193,14 @@ export function ResumeUpload({ onSuccess, compact = false }: ResumeUploadProps) 
       
       // Show success tip
       setShowUploadSuccessTip(true);
-      
-      // Trigger AI analysis
+
+      // Notify caller immediately (don't wait for AI analysis)
+      onSuccess?.();
+
+      // Trigger AI analysis in background
       if (data.documentId) {
         await analyzeResume(data.documentId, data.fileName, data.originalName);
       }
-      
-      onSuccess?.();
     },
     onError: (error: any) => {
       console.error('Upload error:', error);
