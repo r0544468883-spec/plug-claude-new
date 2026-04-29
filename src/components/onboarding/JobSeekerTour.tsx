@@ -54,11 +54,11 @@ export const TOUR_STEPS: TourStep[] = [
 
   {
     section: 'overview',
-    targetSelector: '[data-tour="plug-chat"]',
+    targetSelector: '[data-tour="extension-download"]',
     titleHe: 'התוסף של פלאג - עובד בכל מקום 🤖',
     titleEn: 'PLUG Extension - Works Everywhere 🤖',
-    descriptionHe: 'הורידו את התוסף מהסייד-פאנל. עם התוסף, פלאג עובד ישירות ב-LinkedIn ו-AllJobs - מנתח משרות בזמן גלישה, ממלא טפסים ושומר הכל לדשבורד. הפעילו את הסוכן החכם - הוא סורק, מנתח ומגיש מועמדויות. עם HITL: הסוכן מציג לכם כל משרה ומחכה לאישורכם לפני הגשה.',
-    descriptionEn: 'Download the extension from the side panel. With it, PLUG works directly on LinkedIn & AllJobs - analyzes jobs while browsing, fills forms, saves everything to the dashboard. Activate the AI Agent - it scans, analyzes fit, and submits applications. With HITL: the agent shows you each job and waits for your approval before applying.',
+    descriptionHe: 'לחצו על הבאנר כאן בסייד-בר כדי להוריד את התוסף. עם התוסף, פלאג עובד ישירות ב-LinkedIn ו-AllJobs - מנתח משרות בזמן גלישה, ממלא טפסים ושומר הכל לדשבורד. הפעילו את הסוכן החכם - הוא סורק, מנתח ומגיש מועמדויות. עם HITL: הסוכן מציג לכם כל משרה ומחכה לאישורכם.',
+    descriptionEn: 'Click this banner in the sidebar to download the extension. With it, PLUG works directly on LinkedIn & AllJobs - analyzes jobs while browsing, fills forms, saves everything to the dashboard. Activate the AI Agent - it scans, analyzes fit, and submits applications. With HITL: the agent shows each job and waits for your approval.',
     icon: Bot,
     sectionLabelHe: 'שלב 2: התוסף',
     sectionLabelEn: 'Step 2: Extension',
@@ -173,6 +173,48 @@ export const TOUR_STEPS: TourStep[] = [
     sectionLabelEn: 'Step 10: Job Digest',
   },
 
+  // ── שלב 8.7: תזכורות follow-up (settings) ──────────────
+
+  {
+    section: 'settings',
+    targetSelector: '[data-tour="email-followup"]',
+    titleHe: 'תזכורות Follow-up אוטומטיות 🔔',
+    titleEn: 'Automatic Follow-up Reminders 🔔',
+    descriptionHe: 'פלאג מזהה מועמדויות שלא קיבלו תגובה אחרי 5 ימים ומציג בנר עם כפתור שליחת מייל ישיר. פשוט לחצו על המשרה ובחרו "שלח מייל" — הנושא והטקסט כבר מוכנים.',
+    descriptionEn: 'PLUG detects applications with no reply after 5 days and shows a banner with a direct email button. Just click the job and choose "Send Email" — subject and body are already prepared.',
+    icon: Bell,
+    sectionLabelHe: 'שלב 8: Follow-up',
+    sectionLabelEn: 'Step 8: Follow-up',
+  },
+
+  // ── שלב 8.8: ניתוח ביצועי מייל (settings) ──────────────
+
+  {
+    section: 'settings',
+    targetSelector: '[data-tour="email-analytics"]',
+    titleHe: 'ניתוח ביצועי מייל 📊',
+    titleEn: 'Email Performance Analytics 📊',
+    descriptionHe: 'פלאג מנתח את כל המיילים שקיבלתם ומציג: אחוז מענה, זמן מענה ממוצע, מספר ראיונות שהוזמנתם ומספר דחיות. ראו בדיוק עד כמה חיפוש העבודה שלכם אפקטיבי.',
+    descriptionEn: 'PLUG analyzes all your received emails and shows: response rate, average response time, number of interview invites, and rejections. See exactly how effective your job search is.',
+    icon: BarChart3,
+    sectionLabelHe: 'שלב 9: ניתוח מייל',
+    sectionLabelEn: 'Step 9: Email Analytics',
+  },
+
+  // ── שלב 8.9: Google Calendar (settings) ─────────────────
+
+  {
+    section: 'settings',
+    targetSelector: '[data-tour="google-calendar-card"]',
+    titleHe: 'Google Calendar — ראיונות בלוח השנה 📅',
+    titleEn: 'Google Calendar — Interviews in Your Calendar 📅',
+    descriptionHe: 'חברו את Google Calendar פה. כשמגיע מייל הזמנה לראיון, פלאג מציע "הוסף ליומן" — לחיצה אחת ואירוע עם 2 תזכורות (שעה ו-10 דקות לפני) נוצר אוטומטית.',
+    descriptionEn: 'Connect your Google Calendar here. When an interview invite arrives, PLUG shows "Add to calendar" — one click and an event with 2 reminders (1 hour and 10 minutes before) is created automatically.',
+    icon: CalendarDays,
+    sectionLabelHe: 'שלב 10: יומן Google',
+    sectionLabelEn: 'Step 10: Google Calendar',
+  },
+
   // ── שלב 11: חיפוש משרות (job-search) ───────────────────
 
   {
@@ -239,6 +281,20 @@ export const TOUR_STEPS: TourStep[] = [
     icon: LayoutDashboard,
     sectionLabelHe: 'שלב 12: מועמדויות',
     sectionLabelEn: 'Step 12: Applications',
+  },
+
+  // ── שלב 12.5: הזמנה לראיון (applications) ──────────────
+
+  {
+    section: 'applications',
+    targetSelector: '[data-tour="email-interview-actions"]',
+    titleHe: 'הזמנה לראיון — תגובה בקליק + יומן 🎯',
+    titleEn: 'Interview Invite — Reply in 1 Click + Calendar 🎯',
+    descriptionHe: 'כשמגיע מייל הזמנה לראיון, פלאג מציג בנר כחול על המועמדות: כפתור "ענה עם זמינות" יפתח מייל AI מוכן לשליחה, וכפתור "הוסף ליומן" ייצור אירוע ב-Google Calendar עם תזכורות. הכל בלי לעזוב את פלאג.',
+    descriptionEn: 'When an interview invite arrives, PLUG shows a blue banner on the application: "Reply with availability" opens a ready AI email, and "Add to calendar" creates a Google Calendar event with reminders. All without leaving PLUG.',
+    icon: CalendarDays,
+    sectionLabelHe: 'שלב 13: ראיון',
+    sectionLabelEn: 'Step 13: Interview',
   },
 
   // ── שלב 13: יומן (schedule) ─────────────────────────────

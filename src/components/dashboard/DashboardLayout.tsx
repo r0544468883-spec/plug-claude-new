@@ -341,6 +341,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
             href="https://chrome.google.com/webstore/detail/plug"
             target="_blank"
             rel="noopener noreferrer"
+            data-tour="extension-download"
             className="mx-3 mb-2 flex items-center gap-2.5 rounded-lg border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors px-3 py-2.5"
           >
             <div className="w-7 h-7 rounded-md bg-primary/20 flex items-center justify-center shrink-0">

@@ -286,7 +286,9 @@ export function EmailConnectionCard() {
         {renderProviderCard('gmail', gmailToken, connectGmail, 'Gmail', 'bg-red-500')}
         {renderProviderCard('outlook', outlookToken, connectOutlook, 'Outlook', 'bg-blue-600')}
 
-        <FollowUpReminder />
+        <div data-tour="email-followup">
+          <FollowUpReminder />
+        </div>
 
         {unmatchedEmails && unmatchedEmails.length > 0 && (
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 space-y-2">

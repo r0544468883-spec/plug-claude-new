@@ -122,7 +122,7 @@ export function EmailThreadView({
     <div className="space-y-4">
       {/* Interview invite — one-click reply banner */}
       {interviewInvite && (
-        <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 p-3 flex items-center justify-between gap-3">
+        <div data-tour="email-interview-actions" className="rounded-lg border border-blue-500/40 bg-blue-500/10 p-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-sm font-medium">
             <CalendarCheck className="w-4 h-4 shrink-0" />
             {isHebrew ? 'קיבלת הזמנה לראיון!' : 'You received an interview invite!'}

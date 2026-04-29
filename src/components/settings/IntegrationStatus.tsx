@@ -632,13 +632,17 @@ export function IntegrationStatus() {
           <EmailConnectionCard />
 
           {/* Email performance analytics */}
-          <EmailAnalytics />
+          <div data-tour="email-analytics">
+            <EmailAnalytics />
+          </div>
 
           {/* Email Templates */}
           <TemplateEditor />
 
           {/* Google Calendar — functional */}
-          <GoogleCalendarCard />
+          <div data-tour="google-calendar-card">
+            <GoogleCalendarCard />
+          </div>
 
           {/* Push Notifications — functional */}
           <PushNotificationsCard />
