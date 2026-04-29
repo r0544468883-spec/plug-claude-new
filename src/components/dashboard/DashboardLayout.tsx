@@ -147,6 +147,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
     if (role === 'job_seeker') {
       return [
         // ── Core ──
+        { icon: User, label: isRTL ? 'הפרופיל שלי' : 'My Profile', section: 'profile-settings', tooltipHe: 'פרופיל, הגדרות, אינטגרציות וחשבון', tooltipEn: 'Profile, settings, integrations & account' },
         { icon: LayoutDashboard, label: isRTL ? 'מסך ראשי' : 'Overview', section: 'overview', tooltipHe: 'מסך ראשי — הצצה לכל מה שקורה אצלך', tooltipEn: 'Home — a peek into everything happening' },
         { icon: Search, label: isRTL ? 'לוח המשרות שלי' : 'My Jobboard', section: 'job-search', tooltipHe: 'חיפוש משרות חדשות וסינון לפי מיקום, קטגוריה וסוג', tooltipEn: 'Search new jobs and filter by location, category, and type' },
         { icon: Target, label: isRTL ? 'ספרינט' : 'Sprint', section: 'job-swipe' as DashboardSection, tooltipHe: 'סוויפ על משרות מותאמות + היסטוריית מאצ׳ים', tooltipEn: 'Swipe through matched jobs + match history' },
@@ -159,7 +160,6 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
         { icon: Sparkles, label: isRTL ? 'הסודות שלי' : 'My Secrets', section: 'my-secrets' as DashboardSection, tooltipHe: 'תובנות חברות מלינקדאין — מה החברה עושה, אנשי קשר והתאמה', tooltipEn: 'LinkedIn company insights — what they do, contacts & fit' },
         { icon: Building2, label: isRTL ? 'ספריית חברות' : 'Companies', section: 'companies' as DashboardSection, tooltipHe: 'גלה חברות וקרא ביקורות אנונימיות מהקהילה', tooltipEn: 'Discover companies & read anonymous community reviews' },
         // ── Preparation & Profile ──
-        { icon: User, label: isRTL ? 'הפרופיל שלי' : 'My Profile', section: 'profile-settings', tooltipHe: 'פרופיל, הגדרות, אינטגרציות וחשבון', tooltipEn: 'Profile, settings, integrations & account' },
         { icon: FileEdit, label: isRTL ? 'בניית קורות חיים' : 'CV Builder', section: 'cv-builder', tooltipHe: 'בניית קורות חיים מקצועיים עם תבניות ו-AI', tooltipEn: 'Build professional CVs with templates and AI' },
         { icon: Mic, label: isRTL ? 'הכנה לראיון עבודה' : 'Interview Prep', section: 'interview-prep', tooltipHe: 'הכנה לראיון עבודה עם שאלות ותרגול AI', tooltipEn: 'Interview preparation with AI questions and practice' },
         { icon: ClipboardList, label: isRTL ? 'לוח המטלות' : 'Assignments Board', section: 'assignments' as DashboardSection, tooltipHe: 'לוח המטלות – הוכח את הכישורים שלך עם אתגרים אמיתיים', tooltipEn: 'Assignments board – prove your skills with real challenges' },
@@ -289,26 +289,47 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navItems.map((item, index) => (
-            <NavTooltip 
-              key={index} 
-              content={direction === 'rtl' ? item.tooltipHe : item.tooltipEn}
-              side={direction === 'rtl' ? 'left' : 'right'}
-            >
-              <button
-                onClick={() => handleNavClick(item.section)}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-start",
-                  (item.section === 'feed' ? SOCIAL_SECTIONS.includes(currentSection) : currentSection === item.section)
-                    ? "bg-primary/10 text-primary plug-row-active plug-glow-purple"
-                    : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/10"
-                )}
+          {navItems.map((item, index) => {
+            const isProfileItem = item.section === 'profile-settings' || item.section === 'recruiter-profile';
+            const p = profile as any;
+            const profileItems = [
+              !!p?.full_name?.trim(),
+              !!p?.avatar_url,
+              !!p?.personal_tagline?.trim(),
+              !!p?.about_me?.trim(),
+              !!p?.phone?.trim(),
+              !!(p?.cv_data && Object.keys(p?.cv_data || {}).length > 0),
+              !!(p?.linkedin_url || p?.portfolio_url || p?.github_url),
+            ];
+            const profilePct = Math.round((profileItems.filter(Boolean).length / profileItems.length) * 100);
+            const showProfileBadge = isProfileItem && profilePct < 80;
+
+            return (
+              <NavTooltip
+                key={index}
+                content={direction === 'rtl' ? item.tooltipHe : item.tooltipEn}
+                side={direction === 'rtl' ? 'left' : 'right'}
               >
-                <item.icon className="w-5 h-5" />
-                <span>{item.label}</span>
-              </button>
-            </NavTooltip>
-          ))}
+                <button
+                  onClick={() => handleNavClick(item.section)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-start",
+                    (item.section === 'feed' ? SOCIAL_SECTIONS.includes(currentSection) : currentSection === item.section)
+                      ? "bg-primary/10 text-primary plug-row-active plug-glow-purple"
+                      : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/10"
+                  )}
+                >
+                  <item.icon className="w-5 h-5 shrink-0" />
+                  <span className="flex-1">{item.label}</span>
+                  {showProfileBadge && (
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 leading-none">
+                      {isRTL ? 'חסר' : 'Fill'}
+                    </span>
+                  )}
+                </button>
+              </NavTooltip>
+            );
+          })}
         </nav>
 
         {/* Visible to HR Banner for job seekers */}

@@ -20,16 +20,17 @@ import { JobFilterSettings } from '@/components/settings/JobFilterSettings';
 import { PrivacySettings } from '@/components/settings/PrivacySettings';
 import { AccountSettings } from '@/components/settings/AccountSettings';
 import { IntegrationStatus } from '@/components/settings/IntegrationStatus';
-import { User, Sliders, Plug, KeyRound, Upload } from 'lucide-react';
+import { User, Sliders, Plug, KeyRound, Upload, RefreshCw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DashboardSection } from '@/components/dashboard/DashboardLayout';
 
 interface UnifiedProfileSettingsProps {
   initialTab?: string;
   onNavigate?: (section: DashboardSection) => void;
+  onReopenOnboarding?: () => void;
 }
 
-export function UnifiedProfileSettings({ initialTab, onNavigate }: UnifiedProfileSettingsProps) {
+export function UnifiedProfileSettings({ initialTab, onNavigate, onReopenOnboarding }: UnifiedProfileSettingsProps) {
   const { user, profile, role, isLoading } = useAuth();
   const { language } = useLanguage();
   const isHebrew = language === 'he';
@@ -107,10 +108,21 @@ export function UnifiedProfileSettings({ initialTab, onNavigate }: UnifiedProfil
 
   return (
     <div className="space-y-6" dir={isHebrew ? 'rtl' : 'ltr'}>
-      <h2 className="text-2xl font-bold flex items-center gap-3">
-        <User className="w-6 h-6 text-primary" />
-        {isHebrew ? 'פרופיל והגדרות' : 'Profile & Settings'}
-      </h2>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h2 className="text-2xl font-bold flex items-center gap-3">
+          <User className="w-6 h-6 text-primary" />
+          {isHebrew ? 'פרופיל והגדרות' : 'Profile & Settings'}
+        </h2>
+        {onReopenOnboarding && (
+          <button
+            onClick={onReopenOnboarding}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors border border-border rounded-full px-3 py-1.5"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            {isHebrew ? 'חזור לאשף ההגדרה' : 'Redo setup wizard'}
+          </button>
+        )}
+      </div>
 
       {/* Profile Completion — always visible */}
       {onNavigate && <ProfileCompletionCard onNavigate={(section) => onNavigate(section as DashboardSection)} />}

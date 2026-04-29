@@ -140,11 +140,18 @@ export default function Dashboard() {
   useEffect(() => {
     if (role !== 'job_seeker') return;
     const done = localStorage.getItem('plug-onboarding-done') === 'true';
+    const skipped = localStorage.getItem('plug-onboarding-skipped') === 'true';
     const profileDone = (profile as any)?.onboarding_completed === true;
-    if (!done && !profileDone) {
+    if (!done && !skipped && !profileDone) {
       setShowOnboardingWizard(true);
     }
   }, [role, profile]);
+
+  const reopenOnboarding = () => {
+    localStorage.removeItem('plug-onboarding-done');
+    localStorage.removeItem('plug-onboarding-skipped');
+    setShowOnboardingWizard(true);
+  };
 
   const isRTL = language === 'he';
 
@@ -395,7 +402,7 @@ export default function Dashboard() {
   };
 
   const renderProfileSettingsContent = () => (
-    <UnifiedProfileSettings onNavigate={setCurrentSection} />
+    <UnifiedProfileSettings onNavigate={setCurrentSection} onReopenOnboarding={role === 'job_seeker' ? reopenOnboarding : undefined} />
   );
 
   const renderChatContent = () => (

@@ -782,10 +782,19 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       : 'All these questions help the PLUG Chrome Extension work fully — auto-fill forms, send CVs, and match jobs.'}
                   </span>
                 </div>
-                <div className="flex justify-center mt-6">
+                <div className="flex flex-col items-center gap-3 mt-6">
                   <Button onClick={handleNext} size="lg" className="min-h-[52px] gap-2 rounded-full px-8 text-base font-semibold hover:shadow-[0_0_30px_hsl(156_100%_50%/0.3)]">
                     {isHebrew ? 'בואו נתחיל!' : "Let's start!"} <Rocket className="w-5 h-5" />
                   </Button>
+                  <button
+                    onClick={() => {
+                      localStorage.setItem('plug-onboarding-skipped', 'true');
+                      onComplete();
+                    }}
+                    className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+                  >
+                    {isHebrew ? 'דלג בינתיים — אמלא פרטים מאוחר יותר' : 'Skip for now — I\'ll fill details later'}
+                  </button>
                 </div>
               </motion.div>
             )}
