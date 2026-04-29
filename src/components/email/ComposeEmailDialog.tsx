@@ -264,6 +264,7 @@ export function ComposeEmailDialog({
                 onClick={handleDraftWithAI}
                 disabled={drafting}
                 className="gap-1.5 shrink-0 text-primary border-primary/30 hover:bg-primary/5"
+                data-tour="email-ai"
               >
                 {drafting ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />

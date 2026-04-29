@@ -11,6 +11,7 @@ import {
   Zap, Mic, MessageSquare, Heart, Users, ClipboardList,
   CreditCard, Eye, Lightbulb, Bell, MessageCircle,
   CalendarDays, Building2, Bot, Clock, Sparkles, LayoutDashboard,
+  Wand2, Mail, Newspaper,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import onboardingNotesImage from '@/assets/onboarding-notes-new.png';
@@ -61,6 +62,20 @@ export const TOUR_STEPS: TourStep[] = [
     icon: Bot,
     sectionLabelHe: 'שלב 2: התוסף',
     sectionLabelEn: 'Step 2: Extension',
+  },
+
+  // ── שלב 2.5: AI בצ'אט LinkedIn (overview) ───────────────
+
+  {
+    section: 'overview',
+    targetSelector: '[data-tour="plug-chat"]',
+    titleHe: 'AI ישירות בצ\'אט של LinkedIn ✍️',
+    titleEn: 'AI Directly in LinkedIn Chat ✍️',
+    descriptionHe: 'בתוסף פלאג: כשכותבים הודעה ל-LinkedIn — מסמנים טקסט ומופיעות 3 אפשרויות AI: ✨ שפר | 💼 מקצועי | ✂️ קצר. פלאג כותב מחדש את ההודעה בשניות. יש גם כפתור "✨ PLUG" שמייצר טיוטה שלמה מאפס לפי הפרופיל שלכם.',
+    descriptionEn: 'In the PLUG extension: while writing a LinkedIn message - select text and 3 AI options appear: ✨ Improve | 💼 Professional | ✂️ Shorten. PLUG rewrites your message in seconds. There\'s also a "✨ PLUG" button that generates a full draft from scratch based on your profile.',
+    icon: Wand2,
+    sectionLabelHe: 'שלב 3: AI בלינקדין',
+    sectionLabelEn: 'Step 3: AI in LinkedIn',
   },
 
   // ── שלבים 3-4: פרופיל (profile-docs) ───────────────────
@@ -130,7 +145,35 @@ export const TOUR_STEPS: TourStep[] = [
     sectionLabelEn: 'Step 7: Settings',
   },
 
-  // ── שלב 8: חיפוש משרות (job-search) ────────────────────
+  // ── שלב 8.5: AI בכתיבת מיילים (settings) ───────────────
+
+  {
+    section: 'settings',
+    targetSelector: '[data-tour="email-ai"]',
+    titleHe: 'AI ישירות בתוך המייל ✉️',
+    titleEn: 'AI Directly Inside Your Email ✉️',
+    descriptionHe: 'בחלון כתיבת המייל: לחצו "טיוטה עם AI" — פלאג מייצר נושא + גוף מייל מלא לפי שלב הבקשה (follow-up / תודה על ראיון / משא ומתן שכר). מסמנים טקסט בגוף המייל ומופיעה toolbar: שפר / מקצועי / קצר / הרחב / תקן.',
+    descriptionEn: 'In the email composer: click "Draft with AI" — PLUG generates a full subject + body based on your application stage (follow-up / post-interview thank you / salary negotiation). Select text in the body and a toolbar appears: Improve / Professional / Shorten / Expand / Fix.',
+    icon: Mail,
+    sectionLabelHe: 'שלב 9: AI במייל',
+    sectionLabelEn: 'Step 9: AI in Email',
+  },
+
+  // ── שלב 8.6: דייג'סט משרות (settings) ──────────────────
+
+  {
+    section: 'settings',
+    targetSelector: '[data-tour="email-digest"]',
+    titleHe: 'דייג\'סט משרות — כל יומיים למייל 📬',
+    titleEn: 'Job Digest — Every 2 Days to Your Inbox 📬',
+    descriptionHe: 'פלאג שולח אוטומטית כל יומיים מייל עם 5-8 המשרות הכי חדשות ורלוונטיות עבורכם. רואים את ההזדמנויות הכי טובות בלי לפתוח את האפליקציה. נדרש: חיבור Gmail בהגדרות.',
+    descriptionEn: 'PLUG automatically sends every 2 days an email with the 5-8 newest and most relevant jobs for you. See the best opportunities without opening the app. Requires: Gmail connected in Settings.',
+    icon: Newspaper,
+    sectionLabelHe: 'שלב 10: דייג\'סט משרות',
+    sectionLabelEn: 'Step 10: Job Digest',
+  },
+
+  // ── שלב 11: חיפוש משרות (job-search) ───────────────────
 
   {
     section: 'job-search',

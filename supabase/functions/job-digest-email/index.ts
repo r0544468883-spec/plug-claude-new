@@ -111,6 +111,51 @@ serve(async (req) => {
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
+  // Parse optional test params
+  let testTo: string | null = null;
+  try {
+    const body = await req.json().catch(() => ({}));
+    testTo = body.test_to || null;
+  } catch { /* no body */ }
+
+  // Test mode — send sample email immediately
+  if (testTo) {
+    const sampleJobs = [
+      { id: '1', title: 'מפתח Full Stack', company: 'WalkMe', location: 'תל אביב', job_url: `${APP_URL}` },
+      { id: '2', title: 'Frontend Engineer (React)', company: 'Wix', location: 'תל אביב', job_url: `${APP_URL}` },
+      { id: '3', title: 'Backend Developer — Node.js', company: 'Monday.com', location: 'תל אביב / היברידי', job_url: `${APP_URL}` },
+      { id: '4', title: 'DevOps Engineer', company: 'Fiverr', location: 'תל אביב', job_url: `${APP_URL}` },
+      { id: '5', title: 'Mobile Developer (React Native)', company: 'Gett', location: 'תל אביב', job_url: `${APP_URL}` },
+    ];
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    // Use any connected Gmail token to send the test email
+    const { data: token } = await supabase
+      .from("email_oauth_tokens")
+      .select("access_token, refresh_token, expires_at")
+      .eq("provider", "gmail")
+      .eq("sync_enabled", true)
+      .limit(1)
+      .maybeSingle();
+
+    if (!token) {
+      return new Response(JSON.stringify({ error: "No Gmail account connected in PLUG" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    let accessToken = token.access_token;
+    if (new Date(token.expires_at).getTime() - Date.now() < 5 * 60 * 1000) {
+      accessToken = await refreshGmailToken(token.refresh_token);
+    }
+
+    const subject = "🔍 5 משרות חדשות מחכות לך — PLUG (דוגמה)";
+    await sendGmailDigest(accessToken, testTo, subject, buildEmailHtml(sampleJobs, true));
+    return new Response(JSON.stringify({ sent: 1, test: true }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   // Fetch all users with Gmail connected and sync enabled
   const { data: tokens, error: tokensErr } = await supabase
     .from("email_oauth_tokens")
@@ -131,14 +176,14 @@ serve(async (req) => {
     try {
       const userId = token.user_id;
 
-      // Check if digest was sent recently
+      // Check if digest was sent recently (skip in test mode)
       const { data: profile } = await supabase
         .from("profiles")
         .select("last_digest_sent_at, language")
         .eq("user_id", userId)
         .single();
 
-      if (profile?.last_digest_sent_at) {
+      if (!testTo && profile?.last_digest_sent_at) {
         const lastSent = new Date(profile.last_digest_sent_at);
         const hoursSince = (now.getTime() - lastSent.getTime()) / (1000 * 60 * 60);
         if (hoursSince < DIGEST_INTERVAL_HOURS - 1) {
@@ -156,13 +201,16 @@ serve(async (req) => {
         .eq("user_id", userId);
       const appliedJobIds = new Set((applications || []).map((a: any) => a.job_id).filter(Boolean));
 
-      // Fetch new jobs from the last 2 days, not yet applied
-      const { data: jobs } = await supabase
+      // Fetch jobs — in test mode skip date filter
+      const jobQuery = supabase
         .from("jobs")
         .select("id, title, company_id, location, job_url, created_at")
-        .gte("created_at", twoDaysAgo)
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(testTo ? 8 : 20);
+
+      if (!testTo) jobQuery.gte("created_at", twoDaysAgo);
+
+      const { data: jobs } = await jobQuery;
 
       // Filter out already applied jobs
       const newJobs = (jobs || []).filter((j: any) => !appliedJobIds.has(j.id)).slice(0, 8);
@@ -208,7 +256,8 @@ serve(async (req) => {
         ? `🔍 ${enrichedJobs.length} משרות חדשות מחכות לך — PLUG`
         : `🔍 ${enrichedJobs.length} new jobs waiting for you — PLUG`;
 
-      await sendGmailDigest(accessToken, token.email_address, subject, buildEmailHtml(enrichedJobs, isHe));
+      const sendTo = testTo || token.email_address;
+      await sendGmailDigest(accessToken, sendTo, subject, buildEmailHtml(enrichedJobs, isHe));
 
       // Update last digest sent time
       await supabase

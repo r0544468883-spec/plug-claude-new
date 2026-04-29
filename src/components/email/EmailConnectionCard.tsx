@@ -268,7 +268,7 @@ export function EmailConnectionCard() {
         {renderProviderCard('outlook', outlookToken, connectOutlook, 'Outlook', 'bg-blue-600')}
 
         {(gmailToken || outlookToken) && (
-          <div className="pt-2 text-xs text-muted-foreground flex items-center gap-1">
+          <div className="pt-2 text-xs text-muted-foreground flex items-center gap-1" data-tour="email-digest">
             <RefreshCw className="w-3 h-3" />
             {isHebrew
               ? 'מיילים נסרקים כל 15 דקות אוטומטית'
