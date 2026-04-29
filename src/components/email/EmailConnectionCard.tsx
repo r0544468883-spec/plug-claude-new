@@ -22,23 +22,23 @@ export function EmailConnectionCard() {
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
 
-  // Handle OAuth callback params
+  // Handle OAuth popup postMessage
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('email_connected') === 'true') {
-      const provider = params.get('provider') || '';
-      toast.success(
-        isHebrew
-          ? `חשבון ${provider === 'gmail' ? 'Gmail' : 'Outlook'} חובר בהצלחה!`
-          : `${provider === 'gmail' ? 'Gmail' : 'Outlook'} connected successfully!`
-      );
-      window.history.replaceState({}, '', window.location.pathname);
-      queryClient.invalidateQueries({ queryKey: ['email-oauth-tokens'] });
-    } else if (params.get('email_error')) {
-      toast.error(isHebrew ? 'שגיאה בחיבור מייל' : 'Email connection failed');
-      window.history.replaceState({}, '', window.location.pathname);
-    }
-  }, []);
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type !== 'PLUG_OAUTH_SUCCESS') return;
+      const { provider } = e.data;
+      if (provider === 'gmail' || provider === 'outlook') {
+        toast.success(
+          isHebrew
+            ? `${provider === 'gmail' ? 'Gmail' : 'Outlook'} חובר בהצלחה!`
+            : `${provider === 'gmail' ? 'Gmail' : 'Outlook'} connected successfully!`
+        );
+        queryClient.invalidateQueries({ queryKey: ['email-oauth-tokens'] });
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [isHebrew]);
 
   const { data: tokens, isLoading } = useQuery({
     queryKey: ['email-oauth-tokens', user?.id],
@@ -68,9 +68,9 @@ export function EmailConnectionCard() {
       return;
     }
     const state = `${user?.id}:gmail`;
-    const scopes = 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly';
+    const scopes = 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${state}&access_type=offline&prompt=consent`;
-    window.location.href = url;
+    window.open(url, '_blank', 'width=600,height=700');
   };
 
   const connectOutlook = () => {
@@ -81,7 +81,7 @@ export function EmailConnectionCard() {
     const state = `${user?.id}:outlook`;
     const scopes = 'Mail.Send Mail.Read offline_access User.Read';
     const url = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${MICROSOFT_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${state}`;
-    window.location.href = url;
+    window.open(url, '_blank', 'width=600,height=700');
   };
 
   const disconnect = async (provider: string) => {

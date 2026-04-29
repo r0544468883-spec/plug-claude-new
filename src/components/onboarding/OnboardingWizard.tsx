@@ -662,14 +662,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     const state = `${user.id}:gmail`;
     const scopes = 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(EMAIL_REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${state}&access_type=offline&prompt=consent`;
-    window.open(url, '_blank', 'noopener');
+    window.open(url, '_blank', 'width=600,height=700');
     setGmailDone(true);
   };
   const connectLinkedIn = () => {
     if (!LINKEDIN_CLIENT_ID || !user) return;
     const scopes = 'openid profile email';
     const url = `https://www.linkedin.com/oauth/v2/authorization?client_id=${LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(LINKEDIN_REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${user.id}`;
-    window.open(url, '_blank', 'noopener');
+    window.open(url, '_blank', 'width=600,height=700');
     setLinkedinDone(true);
   };
 
@@ -677,7 +677,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     if (!GOOGLE_CLIENT_ID || !user) return;
     const scopes = 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events';
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(CALENDAR_REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${user.id}&access_type=offline&prompt=consent`;
-    window.open(url, '_blank', 'noopener');
+    window.open(url, '_blank', 'width=600,height=700');
     setCalendarDone(true);
   };
   const connectPush = async () => {
