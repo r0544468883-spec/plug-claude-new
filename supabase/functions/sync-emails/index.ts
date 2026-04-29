@@ -14,20 +14,109 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Signal words that indicate a job-related email (rejection, interview, offer)
-const JOB_SIGNAL_WORDS = [
-  // Rejection signals
-  "sorry", "unfortunately", "regret", "we regret", "not moving forward",
-  "moving forward with other", "not selected", "decided not to", "will not be",
-  "לצערנו", "לא נוכל", "החלטנו שלא", "לא נוכל לקדם", "לא קדמנו",
-  // Interview signals
-  "interview", "ראיון", "phone screen", "next step", "שלב הבא", "schedule a call",
-  "would like to invite", "היינו רוצים להזמין",
-  // Offer signals
-  "offer", "הצעה", "congratulations", "ברכות", "you've been selected", "נבחרת",
-  // General application signals
-  "thank you for applying", "תודה על הגשת", "your application", "מועמדותך",
+// ─── Email signal word bank (sourced from real job emails in inbox) ──────────
+// Only REJECTION + INTERVIEW + OFFER trigger step-8 matching and needs_review.
+// ACKNOWLEDGMENT ("thank you for applying") is too noisy — every receipt email
+// would fire the banner — so it's kept separate for classify-email only.
+
+const SIGNAL_REJECTION = [
+  // English — seen in: Lightrun, Payoneer, JobTestPrep
+  "unfortunately",
+  "we regret",
+  "regret to inform",
+  "not moving forward",
+  "not selected",
+  "decided to move forward with other",
+  "went with another candidate",
+  "high volume of applications",
+  "we appreciate your time and effort",
+  "wish you well in your",
+  "best of luck in your",
+  "unable to move forward",
+  "will not be advancing",
+  "position has been filled",
+  "not the right fit",
+  "we have decided not to",
+  "sorry to inform",
+  // Hebrew
+  "לצערנו",
+  "לא נוכל לקדמך",
+  "לא נוכל לקדם",
+  "לא ממשיכים",
+  "לא קדמנו",
+  "בחרנו במועמד אחר",
+  "לא עמדת בקריטריונים",
+  "סיימנו את תהליך",
+  "נסגרה המשרה",
+  "עברנו הלאה",
+  "לא מתאים לתפקיד",
+  "לא נוכל להמשיך",
+  "לא נוכל",
+  "החלטנו שלא",
 ];
+
+const SIGNAL_INTERVIEW = [
+  // English — seen in: Theator (BambooHR), Clicks Talent
+  "schedule your interview",
+  "schedule an interview",
+  "let's talk",
+  "phone screen",
+  "video call",
+  "next step",
+  "next round",
+  "next stage",
+  "we'd like to invite",
+  "we would like to invite",
+  "shortlisted",
+  "moving forward with you",
+  "we've reviewed your application and",
+  "advance to the next",
+  "schedule a call",
+  "book a meeting",
+  "we'd like to meet",
+  // Hebrew
+  "ראיון",
+  "שלב הבא",
+  "שיחת טלפון",
+  "שמחים להזמינך",
+  "ממשיכים איתך",
+  "נבחרת להמשיך",
+  "לתאם שיחה",
+  "קביעת ראיון",
+  "עברת לשלב",
+  "הזמנה לראיון",
+  "שיחת היכרות",
+  "ראיון עבודה",
+  "ראיון ראשוני",
+  "היינו רוצים להזמין",
+];
+
+const SIGNAL_OFFER = [
+  // English
+  "offer letter",
+  "pleased to offer",
+  "extend an offer",
+  "we'd like to offer",
+  "welcome aboard",
+  "start date",
+  "compensation package",
+  "congratulations",
+  "joining us",
+  // Hebrew
+  "הצעת עבודה",
+  "ברכות",
+  "שמחים להציע",
+  "להצטרף אלינו",
+  "ברוך הבא לצוות",
+  "תאריך התחלה",
+  "תנאי העסקה",
+  "תנאי שכר",
+];
+
+// JOB_SIGNAL_WORDS → step-8 matching + needs_review flag
+// (acknowledgment words like "thank you for applying" are intentionally excluded —
+//  they fire on every receipt email and make the needs_review banner too noisy)
+const JOB_SIGNAL_WORDS = [...SIGNAL_REJECTION, ...SIGNAL_INTERVIEW, ...SIGNAL_OFFER];
 
 async function refreshToken(provider: string, refreshToken: string) {
   if (provider === "gmail") {
