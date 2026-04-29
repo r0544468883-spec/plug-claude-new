@@ -79,11 +79,13 @@ const htmlPage = (success: boolean, provider: string, error?: string) => `<!DOCT
 </body>
 </html>`;
 
-const htmlResponse = (success: boolean, provider: string, error?: string) =>
-  new Response(htmlPage(success, provider, error), {
+const htmlResponse = (success: boolean, provider: string, error?: string) => {
+  const body = new TextEncoder().encode(htmlPage(success, provider, error));
+  return new Response(body, {
     headers: { "Content-Type": "text/html; charset=utf-8" },
     status: 200,
   });
+};
 
 const REDIRECT_URI = `${SUPABASE_URL}/functions/v1/connect-email-callback`;
 
@@ -111,6 +113,7 @@ serve(async (req) => {
     expires_in: number;
   };
   let emailAddress = "";
+  let googlePicture = "";
 
   try {
     if (provider === "gmail") {
@@ -135,14 +138,15 @@ serve(async (req) => {
 
       tokenData = await tokenRes.json();
 
-      // Get user's email address from Gmail profile
+      // Get user's profile (email + picture) from Google userinfo
       const profileRes = await fetch(
-        "https://gmail.googleapis.com/gmail/v1/users/me/profile",
+        "https://www.googleapis.com/oauth2/v3/userinfo",
         { headers: { Authorization: `Bearer ${tokenData.access_token}` } }
       );
       if (profileRes.ok) {
-        const profile = await profileRes.json();
-        emailAddress = profile.emailAddress || "";
+        const googleProfile = await profileRes.json();
+        emailAddress = googleProfile.email || "";
+        googlePicture = googleProfile.picture || "";
       }
     } else {
       // Outlook — exchange code with Microsoft
@@ -216,6 +220,18 @@ serve(async (req) => {
       { user_id: userId, updated_at: new Date().toISOString() },
       { onConflict: "user_id" }
     );
+
+  // Update avatar if profile has none
+  if (googlePicture) {
+    const { data: existingProfile } = await supabase
+      .from("profiles")
+      .select("avatar_url")
+      .eq("user_id", userId)
+      .single();
+    if (!existingProfile?.avatar_url?.trim()) {
+      await supabase.from("profiles").update({ avatar_url: googlePicture }).eq("user_id", userId);
+    }
+  }
 
   return htmlResponse(true, provider);
 });

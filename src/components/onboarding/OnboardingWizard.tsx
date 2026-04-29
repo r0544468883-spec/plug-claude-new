@@ -646,7 +646,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const connectGmail = () => {
     if (!GOOGLE_CLIENT_ID || !user) return;
     const state = `${user.id}:gmail`;
-    const scopes = 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly';
+    const scopes = 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(EMAIL_REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${state}&access_type=offline&prompt=consent`;
     window.open(url, '_blank', 'noopener');
     setGmailDone(true);
