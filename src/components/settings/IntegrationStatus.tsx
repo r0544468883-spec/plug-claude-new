@@ -33,6 +33,7 @@ import { TemplateEditor } from '@/components/email/TemplateEditor';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+const LINKEDIN_CLIENT_ID = import.meta.env.VITE_LINKEDIN_CLIENT_ID || '';
 
 // ─── Webhook Card ───────────────────────────────────────────────
 function WebhookCard() {
@@ -464,6 +465,115 @@ function GoogleCalendarCard() {
   );
 }
 
+// ─── LinkedIn Card ──────────────────────────────────────────────
+function LinkedInCard() {
+  const { language } = useLanguage();
+  const { user, profile, refreshProfile } = useAuth();
+  const queryClient = useQueryClient();
+  const isHebrew = language === 'he';
+  const [disconnecting, setDisconnecting] = useState(false);
+
+  const isConnected = !!(profile as any)?.linkedin_connected;
+  const displayName = (profile as any)?.linkedin_display_name || '';
+  const picture = (profile as any)?.linkedin_picture || '';
+
+  // Listen for OAuth popup success
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === 'PLUG_OAUTH_SUCCESS' && e.data?.provider === 'linkedin') {
+        toast.success(isHebrew ? 'LinkedIn חובר בהצלחה!' : 'LinkedIn connected!');
+        refreshProfile?.();
+        queryClient.invalidateQueries({ queryKey: ['profile'] });
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [isHebrew]);
+
+  const connect = () => {
+    if (!LINKEDIN_CLIENT_ID || !user) {
+      toast.error(isHebrew ? 'LinkedIn Client ID לא מוגדר' : 'LinkedIn Client ID not configured');
+      return;
+    }
+    const redirectUri = `${SUPABASE_URL}/functions/v1/linkedin-callback`;
+    const scopes = 'openid profile email';
+    const url = `https://www.linkedin.com/oauth/v2/authorization?client_id=${LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${user.id}`;
+    window.open(url, '_blank', 'noopener,width=600,height=700');
+  };
+
+  const disconnect = async () => {
+    if (!user) return;
+    setDisconnecting(true);
+    try {
+      const { error } = await (supabase as any)
+        .from('profiles')
+        .update({
+          linkedin_connected: false,
+          linkedin_access_token: null,
+          linkedin_token_expires_at: null,
+          linkedin_sub: null,
+        })
+        .eq('user_id', user.id);
+      if (error) throw error;
+      toast.success(isHebrew ? 'LinkedIn נותק' : 'LinkedIn disconnected');
+      refreshProfile?.();
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    } catch {
+      toast.error(isHebrew ? 'שגיאה בניתוק' : 'Error disconnecting');
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/20">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-lg bg-[#0077B5]/10 flex items-center justify-center">
+          {picture && isConnected ? (
+            <img src={picture} alt="" className="w-10 h-10 rounded-lg object-cover" />
+          ) : (
+            <Linkedin className="w-5 h-5 text-[#0077B5]" />
+          )}
+        </div>
+        <div>
+          <div className="flex items-center gap-2">
+            <h4 className="font-medium">LinkedIn</h4>
+            {isConnected ? (
+              <Badge className="gap-1 bg-green-500/20 text-green-700 border-green-500/30 dark:text-green-300">
+                <CheckCircle2 className="w-3 h-3" />
+                {isHebrew ? 'מחובר' : 'Connected'}
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="gap-1 text-muted-foreground">
+                <XCircle className="w-3 h-3" />
+                {isHebrew ? 'לא מחובר' : 'Not connected'}
+              </Badge>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {isConnected && displayName
+              ? displayName
+              : isHebrew ? 'ייבא פרטי פרופיל מ-LinkedIn' : 'Import profile data from LinkedIn'}
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-1 shrink-0">
+        {isConnected ? (
+          <Button variant="ghost" size="sm" onClick={disconnect} disabled={disconnecting} className="gap-1 text-destructive">
+            {disconnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unlink className="w-4 h-4" />}
+            {isHebrew ? 'נתק' : 'Disconnect'}
+          </Button>
+        ) : (
+          <Button size="sm" onClick={connect} className="gap-1.5 bg-[#0077B5] hover:bg-[#006399]">
+            <Linkedin className="w-4 h-4" />
+            {isHebrew ? 'חבר' : 'Connect'}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Coming Soon Card ───────────────────────────────────────────
 function ComingSoonCard({ icon: Icon, name, description }: {
   icon: React.ComponentType<{ className?: string }>;
@@ -535,11 +645,7 @@ export function IntegrationStatus() {
             name="WhatsApp"
             description={isHebrew ? 'שלח הודעות WhatsApp אוטומטיות' : 'Send automated WhatsApp messages'}
           />
-          <ComingSoonCard
-            icon={Linkedin}
-            name="LinkedIn Sync"
-            description={isHebrew ? 'ייבא נתוני פרופיל מלינקדאין' : 'Import profile data from LinkedIn'}
-          />
+          <LinkedInCard />
         </CardContent>
       </Card>
     </div>
