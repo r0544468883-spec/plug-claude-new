@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { EmailConnectionCard } from '@/components/email/EmailConnectionCard';
+import { EmailAnalytics } from '@/components/email/EmailAnalytics';
 import { TemplateEditor } from '@/components/email/TemplateEditor';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -629,6 +630,9 @@ export function IntegrationStatus() {
         <CardContent className="space-y-4">
           {/* Gmail / Outlook — already functional */}
           <EmailConnectionCard />
+
+          {/* Email performance analytics */}
+          <EmailAnalytics />
 
           {/* Email Templates */}
           <TemplateEditor />

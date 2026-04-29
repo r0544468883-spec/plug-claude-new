@@ -359,7 +359,46 @@ async function matchEmailToApplication(
   const senderDomain = email.from_email.split("@")[1]?.toLowerCase() || "";
   const subjectLower = (email.subject || "").toLowerCase();
   const bodySnippet = (email.body_text || "").toLowerCase().substring(0, 1000);
+
+  // ATS domain mapping — emails from these domains come on behalf of a company.
+  // Extract the company hint from the subject (first word / company name pattern).
+  const ATS_DOMAINS: Record<string, true> = {
+    "greenhouse-mail.io": true,
+    "us.greenhouse-mail.io": true,
+    "eu.greenhouse-mail.io": true,
+    "hire.lever.co": true,
+    "lever.co": true,
+    "workablemail.com": true,
+    "candidates.workablemail.com": true,
+    "bamboohr.com": true,
+    "notifications.app.bamboohr.com": true,
+    "ashbyhq.com": true,
+    "recruitee.com": true,
+    "smartrecruiters.com": true,
+    "comeet.co": true,
+    "breezy.hr": true,
+    "taleo.net": true,
+    "icims.com": true,
+    "jobvite.com": true,
+    "hire-match.ai": true,
+  };
+  const isATS = Object.keys(ATS_DOMAINS).some(d => senderDomain.includes(d));
+
   const haystack = `${subjectLower} ${bodySnippet}`;
+
+  // 2.5 ATS fast-path — sender is a known ATS (Greenhouse, Lever, Workable…).
+  // Domain matching is useless here; go straight to company-name scan across all apps.
+  if (isATS) {
+    for (const app of apps) {
+      if (!app.job_company || app.job_company.length < 3) continue;
+      const companyWords = app.job_company.toLowerCase().split(/[\s,./\-_()]+/).filter((w: string) => w.length >= 3);
+      if (companyWords.some((w: string) => haystack.includes(w))) return app.id;
+    }
+    // Also try job title match on subject
+    for (const app of apps) {
+      if (app.job_title && app.job_title.length >= 6 && subjectLower.includes(app.job_title.toLowerCase())) return app.id;
+    }
+  }
 
   for (const app of apps) {
     // 2. Domain match — sender domain contains company name

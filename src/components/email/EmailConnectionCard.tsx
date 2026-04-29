@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Mail, CheckCircle2, XCircle, Loader2, RefreshCw, Unlink, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { FollowUpReminder } from './FollowUpReminder';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
@@ -284,6 +285,8 @@ export function EmailConnectionCard() {
       <CardContent className="space-y-3">
         {renderProviderCard('gmail', gmailToken, connectGmail, 'Gmail', 'bg-red-500')}
         {renderProviderCard('outlook', outlookToken, connectOutlook, 'Outlook', 'bg-blue-600')}
+
+        <FollowUpReminder />
 
         {unmatchedEmails && unmatchedEmails.length > 0 && (
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 space-y-2">

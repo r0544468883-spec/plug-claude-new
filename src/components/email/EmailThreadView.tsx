@@ -4,9 +4,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Mail, Send, Inbox, Loader2, Sparkles, Clock } from 'lucide-react';
+import { Mail, Send, Inbox, Loader2, Sparkles, Clock, CalendarCheck, CalendarPlus } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { he, enUS } from 'date-fns/locale';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { ComposeEmailDialog } from './ComposeEmailDialog';
 import { PasteEmailDialog } from './PasteEmailDialog';
 
@@ -74,8 +76,89 @@ export function EmailThreadView({
     );
   }
 
+  const [addingToCalendar, setAddingToCalendar] = useState(false);
+
+  const addToCalendar = async (email: typeof emails[0]) => {
+    setAddingToCalendar(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const interviewDate = (email as any).ai_extracted_data?.interview_date;
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/add-interview-to-calendar`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({
+            interview_date: interviewDate,
+            job_title: jobTitle,
+            company_name: companyName,
+            application_id: applicationId,
+          }),
+        }
+      );
+      const data = await res.json();
+      if (data.error === 'no_calendar') {
+        toast.error(isHebrew ? 'חבר Google Calendar בהגדרות קודם' : 'Connect Google Calendar in Settings first');
+      } else if (data.success) {
+        toast.success(isHebrew ? 'הראיון נוסף ליומן!' : 'Interview added to calendar!');
+      } else {
+        throw new Error(data.error);
+      }
+    } catch {
+      toast.error(isHebrew ? 'שגיאה בהוספה ליומן' : 'Failed to add to calendar');
+    } finally {
+      setAddingToCalendar(false);
+    }
+  };
+
+  // Detect interview invite in this thread
+  const interviewInvite = emails?.find(e => e.ai_classification === 'interview_invitation' && e.direction === 'received');
+
   return (
     <div className="space-y-4">
+      {/* Interview invite — one-click reply banner */}
+      {interviewInvite && (
+        <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 p-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-sm font-medium">
+            <CalendarCheck className="w-4 h-4 shrink-0" />
+            {isHebrew ? 'קיבלת הזמנה לראיון!' : 'You received an interview invite!'}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {(interviewInvite as any).ai_extracted_data?.interview_date && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 border-blue-500/40 text-blue-600"
+                onClick={() => addToCalendar(interviewInvite)}
+                disabled={addingToCalendar}
+              >
+                {addingToCalendar ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CalendarPlus className="h-3.5 w-3.5" />}
+                {isHebrew ? 'הוסף ליומן' : 'Add to calendar'}
+              </Button>
+            )}
+            <ComposeEmailDialog
+              defaultTo={interviewInvite.from_email}
+              applicationId={applicationId}
+              candidateName={candidateName}
+              jobTitle={jobTitle}
+              companyName={companyName}
+              replyToMessageId={interviewInvite.id}
+              stage="interview"
+              trigger={
+                <Button size="sm" className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white">
+                  <Send className="h-3.5 w-3.5" />
+                  {isHebrew ? 'ענה עם זמינות' : 'Reply with availability'}
+                </Button>
+              }
+            />
+          </div>
+        </div>
+      )}
+
       {/* Action Buttons */}
       <div className="flex gap-2 flex-wrap">
         <ComposeEmailDialog
