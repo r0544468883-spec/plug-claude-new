@@ -44,8 +44,10 @@ const htmlPage = (success: boolean, error?: string) => `<!DOCTYPE html>
 </body>
 </html>`;
 
+const toEntities = (s: string) => s.replace(/[^\x00-\x7F]/g, c => `&#x${c.codePointAt(0)!.toString(16)};`);
+
 const htmlResponse = (success: boolean, error?: string) =>
-  new Response(htmlPage(success, error), { headers: { "Content-Type": "text/html; charset=utf-8" }, status: 200 });
+  new Response(toEntities(htmlPage(success, error)), { headers: { "Content-Type": "text/html; charset=utf-8" }, status: 200 });
 
 serve(async (req) => {
   const url   = new URL(req.url);

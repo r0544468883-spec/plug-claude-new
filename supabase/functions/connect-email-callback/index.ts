@@ -79,13 +79,14 @@ const htmlPage = (success: boolean, provider: string, error?: string) => `<!DOCT
 </body>
 </html>`;
 
-const htmlResponse = (success: boolean, provider: string, error?: string) => {
-  const body = new TextEncoder().encode(htmlPage(success, provider, error));
-  return new Response(body, {
+// Encode non-ASCII chars as HTML entities to avoid any encoding issues
+const toEntities = (s: string) => s.replace(/[^\x00-\x7F]/g, c => `&#x${c.codePointAt(0)!.toString(16)};`);
+
+const htmlResponse = (success: boolean, provider: string, error?: string) =>
+  new Response(toEntities(htmlPage(success, provider, error)), {
     headers: { "Content-Type": "text/html; charset=utf-8" },
     status: 200,
   });
-};
 
 const REDIRECT_URI = `${SUPABASE_URL}/functions/v1/connect-email-callback`;
 
