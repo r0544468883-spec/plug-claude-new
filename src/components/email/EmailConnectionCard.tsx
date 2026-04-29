@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Mail, CheckCircle2, XCircle, Loader2, RefreshCw, Unlink } from 'lucide-react';
+import { Mail, CheckCircle2, XCircle, Loader2, RefreshCw, Unlink, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -61,6 +61,24 @@ export function EmailConnectionCard() {
 
   const gmailToken = tokens?.find(t => t.provider === 'gmail');
   const outlookToken = tokens?.find(t => t.provider === 'outlook');
+
+  // Unmatched job emails that need manual review (Feature 1)
+  const { data: unmatchedEmails } = useQuery({
+    queryKey: ['unmatched-emails', user?.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('application_emails')
+        .select('id, subject, from_email, created_at')
+        .eq('user_id', user?.id)
+        .eq('needs_review', true)
+        .is('application_id', null)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data as Array<{ id: string; subject: string; from_email: string; created_at: string }>;
+    },
+    enabled: !!user?.id && (tokens?.length ?? 0) > 0,
+  });
 
   const connectGmail = () => {
     if (!GOOGLE_CLIENT_ID) {
@@ -266,6 +284,35 @@ export function EmailConnectionCard() {
       <CardContent className="space-y-3">
         {renderProviderCard('gmail', gmailToken, connectGmail, 'Gmail', 'bg-red-500')}
         {renderProviderCard('outlook', outlookToken, connectOutlook, 'Outlook', 'bg-blue-600')}
+
+        {unmatchedEmails && unmatchedEmails.length > 0 && (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 space-y-2">
+            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-medium text-sm">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              {isHebrew
+                ? `${unmatchedEmails.length} מיילים לא זוהו — נדרשת תשומת לב`
+                : `${unmatchedEmails.length} email${unmatchedEmails.length > 1 ? 's' : ''} couldn't be matched to an application`}
+            </div>
+            <ul className="space-y-1">
+              {unmatchedEmails.slice(0, 3).map(e => (
+                <li key={e.id} className="text-xs text-muted-foreground truncate">
+                  <span className="font-medium text-foreground">{e.from_email}</span>
+                  {' — '}{e.subject}
+                </li>
+              ))}
+              {unmatchedEmails.length > 3 && (
+                <li className="text-xs text-muted-foreground">
+                  {isHebrew ? `ועוד ${unmatchedEmails.length - 3}...` : `and ${unmatchedEmails.length - 3} more...`}
+                </li>
+              )}
+            </ul>
+            <p className="text-xs text-muted-foreground">
+              {isHebrew
+                ? 'עבור לטאב "מיילים" בדף המשרה הרלוונטית וקשר ידנית'
+                : 'Go to the relevant application\'s "Emails" tab to link manually'}
+            </p>
+          </div>
+        )}
 
         {(gmailToken || outlookToken) && (
           <div className="pt-2 text-xs text-muted-foreground flex items-center gap-1" data-tour="email-digest">

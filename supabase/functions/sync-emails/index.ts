@@ -14,6 +14,21 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Signal words that indicate a job-related email (rejection, interview, offer)
+const JOB_SIGNAL_WORDS = [
+  // Rejection signals
+  "sorry", "unfortunately", "regret", "we regret", "not moving forward",
+  "moving forward with other", "not selected", "decided not to", "will not be",
+  "לצערנו", "לא נוכל", "החלטנו שלא", "לא נוכל לקדם", "לא קדמנו",
+  // Interview signals
+  "interview", "ראיון", "phone screen", "next step", "שלב הבא", "schedule a call",
+  "would like to invite", "היינו רוצים להזמין",
+  // Offer signals
+  "offer", "הצעה", "congratulations", "ברכות", "you've been selected", "נבחרת",
+  // General application signals
+  "thank you for applying", "תודה על הגשת", "your application", "מועמדותך",
+];
+
 async function refreshToken(provider: string, refreshToken: string) {
   if (provider === "gmail") {
     const res = await fetch("https://oauth2.googleapis.com/token", {
@@ -314,6 +329,19 @@ async function matchEmailToApplication(
     }
   }
 
+  // 8. 2-keyword match — BOTH a job signal word AND a partial company name must appear in the email.
+  // Example: email contains "sorry" + "wix" → matches the application to Wix.
+  if (JOB_SIGNAL_WORDS.some(w => haystack.includes(w))) {
+    for (const app of apps) {
+      if (!app.job_company || app.job_company.length < 3) continue;
+      // Split company into words and check if any meaningful word appears in the email
+      const companyWords = app.job_company.toLowerCase().split(/[\s,./\-_()]+/).filter((w: string) => w.length >= 3);
+      if (companyWords.some((word: string) => haystack.includes(word))) {
+        return app.id;
+      }
+    }
+  }
+
   return null;
 }
 
@@ -431,6 +459,10 @@ serve(async (req) => {
           if (!debugInfo.matchResults) debugInfo.matchResults = [];
           (debugInfo.matchResults as unknown[]).push({ subject: email.subject, from: email.from_email, matched: applicationId });
 
+          // Feature 1: flag unmatched emails that look job-related for manual review
+          const emailHaystack = `${(email.subject || "").toLowerCase()} ${(email.body_text || "").toLowerCase().substring(0, 1000)}`;
+          const needsReview = applicationId === null && JOB_SIGNAL_WORDS.some(w => emailHaystack.includes(w));
+
           // Save email
           const { data: savedEmail, error: insertErr } = await supabase
             .from("application_emails")
@@ -447,6 +479,7 @@ serve(async (req) => {
               body_html: email.body_html,
               provider: token.provider,
               created_at: email.received_at,
+              needs_review: needsReview,
             })
             .select("id")
             .single();
