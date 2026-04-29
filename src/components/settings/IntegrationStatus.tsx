@@ -498,7 +498,10 @@ function LinkedInCard() {
     const redirectUri = `${SUPABASE_URL}/functions/v1/linkedin-callback`;
     const scopes = 'openid profile email';
     const url = `https://www.linkedin.com/oauth/v2/authorization?client_id=${LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${user.id}`;
-    window.open(url, '_blank', 'width=600,height=700');
+    const popup = window.open(url, '_blank', 'width=600,height=700');
+    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+      toast.error(isHebrew ? 'הדפדפן חסם את החלון — אפשר popups לאתר זה ונסה שוב' : 'Browser blocked the popup — allow popups and try again');
+    }
   };
 
   const disconnect = async () => {

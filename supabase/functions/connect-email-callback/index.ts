@@ -82,11 +82,19 @@ const htmlPage = (success: boolean, provider: string, error?: string) => `<!DOCT
 // Encode non-ASCII chars as HTML entities to avoid any encoding issues
 const toEntities = (s: string) => s.replace(/[^\x00-\x7F]/g, c => `&#x${c.codePointAt(0)!.toString(16)};`);
 
+const successClose = (provider: string) =>
+  new Response(
+    `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head><body><script>try{window.opener&&window.opener.postMessage({type:'PLUG_OAUTH_SUCCESS',provider:'${provider}'},'*');}catch(e){}window.close();<\/script></body></html>`,
+    { headers: { "Content-Type": "text/html; charset=utf-8" }, status: 200 }
+  );
+
 const htmlResponse = (success: boolean, provider: string, error?: string) =>
-  new Response(toEntities(htmlPage(success, provider, error)), {
-    headers: { "Content-Type": "text/html; charset=utf-8" },
-    status: 200,
-  });
+  success
+    ? successClose(provider)
+    : new Response(toEntities(htmlPage(false, provider, error)), {
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+        status: 200,
+      });
 
 const REDIRECT_URI = `${SUPABASE_URL}/functions/v1/connect-email-callback`;
 

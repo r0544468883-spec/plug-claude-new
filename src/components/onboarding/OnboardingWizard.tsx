@@ -657,19 +657,26 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   };
 
   // ── Gmail helpers — open in NEW TAB ──
+  const openOAuthPopup = (url: string, blockedMsg: string) => {
+    const popup = window.open(url, '_blank', 'width=600,height=700');
+    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+      toast.error(blockedMsg);
+    }
+  };
+
   const connectGmail = () => {
     if (!GOOGLE_CLIENT_ID || !user) return;
     const state = `${user.id}:gmail`;
     const scopes = 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(EMAIL_REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${state}&access_type=offline&prompt=consent`;
-    window.open(url, '_blank', 'width=600,height=700');
+    openOAuthPopup(url, isHebrew ? 'הדפדפן חסם את החלון — אפשר popups לאתר זה ונסה שוב' : 'Browser blocked the popup — allow popups for this site and try again');
     setGmailDone(true);
   };
   const connectLinkedIn = () => {
     if (!LINKEDIN_CLIENT_ID || !user) return;
     const scopes = 'openid profile email';
     const url = `https://www.linkedin.com/oauth/v2/authorization?client_id=${LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(LINKEDIN_REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${user.id}`;
-    window.open(url, '_blank', 'width=600,height=700');
+    openOAuthPopup(url, isHebrew ? 'הדפדפן חסם את החלון — אפשר popups לאתר זה ונסה שוב' : 'Browser blocked the popup — allow popups for this site and try again');
     setLinkedinDone(true);
   };
 
@@ -677,7 +684,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     if (!GOOGLE_CLIENT_ID || !user) return;
     const scopes = 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events';
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(CALENDAR_REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${user.id}&access_type=offline&prompt=consent`;
-    window.open(url, '_blank', 'width=600,height=700');
+    openOAuthPopup(url, isHebrew ? 'הדפדפן חסם את החלון — אפשר popups לאתר זה ונסה שוב' : 'Browser blocked the popup — allow popups for this site and try again');
     setCalendarDone(true);
   };
   const connectPush = async () => {

@@ -48,8 +48,16 @@ const htmlPage = (success: boolean, error?: string) => `<!DOCTYPE html>
 
 const toEntities = (s: string) => s.replace(/[^\x00-\x7F]/g, c => `&#x${c.codePointAt(0)!.toString(16)};`);
 
+const successClose = () =>
+  new Response(
+    `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head><body><script>try{window.opener&&window.opener.postMessage({type:'PLUG_OAUTH_SUCCESS',provider:'linkedin'},'*');}catch(e){}window.close();<\/script></body></html>`,
+    { headers: { "Content-Type": "text/html; charset=utf-8" }, status: 200 }
+  );
+
 const htmlResponse = (success: boolean, error?: string) =>
-  new Response(toEntities(htmlPage(success, error)), { headers: { "Content-Type": "text/html; charset=utf-8" }, status: 200 });
+  success
+    ? successClose()
+    : new Response(toEntities(htmlPage(false, error)), { headers: { "Content-Type": "text/html; charset=utf-8" }, status: 200 });
 
 serve(async (req) => {
   const url   = new URL(req.url);

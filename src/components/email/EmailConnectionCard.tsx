@@ -70,7 +70,10 @@ export function EmailConnectionCard() {
     const state = `${user?.id}:gmail`;
     const scopes = 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${state}&access_type=offline&prompt=consent`;
-    window.open(url, '_blank', 'width=600,height=700');
+    const popup = window.open(url, '_blank', 'width=600,height=700');
+    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+      toast.error(isHebrew ? 'הדפדפן חסם את החלון — אפשר popups לאתר זה ונסה שוב' : 'Browser blocked the popup — allow popups and try again');
+    }
   };
 
   const connectOutlook = () => {
@@ -81,7 +84,10 @@ export function EmailConnectionCard() {
     const state = `${user?.id}:outlook`;
     const scopes = 'Mail.Send Mail.Read offline_access User.Read';
     const url = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${MICROSOFT_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${state}`;
-    window.open(url, '_blank', 'width=600,height=700');
+    const popupO = window.open(url, '_blank', 'width=600,height=700');
+    if (!popupO || popupO.closed || typeof popupO.closed === 'undefined') {
+      toast.error(isHebrew ? 'הדפדפן חסם את החלון — אפשר popups לאתר זה ונסה שוב' : 'Browser blocked the popup — allow popups and try again');
+    }
   };
 
   const disconnect = async (provider: string) => {
