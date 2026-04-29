@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -21,8 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Mail, Send, Loader2, FileText } from 'lucide-react';
+import { Mail, Send, Loader2, FileText, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { EmailInlineAI } from './EmailInlineAI';
 
 interface ComposeEmailDialogProps {
   trigger?: React.ReactNode;
@@ -34,6 +34,7 @@ interface ComposeEmailDialogProps {
   candidateName?: string;
   jobTitle?: string;
   companyName?: string;
+  stage?: string;
 }
 
 export function ComposeEmailDialog({
@@ -46,6 +47,7 @@ export function ComposeEmailDialog({
   candidateName,
   jobTitle,
   companyName,
+  stage,
 }: ComposeEmailDialogProps) {
   const { language } = useLanguage();
   const { user } = useAuth();
@@ -55,6 +57,7 @@ export function ComposeEmailDialog({
   const [subject, setSubject] = useState(defaultSubject);
   const [body, setBody] = useState(defaultBody);
   const [sending, setSending] = useState(false);
+  const [drafting, setDrafting] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
 
   // Check if email is connected
@@ -107,6 +110,43 @@ export function ComposeEmailDialog({
     if (template) {
       setSubject(replaceTemplateVars(template.subject));
       setBody(replaceTemplateVars(template.body));
+    }
+  };
+
+  const handleDraftWithAI = async () => {
+    setDrafting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/email-ai-assist`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            action: 'draft',
+            job_title: jobTitle || '',
+            company_name: companyName || '',
+            stage: stage || 'applied',
+            language: isHebrew ? 'he' : 'en',
+            user_name: candidateName || '',
+          }),
+        }
+      );
+
+      if (!res.ok) throw new Error('Failed');
+      const data = await res.json();
+      if (data.subject) setSubject(data.subject);
+      if (data.body) setBody(data.body);
+    } catch {
+      toast.error(isHebrew ? 'שגיאה ביצירת טיוטה — נסה שוב' : 'Failed to generate draft — try again');
+    } finally {
+      setDrafting(false);
     }
   };
 
@@ -197,25 +237,42 @@ export function ComposeEmailDialog({
               {isHebrew ? 'מאת:' : 'From:'} <span className="font-medium text-foreground">{connectedEmail}</span>
             </div>
 
-            {/* Template selector */}
-            {templates && templates.length > 0 && (
-              <div className="space-y-1">
-                <Label className="flex items-center gap-1">
-                  <FileText className="w-3.5 h-3.5" />
-                  {isHebrew ? 'תבנית' : 'Template'}
-                </Label>
-                <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={isHebrew ? 'בחר תבנית...' : 'Choose template...'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {templates.map(t => (
-                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            {/* Template selector + Draft with AI */}
+            <div className="flex items-end gap-2">
+              {templates && templates.length > 0 && (
+                <div className="space-y-1 flex-1">
+                  <Label className="flex items-center gap-1">
+                    <FileText className="w-3.5 h-3.5" />
+                    {isHebrew ? 'תבנית' : 'Template'}
+                  </Label>
+                  <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={isHebrew ? 'בחר תבנית...' : 'Choose template...'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templates.map(t => (
+                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleDraftWithAI}
+                disabled={drafting}
+                className="gap-1.5 shrink-0 text-primary border-primary/30 hover:bg-primary/5"
+              >
+                {drafting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Wand2 className="w-3.5 h-3.5" />
+                )}
+                {isHebrew ? 'טיוטה עם AI' : 'Draft with AI'}
+              </Button>
+            </div>
 
             {/* To */}
             <div className="space-y-1">
@@ -239,14 +296,15 @@ export function ComposeEmailDialog({
               />
             </div>
 
-            {/* Body */}
+            {/* Body with inline AI rewrite */}
             <div className="space-y-1">
               <Label>{isHebrew ? 'תוכן' : 'Body'}</Label>
-              <Textarea
+              <EmailInlineAI
                 value={body}
-                onChange={(e) => setBody(e.target.value)}
+                onChange={setBody}
                 placeholder={isHebrew ? 'כתוב את תוכן המייל...' : 'Write your email...'}
                 className="min-h-[200px] resize-none"
+                rows={8}
               />
             </div>
 
