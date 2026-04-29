@@ -346,7 +346,7 @@ function ChipBtn({ label, selected, onClick }: { label: string; selected: boolea
 
 // ── Main Component ──
 export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const { language } = useLanguage();
   const queryClient = useQueryClient();
   const isHebrew = language === 'he';
@@ -629,6 +629,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         .eq('user_id', user.id);
       if (error) throw error;
 
+      await refreshProfile();
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       localStorage.setItem('plug-onboarding-done', 'true');
       toast.success(isHebrew ? 'הפרופיל עודכן בהצלחה!' : 'Profile updated!');
