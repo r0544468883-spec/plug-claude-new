@@ -605,8 +605,22 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       if (city.trim()) locations.push(city.trim());
       if (commuteDistance && commuteDistance !== 'any') locations.push(commuteDistance);
 
+      // Split full name into first / last
+      const nameParts = fullName.trim().split(/\s+/);
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      // Detect if name is Latin (English) or Hebrew
+      const isLatinName = /^[\x20-\x7E]+$/.test(fullName.trim());
+
+      // Map gender to title
+      const title = gender === 'male' ? 'mr' : gender === 'female' ? 'ms' : null;
+
       const updates: Record<string, any> = {
         full_name: fullName.trim(),
+        first_name: firstName || null,
+        last_name: lastName || null,
+        ...(isLatinName ? { full_name_en: fullName.trim(), first_name_en: firstName || null, last_name_en: lastName || null } : {}),
+        title,
         gender: gender || null,
         phone: phone.trim() || null,
         personal_tagline: tagline.trim() || null,
