@@ -819,8 +819,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           <div className="max-w-lg mx-auto px-4">
             <PlugMessage
               text={isHebrew
-                ? 'יש לך קורות חיים? 📄\nאם תעלה קו"ח, אני אשאב את רוב המידע אוטומטית ונקצר את התהליך!'
-                : 'Do you have a CV? 📄\nUpload it and I\'ll extract most info automatically to speed things up!'}
+                ? `יש לך קורות חיים? 📄\nאם ${gender === 'female' ? 'תעלי' : 'תעלה'} קו"ח, אני אשאב את רוב המידע אוטומטית ונקצר את התהליך!`
+                : "Do you have a CV? 📄\nUpload it and I'll extract most info automatically to speed things up!"}
               speed={30}
               onComplete={onMessageReady}
             />
@@ -892,7 +892,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           <div className="max-w-lg mx-auto px-4">
             <PlugMessage
               text={isHebrew
-                ? 'באילו תחומים אתה מחפש עבודה? 💼\nבחר עד 5 תחומים — זה עוזר לתוסף לסנן ולהתאים משרות.'
+                ? `באילו תחומים ${gender === 'female' ? 'את מחפשת' : 'אתה מחפש'} עבודה? 💼\n${gender === 'female' ? 'בחרי' : 'בחר'} עד 5 תחומים — זה עוזר לתוסף לסנן ולהתאים משרות.`
                 : 'What fields are you looking for? 💼\nPick up to 5 — helps the extension filter and match jobs.'}
               speed={28}
               onComplete={onMessageReady}
@@ -1006,7 +1006,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           <div className="max-w-lg mx-auto px-4">
             <PlugMessage
               text={isHebrew
-                ? 'יש לך פרופילים ברשת? 🔗\nהקישורים ימולאו אוטומטית בטפסי הגשת מועמדות — חוסך זמן!'
+                ? `יש לך פרופילים ברשת? 🔗\nהקישורים יימולאו אוטומטית בטפסי הגשת מועמדות — ${gender === 'female' ? 'חוסכת' : 'חוסך'} זמן!`
                 : 'Got online profiles? 🔗\nThese links auto-fill in application forms — saves time!'}
               speed={28}
               onComplete={onMessageReady}
@@ -1134,7 +1134,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           <div className="max-w-lg mx-auto px-4">
             <PlugMessage
               text={isHebrew
-                ? 'שלב אחרון! 🎉\nחיבור Gmail מאפשר ל-PLUG לעקוב אחרי דחיות ולסנכרן ראיונות ליומן.\nהחיבורים נפתחים בטאב חדש — חזור לפה אחרי.'
+                ? `שלב אחרון! 🎉\nחיבור Gmail מאפשר ל-PLUG לעקוב אחרי דחיות ולסנכרן ראיונות ליומן.\nהחיבורים נפתחים בטאב חדש — ${gender === 'female' ? 'חזרי' : 'חזור'} לפה אחרי.`
                 : 'Last step! 🎉\nGmail lets PLUG track rejections and sync interviews.\nConnections open in a new tab — come back here after.'}
               speed={28}
               onComplete={onMessageReady}
