@@ -18,7 +18,7 @@ import { NavTooltip } from '@/components/ui/nav-tooltip';
 import { VisibleToHRBanner } from '@/components/sidebar/VisibleToHRBanner';
 // PlugFloatingHint removed - notifications now in NotificationBell
 import {
-  LayoutDashboard, Users, Briefcase, FileText, MessageSquare, Settings, LogOut, Menu, X, User, Search, ArrowLeft, ArrowRight, Heart, FileEdit, Route, Sparkles, Mic, Newspaper, Video, Globe, DollarSign, Building2, Target, Calendar, LayoutGrid, Gem, ClipboardList, BarChart3, UserSearch, Monitor, Share2, History, Lightbulb
+  LayoutDashboard, Users, Briefcase, FileText, MessageSquare, Settings, LogOut, Menu, X, User, Search, ArrowLeft, ArrowRight, Heart, FileEdit, Route, Sparkles, Mic, Newspaper, Video, Globe, DollarSign, Building2, Target, Calendar, LayoutGrid, Gem, ClipboardList, BarChart3, UserSearch, Monitor, Share2, History, Lightbulb, Eye
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -287,53 +287,206 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
           </button>
         )}
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navItems.map((item, index) => {
-            const isProfileItem = item.section === 'profile-settings' || item.section === 'recruiter-profile';
-            const p = profile as any;
-            const profileItems = [
-              !!p?.full_name?.trim(),
-              !!p?.avatar_url,
-              !!p?.personal_tagline?.trim(),
-              !!p?.about_me?.trim(),
-              !!p?.phone?.trim(),
-              !!(p?.cv_data && Object.keys(p?.cv_data || {}).length > 0),
-              !!(p?.linkedin_url || p?.portfolio_url || p?.github_url),
-            ];
-            const profilePct = Math.round((profileItems.filter(Boolean).length / profileItems.length) * 100);
-            const showProfileBadge = isProfileItem && profilePct < 80;
-
-            return (
-              <NavTooltip
-                key={index}
-                content={direction === 'rtl' ? item.tooltipHe : item.tooltipEn}
-                side={direction === 'rtl' ? 'left' : 'right'}
-              >
-                <button
-                  onClick={() => handleNavClick(item.section)}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-start",
-                    (item.section === 'feed' ? SOCIAL_SECTIONS.includes(currentSection) : currentSection === item.section)
-                      ? "bg-primary/10 text-primary plug-row-active plug-glow-purple"
-                      : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/10"
-                  )}
-                >
-                  <item.icon className="w-5 h-5 shrink-0" />
-                  <span className="flex-1">{item.label}</span>
-                  {showProfileBadge && (
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 leading-none">
-                      {isRTL ? 'חסר' : 'Fill'}
-                    </span>
-                  )}
-                </button>
-              </NavTooltip>
-            );
-          })}
-        </nav>
-
-        {/* Visible to HR Banner for job seekers */}
+        {/* Visibility toggle — right below profile card */}
         <VisibleToHRBanner />
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto">
+          {role === 'job_seeker' ? (
+            <>
+              {/* ── Pinned ── */}
+              <div className="px-2 pt-2 space-y-0.5">
+                {([
+                  { icon: LayoutDashboard, label: isRTL ? 'מסך ראשי' : 'Overview',    section: 'overview'         as DashboardSection, tooltipHe: 'מסך ראשי — הצצה לכל מה שקורה', tooltipEn: 'Home — everything at a glance' },
+                  { icon: User,            label: isRTL ? 'הפרופיל שלי' : 'My Profile', section: 'profile-settings' as DashboardSection, tooltipHe: 'פרופיל, הגדרות, אינטגרציות',    tooltipEn: 'Profile, settings & integrations' },
+                ] as NavItemConfig[]).map(item => {
+                  const isProfileItem = item.section === 'profile-settings';
+                  const p = profile as any;
+                  const pItems = [!!p?.full_name?.trim(), !!p?.avatar_url, !!p?.personal_tagline?.trim(), !!p?.about_me?.trim(), !!p?.phone?.trim(), !!(p?.cv_data && Object.keys(p?.cv_data || {}).length > 0), !!(p?.linkedin_url || p?.portfolio_url || p?.github_url)];
+                  const pPct = Math.round((pItems.filter(Boolean).length / pItems.length) * 100);
+                  return (
+                    <NavTooltip key={item.section} content={isRTL ? item.tooltipHe : item.tooltipEn} side={isRTL ? 'left' : 'right'}>
+                      <button
+                        onClick={() => handleNavClick(item.section)}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-start",
+                          currentSection === item.section
+                            ? "bg-primary/10 text-primary plug-row-active plug-glow-purple"
+                            : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/10"
+                        )}
+                      >
+                        <item.icon className="w-5 h-5 shrink-0" />
+                        <span className="flex-1 text-sm">{item.label}</span>
+                        {isProfileItem && pPct < 80 && (
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 leading-none">
+                            {isRTL ? 'חסר' : 'Fill'}
+                          </span>
+                        )}
+                      </button>
+                    </NavTooltip>
+                  );
+                })}
+              </div>
+
+              {/* ── Quick Strip ── */}
+              <div className="mx-2 my-2 rounded-lg border border-sidebar-border bg-muted/20 p-1.5">
+                <p className="text-[9px] uppercase tracking-widest text-muted-foreground/40 text-center mb-1.5">
+                  {isRTL ? '⚡ קיצורים' : '⚡ Quick'}
+                </p>
+                <div className="grid grid-cols-5 gap-0.5">
+                  {([
+                    { icon: Search,    label: isRTL ? 'משרות' : 'Jobs',     section: 'job-search'   as DashboardSection },
+                    { icon: Briefcase, label: isRTL ? 'הגשות' : 'Applied',  section: 'applications' as DashboardSection },
+                    { icon: Calendar,  label: isRTL ? 'יומן'  : 'Schedule', section: 'schedule'     as DashboardSection },
+                    { icon: Newspaper, label: 'Feed',                        section: 'feed'         as DashboardSection },
+                    { icon: BarChart3, label: isRTL ? 'סטטס'  : 'Stats',    section: 'my-stats'     as DashboardSection },
+                  ] as Array<{ icon: React.ElementType; label: string; section: DashboardSection }>).map(item => (
+                    <button
+                      key={item.section}
+                      onClick={() => handleNavClick(item.section)}
+                      className={cn(
+                        "flex flex-col items-center gap-1 py-2 rounded-md transition-colors",
+                        (item.section === 'feed' ? SOCIAL_SECTIONS.includes(currentSection) : currentSection === item.section)
+                          ? "bg-primary/15 text-primary"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      )}
+                    >
+                      <item.icon className="w-4 h-4 shrink-0" />
+                      <span className="text-[9px] leading-tight text-center font-medium">{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── Grouped nav ── */}
+              <div className="px-2 pb-2">
+                {([
+                  {
+                    labelHe: 'משרות', labelEn: 'Jobs',
+                    items: [
+                      { icon: Search,    label: isRTL ? 'לוח המשרות שלי' : 'My Jobboard',      section: 'job-search' as DashboardSection, tooltipHe: 'חיפוש משרות חדשות וסינון',            tooltipEn: 'Search & filter new jobs' },
+                      { icon: Target,    label: isRTL ? 'ספרינט'          : 'Sprint',            section: 'job-swipe'  as DashboardSection, tooltipHe: 'סוויפ על משרות מותאמות',              tooltipEn: 'Swipe through matched jobs' },
+                      { icon: Building2, label: isRTL ? 'ספריית חברות'    : 'Companies',         section: 'companies'  as DashboardSection, tooltipHe: 'גלה חברות וקרא ביקורות',             tooltipEn: 'Discover companies & reviews' },
+                      { icon: Eye,       label: isRTL ? 'תובנות חברות'    : 'Company Insights',  section: 'my-secrets' as DashboardSection, tooltipHe: 'תובנות מלינקדאין — אנשי קשר והתאמה', tooltipEn: 'LinkedIn insights — contacts & fit' },
+                    ],
+                  },
+                  {
+                    labelHe: 'הגשות', labelEn: 'Applications',
+                    items: [
+                      { icon: Briefcase, label: isRTL ? 'המשרות שהגשתי'    : 'My Applications', section: 'applications' as DashboardSection, tooltipHe: 'משרות שהגשתי דרך פלאג',        tooltipEn: 'Jobs applied via PLUG' },
+                      { icon: Calendar,  label: isRTL ? 'יומן החיפוש'       : 'My Schedule',     section: 'schedule'     as DashboardSection, tooltipHe: 'יומן ראיונות ותזכורות',        tooltipEn: 'Interviews & reminders' },
+                      { icon: BarChart3, label: isRTL ? 'נתוני החיפוש שלי'  : 'My Stats',        section: 'my-stats'     as DashboardSection, tooltipHe: 'סטטיסטיקות אישיות ושוק',       tooltipEn: 'Personal statistics & market data' },
+                    ],
+                  },
+                  {
+                    labelHe: 'הכנה', labelEn: 'Preparation',
+                    items: [
+                      { icon: FileEdit,      label: isRTL ? 'בניית קורות חיים' : 'CV Builder',     section: 'cv-builder'     as DashboardSection, tooltipHe: 'בניית קורות חיים עם AI', tooltipEn: 'Build CVs with AI' },
+                      { icon: Mic,           label: isRTL ? 'הכנה לראיון'      : 'Interview Prep', section: 'interview-prep'  as DashboardSection, tooltipHe: 'תרגול ראיון עם AI',        tooltipEn: 'AI interview practice' },
+                      { icon: ClipboardList, label: isRTL ? 'לוח המטלות'       : 'Assignments',    section: 'assignments'     as DashboardSection, tooltipHe: 'הוכח כישורים עם אתגרים',  tooltipEn: 'Prove skills with challenges' },
+                    ],
+                  },
+                  {
+                    labelHe: 'קהילה', labelEn: 'Community',
+                    items: [
+                      { icon: Newspaper,    label: 'PLUG Feed',                                section: 'feed'     as DashboardSection, tooltipHe: 'פיד מקצועי ממגייסים',     tooltipEn: 'Professional feed from recruiters' },
+                      { icon: Users,        label: isRTL ? 'הרשת שלי'      : 'My Network',    section: 'network'  as DashboardSection, tooltipHe: 'קשרים מקצועיים',          tooltipEn: 'Professional connections' },
+                      { icon: Heart,        label: isRTL ? 'ההמלצות שלי'   : 'My Vouches',    section: 'vouches'  as DashboardSection, tooltipHe: 'המלצות שמחזקות הפרופיל', tooltipEn: 'Vouches that boost your profile' },
+                      { icon: MessageSquare,label: isRTL ? 'הודעות'         : 'Messages',      section: 'messages' as DashboardSection, tooltipHe: 'הודעות ממגייסים',         tooltipEn: 'Messages from recruiters' },
+                    ],
+                  },
+                ] as Array<{ labelHe: string; labelEn: string; items: NavItemConfig[] }>).map(group => (
+                  <div key={group.labelEn}>
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground/40 px-3 pt-3 pb-1 font-medium select-none">
+                      {isRTL ? group.labelHe : group.labelEn}
+                    </p>
+                    <div className="space-y-0.5">
+                      {group.items.map(item => (
+                        <NavTooltip key={item.section} content={isRTL ? item.tooltipHe : item.tooltipEn} side={isRTL ? 'left' : 'right'}>
+                          <button
+                            onClick={() => handleNavClick(item.section)}
+                            className={cn(
+                              "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-start text-sm",
+                              (item.section === 'feed' ? SOCIAL_SECTIONS.includes(currentSection) : currentSection === item.section)
+                                ? "bg-primary/10 text-primary plug-row-active plug-glow-purple"
+                                : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/10"
+                            )}
+                          >
+                            <item.icon className="w-4 h-4 shrink-0" />
+                            <span className="flex-1">{item.label}</span>
+                          </button>
+                        </NavTooltip>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {/* ── Extras ── */}
+                <div className="border-t border-sidebar-border mt-3 pt-2 space-y-0.5">
+                  {([
+                    { icon: Lightbulb, label: isRTL ? 'לוח רעיונות'   : 'Ideas Board', section: 'ideas'   as DashboardSection, tooltipHe: 'הציעו פיצ׳רים חדשים', tooltipEn: 'Suggest new features' },
+                    { icon: Gem,       label: isRTL ? 'הקרדיטים שלי'  : 'Credits',     section: 'credits' as DashboardSection, tooltipHe: 'יתרת דלק והיסטוריה',  tooltipEn: 'Fuel balance & history' },
+                  ] as NavItemConfig[]).map(item => (
+                    <NavTooltip key={item.section} content={isRTL ? item.tooltipHe : item.tooltipEn} side={isRTL ? 'left' : 'right'}>
+                      <button
+                        onClick={() => handleNavClick(item.section)}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-start text-sm",
+                          currentSection === item.section
+                            ? "bg-primary/10 text-primary"
+                            : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/10"
+                        )}
+                      >
+                        <item.icon className="w-4 h-4 shrink-0" />
+                        <span className="flex-1">{item.label}</span>
+                      </button>
+                    </NavTooltip>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            /* ── Flat nav for non-job_seeker roles ── */
+            <div className="p-4 space-y-1">
+              {navItems.map((item, index) => {
+                const isProfileItem = item.section === 'profile-settings' || item.section === 'recruiter-profile';
+                const p = profile as any;
+                const profileItems = [
+                  !!p?.full_name?.trim(),
+                  !!p?.avatar_url,
+                  !!p?.personal_tagline?.trim(),
+                  !!p?.about_me?.trim(),
+                  !!p?.phone?.trim(),
+                  !!(p?.cv_data && Object.keys(p?.cv_data || {}).length > 0),
+                  !!(p?.linkedin_url || p?.portfolio_url || p?.github_url),
+                ];
+                const profilePct = Math.round((profileItems.filter(Boolean).length / profileItems.length) * 100);
+                const showProfileBadge = isProfileItem && profilePct < 80;
+                return (
+                  <NavTooltip key={index} content={direction === 'rtl' ? item.tooltipHe : item.tooltipEn} side={direction === 'rtl' ? 'left' : 'right'}>
+                    <button
+                      onClick={() => handleNavClick(item.section)}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-start",
+                        (item.section === 'feed' ? SOCIAL_SECTIONS.includes(currentSection) : currentSection === item.section)
+                          ? "bg-primary/10 text-primary plug-row-active plug-glow-purple"
+                          : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/10"
+                      )}
+                    >
+                      <item.icon className="w-5 h-5 shrink-0" />
+                      <span className="flex-1">{item.label}</span>
+                      {showProfileBadge && (
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 leading-none">
+                          {isRTL ? 'חסר' : 'Fill'}
+                        </span>
+                      )}
+                    </button>
+                  </NavTooltip>
+                );
+              })}
+            </div>
+          )}
+        </nav>
 
         {/* Extension download banner — shown to job seekers who haven't installed */}
         {role === 'job_seeker' && (
