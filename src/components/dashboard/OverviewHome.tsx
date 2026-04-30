@@ -493,7 +493,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
           <CardContent className="p-4">
             <SectionHeader
               icon={ClipboardList} color="text-purple-400"
-              title={isRTL ? 'לוח המטלות' : 'Assignments'}
+              title={isRTL ? 'מטלות אופציונאליות' : 'Optional Assignments'}
               actionLabel={isRTL ? 'לכל המטלות ←' : '→ All tasks'}
               onAction={() => navigate('/assignments')}
             />

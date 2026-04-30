@@ -372,7 +372,7 @@ export default function Assignments() {
             </Button>
             <ClipboardList className="w-7 h-7 text-primary" />
             <div>
-              <h1 className="text-2xl font-bold">{isHebrew ? 'לוח המטלות' : 'Assignments'}</h1>
+              <h1 className="text-2xl font-bold">{isHebrew ? 'מטלות אופציונאליות' : 'Optional Assignments'}</h1>
               <p className="text-sm text-muted-foreground">
                 {isHebrew ? 'הוכח את כישוריך עם אתגרים אמיתיים' : 'Prove your skills with real challenges'}
               </p>
@@ -398,7 +398,7 @@ export default function Assignments() {
             <div className="flex items-center gap-2">
               <Info className="w-5 h-5 text-primary flex-shrink-0" />
               <h2 className="font-semibold text-sm">
-                {isHebrew ? 'ברוכים הבאים ללוח המטלות!' : 'Welcome to the Assignments Board!'}
+                {isHebrew ? 'ברוכים הבאים למטלות האופציונאליות!' : 'Welcome to Optional Assignments!'}
               </h2>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">

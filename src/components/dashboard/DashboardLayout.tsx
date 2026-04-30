@@ -366,7 +366,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
                     items: [
                       { icon: FileEdit,      label: isRTL ? 'בניית קורות חיים' : 'CV Builder',     section: 'cv-builder'     as DashboardSection, tooltipHe: 'בניית קורות חיים עם AI', tooltipEn: 'Build CVs with AI' },
                       { icon: Mic,           label: isRTL ? 'הכנה לראיון'      : 'Interview Prep', section: 'interview-prep'  as DashboardSection, tooltipHe: 'תרגול ראיון עם AI',        tooltipEn: 'AI interview practice' },
-                      { icon: ClipboardList, label: isRTL ? 'לוח המטלות'       : 'Assignments',    section: 'assignments'     as DashboardSection, tooltipHe: 'הוכח כישורים עם אתגרים',  tooltipEn: 'Prove skills with challenges' },
+                      { icon: ClipboardList, label: isRTL ? 'מטלות אופציונאליות' : 'Optional Assignments', section: 'assignments' as DashboardSection, tooltipHe: 'מטלות אופציונאליות — הוכח כישורים עם אתגרים אמיתיים', tooltipEn: 'Optional assignments — prove your skills with real challenges' },
                     ],
                   },
                   {
