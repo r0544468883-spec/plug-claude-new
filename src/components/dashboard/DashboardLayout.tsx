@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { usePresenceTracker } from '@/hooks/usePresenceTracker';
@@ -18,7 +18,7 @@ import { NavTooltip } from '@/components/ui/nav-tooltip';
 import { VisibleToHRBanner } from '@/components/sidebar/VisibleToHRBanner';
 // PlugFloatingHint removed - notifications now in NotificationBell
 import {
-  LayoutDashboard, Users, Briefcase, FileText, MessageSquare, Settings, LogOut, Menu, X, User, Search, ArrowLeft, ArrowRight, Heart, FileEdit, Route, Sparkles, Mic, Newspaper, Video, Globe, DollarSign, Building2, Target, Calendar, LayoutGrid, Gem, ClipboardList, BarChart3, UserSearch, Monitor, Share2, History, Lightbulb, Eye
+  LayoutDashboard, Users, Briefcase, FileText, MessageSquare, Settings, LogOut, Menu, X, User, Search, ArrowLeft, ArrowRight, Heart, FileEdit, Route, Sparkles, Mic, Newspaper, Video, Globe, DollarSign, Building2, Target, Calendar, LayoutGrid, Gem, ClipboardList, BarChart3, UserSearch, Monitor, Share2, History, Lightbulb, Eye, ChevronDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -52,6 +52,19 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showMobileCVWarning, setShowMobileCVWarning] = useState(false);
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+
+  // Auto-open the sidebar group that contains the active section
+  useEffect(() => {
+    const JOB_SECS  = ['job-search', 'job-swipe', 'companies', 'my-secrets'];
+    const APP_SECS  = ['applications', 'schedule', 'my-stats'];
+    const PREP_SECS = ['cv-builder', 'interview-prep', 'assignments'];
+    const COMM_SECS = ['feed', 'network', 'vouches', 'messages', 'communities', 'community-view', 'create-community', 'create-feed-post'];
+    if (JOB_SECS.includes(currentSection))       setOpenGroup('Jobs');
+    else if (APP_SECS.includes(currentSection))  setOpenGroup('Applications');
+    else if (PREP_SECS.includes(currentSection)) setOpenGroup('Preparation');
+    else if (COMM_SECS.includes(currentSection)) setOpenGroup('Community');
+  }, [currentSection]);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -328,37 +341,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
                 })}
               </div>
 
-              {/* ── Quick Strip ── */}
-              <div className="mx-2 my-2 rounded-lg border border-sidebar-border bg-muted/20 p-1.5">
-                <p className="text-[9px] uppercase tracking-widest text-muted-foreground/40 text-center mb-1.5">
-                  {isRTL ? '⚡ קיצורים' : '⚡ Quick'}
-                </p>
-                <div className="grid grid-cols-5 gap-0.5">
-                  {([
-                    { icon: Search,    label: isRTL ? 'משרות' : 'Jobs',     section: 'job-search'   as DashboardSection },
-                    { icon: Briefcase, label: isRTL ? 'הגשות' : 'Applied',  section: 'applications' as DashboardSection },
-                    { icon: Calendar,  label: isRTL ? 'יומן'  : 'Schedule', section: 'schedule'     as DashboardSection },
-                    { icon: Newspaper, label: 'Feed',                        section: 'feed'         as DashboardSection },
-                    { icon: BarChart3, label: isRTL ? 'סטטס'  : 'Stats',    section: 'my-stats'     as DashboardSection },
-                  ] as Array<{ icon: React.ElementType; label: string; section: DashboardSection }>).map(item => (
-                    <button
-                      key={item.section}
-                      onClick={() => handleNavClick(item.section)}
-                      className={cn(
-                        "flex flex-col items-center gap-1 py-2 rounded-md transition-colors",
-                        (item.section === 'feed' ? SOCIAL_SECTIONS.includes(currentSection) : currentSection === item.section)
-                          ? "bg-primary/15 text-primary"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                      )}
-                    >
-                      <item.icon className="w-4 h-4 shrink-0" />
-                      <span className="text-[9px] leading-tight text-center font-medium">{item.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* ── Grouped nav ── */}
+              {/* ── Grouped nav (accordion) ── */}
               <div className="px-2 pb-2">
                 {([
                   {
@@ -395,31 +378,50 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
                       { icon: MessageSquare,label: isRTL ? 'הודעות'         : 'Messages',      section: 'messages' as DashboardSection, tooltipHe: 'הודעות ממגייסים',         tooltipEn: 'Messages from recruiters' },
                     ],
                   },
-                ] as Array<{ labelHe: string; labelEn: string; items: NavItemConfig[] }>).map(group => (
-                  <div key={group.labelEn}>
-                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground/40 px-3 pt-3 pb-1 font-medium select-none">
-                      {isRTL ? group.labelHe : group.labelEn}
-                    </p>
-                    <div className="space-y-0.5">
-                      {group.items.map(item => (
-                        <NavTooltip key={item.section} content={isRTL ? item.tooltipHe : item.tooltipEn} side={isRTL ? 'left' : 'right'}>
-                          <button
-                            onClick={() => handleNavClick(item.section)}
-                            className={cn(
-                              "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-start text-sm",
-                              (item.section === 'feed' ? SOCIAL_SECTIONS.includes(currentSection) : currentSection === item.section)
-                                ? "bg-primary/10 text-primary plug-row-active plug-glow-purple"
-                                : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/10"
-                            )}
-                          >
-                            <item.icon className="w-4 h-4 shrink-0" />
-                            <span className="flex-1">{item.label}</span>
-                          </button>
-                        </NavTooltip>
-                      ))}
+                ] as Array<{ labelHe: string; labelEn: string; items: NavItemConfig[] }>).map(group => {
+                  const isOpen = openGroup === group.labelEn;
+                  const hasActive = group.items.some(i =>
+                    i.section === 'feed' ? SOCIAL_SECTIONS.includes(currentSection) : currentSection === i.section
+                  );
+                  return (
+                    <div key={group.labelEn}>
+                      <button
+                        onClick={() => setOpenGroup(isOpen ? null : group.labelEn)}
+                        className={cn(
+                          "w-full flex items-center justify-between px-3 py-2 mt-1 rounded-lg transition-colors",
+                          hasActive
+                            ? "text-primary/80 bg-primary/5"
+                            : "text-muted-foreground/60 hover:text-muted-foreground hover:bg-sidebar-accent/5"
+                        )}
+                      >
+                        <span className="text-[10px] uppercase tracking-widest font-semibold select-none">
+                          {isRTL ? group.labelHe : group.labelEn}
+                        </span>
+                        <ChevronDown className={cn("w-3 h-3 transition-transform duration-200 shrink-0", isOpen && "rotate-180")} />
+                      </button>
+                      {isOpen && (
+                        <div className="space-y-0.5 mb-1">
+                          {group.items.map(item => (
+                            <NavTooltip key={item.section} content={isRTL ? item.tooltipHe : item.tooltipEn} side={isRTL ? 'left' : 'right'}>
+                              <button
+                                onClick={() => handleNavClick(item.section)}
+                                className={cn(
+                                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-start text-sm",
+                                  (item.section === 'feed' ? SOCIAL_SECTIONS.includes(currentSection) : currentSection === item.section)
+                                    ? "bg-primary/10 text-primary plug-row-active plug-glow-purple"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/10"
+                                )}
+                              >
+                                <item.icon className="w-4 h-4 shrink-0" />
+                                <span className="flex-1">{item.label}</span>
+                              </button>
+                            </NavTooltip>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {/* ── Extras ── */}
                 <div className="border-t border-sidebar-border mt-3 pt-2 space-y-0.5">
@@ -623,6 +625,38 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
             </div>
           </div>
         </header>
+
+        {/* Quick bar — desktop only, below header */}
+        {role === 'job_seeker' && (
+          <div className="hidden lg:flex items-stretch border-b border-border bg-card/60 backdrop-blur-sm sticky top-16 z-20 shrink-0">
+            {([
+              { icon: Search,      labelHe: 'לוח המשרות', labelEn: 'Job Board',      section: 'job-search'   as DashboardSection },
+              { icon: Briefcase,   labelHe: 'הגשות',       labelEn: 'Applications',  section: 'applications' as DashboardSection },
+              { icon: Calendar,    labelHe: 'יומן',         labelEn: 'Calendar',      section: 'schedule'     as DashboardSection },
+              { icon: Newspaper,   labelHe: 'פיד',          labelEn: 'Feed',          section: 'feed'         as DashboardSection },
+              { icon: BarChart3,   labelHe: 'סטטס',         labelEn: 'My Stats',      section: 'my-stats'     as DashboardSection },
+            ]).map(({ icon: Icon, labelHe, labelEn, section }) => {
+              const isActive = section === 'feed'
+                ? SOCIAL_SECTIONS.includes(currentSection)
+                : currentSection === section;
+              return (
+                <button
+                  key={section}
+                  onClick={() => handleNavClick(section)}
+                  className={cn(
+                    "flex flex-1 flex-col items-center justify-center gap-1 py-2.5 px-3 text-xs font-medium transition-colors border-b-2",
+                    isActive
+                      ? "border-primary text-primary bg-primary/5"
+                      : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  )}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="leading-none">{isRTL ? labelHe : labelEn}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Page content */}
         <main id="main-content" className={cn(
