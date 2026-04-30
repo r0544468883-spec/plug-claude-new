@@ -388,16 +388,16 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
                       <button
                         onClick={() => setOpenGroup(isOpen ? null : group.labelEn)}
                         className={cn(
-                          "w-full flex items-center justify-between px-3 py-2 mt-1 rounded-lg transition-colors",
+                          "w-full flex items-center justify-between px-3 py-2.5 mt-2 rounded-lg transition-colors",
                           hasActive
-                            ? "text-primary/80 bg-primary/5"
-                            : "text-muted-foreground/60 hover:text-muted-foreground hover:bg-sidebar-accent/5"
+                            ? "text-primary bg-primary/10 font-bold"
+                            : "text-foreground/70 hover:text-foreground hover:bg-muted/50"
                         )}
                       >
-                        <span className="text-xs font-bold tracking-wide select-none">
+                        <span className="text-sm font-bold select-none">
                           {isRTL ? group.labelHe : group.labelEn}
                         </span>
-                        <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-200 shrink-0", isOpen && "rotate-180")} />
+                        <ChevronDown className={cn("w-4 h-4 transition-transform duration-200 shrink-0", isOpen && "rotate-180")} />
                       </button>
                       {isOpen && (
                         <div className="space-y-0.5 mb-1">
@@ -628,13 +628,13 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
 
         {/* Quick bar — desktop only, below header */}
         {role === 'job_seeker' && (
-          <div className="hidden lg:flex items-stretch border-b border-border bg-card/60 backdrop-blur-sm sticky top-16 z-20 shrink-0">
+          <div className="hidden lg:flex items-stretch border-b-2 border-border bg-card sticky top-16 z-20 shrink-0">
             {([
-              { icon: Search,      labelHe: 'לוח המשרות', labelEn: 'Job Board',      section: 'job-search'   as DashboardSection },
-              { icon: Briefcase,   labelHe: 'הגשות',       labelEn: 'Applications',  section: 'applications' as DashboardSection },
-              { icon: Calendar,    labelHe: 'יומן',         labelEn: 'Calendar',      section: 'schedule'     as DashboardSection },
-              { icon: Newspaper,   labelHe: 'פיד',          labelEn: 'Feed',          section: 'feed'         as DashboardSection },
-              { icon: BarChart3,   labelHe: 'נתונים',        labelEn: 'Stats',         section: 'my-stats'     as DashboardSection },
+              { icon: Search,    labelHe: 'לוח המשרות', labelEn: 'Job Board',     section: 'job-search'   as DashboardSection },
+              { icon: Briefcase, labelHe: 'הגשות',       labelEn: 'Applications', section: 'applications' as DashboardSection },
+              { icon: Calendar,  labelHe: 'יומן',         labelEn: 'Calendar',     section: 'schedule'     as DashboardSection },
+              { icon: Newspaper, labelHe: 'פיד',          labelEn: 'Feed',         section: 'feed'         as DashboardSection },
+              { icon: BarChart3, labelHe: 'נתונים',       labelEn: 'Stats',        section: 'my-stats'     as DashboardSection },
             ]).map(({ icon: Icon, labelHe, labelEn, section }) => {
               const isActive = section === 'feed'
                 ? SOCIAL_SECTIONS.includes(currentSection)
@@ -644,17 +644,17 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
                   key={section}
                   onClick={() => handleNavClick(section)}
                   className={cn(
-                    "flex flex-1 flex-col items-center justify-center gap-1 py-2.5 px-3 text-xs font-medium transition-colors border-b-2",
+                    "flex flex-1 flex-col items-center justify-center gap-2 py-3 px-4 text-sm font-semibold transition-all border-b-2 -mb-0.5",
                     isActive
-                      ? "border-primary text-primary bg-primary/5"
-                      : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      ? "border-primary text-primary bg-primary/8"
+                      : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40"
                   )}
                 >
                   <div className={cn(
-                    "p-1.5 rounded-lg transition-colors",
-                    isActive ? "bg-primary/20" : "bg-muted/70 group-hover:bg-muted"
+                    "p-2 rounded-xl transition-colors",
+                    isActive ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
                   )}>
-                    <Icon className="w-4 h-4 shrink-0" />
+                    <Icon className="w-5 h-5 shrink-0" />
                   </div>
                   <span className="leading-none whitespace-nowrap">{isRTL ? labelHe : labelEn}</span>
                 </button>
