@@ -141,7 +141,9 @@ export default function Dashboard() {
   const [showOnboardingWizard, setShowOnboardingWizard] = useState(false);
   const [showFuelWelcome, setShowFuelWelcome] = useState(false);
   useEffect(() => {
-    if (role !== 'job_seeker') return;
+    // Use role from AuthContext, or fall back to cached localStorage value for faster first render
+    const effectiveRole = role || localStorage.getItem('plug_user_role');
+    if (effectiveRole !== 'job_seeker') return;
     const done = localStorage.getItem('plug-onboarding-done') === 'true';
     const skipped = localStorage.getItem('plug-onboarding-skipped') === 'true';
     if (!done && !skipped) {

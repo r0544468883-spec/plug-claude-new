@@ -182,6 +182,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       if (data.user) {
+        // Clear stale onboarding flags so the wizard triggers fresh for the new account
+        localStorage.removeItem('plug-onboarding-done');
+        localStorage.removeItem('plug-onboarding-skipped');
+        localStorage.removeItem('plug-fuel-welcome-done');
+
         // Update profile with phone, visible_to_hr, gender, referred_by
         const profileUpdate: Record<string, unknown> = { full_name: fullName, phone };
         if (typeof visibleToHR === 'boolean') {
@@ -205,6 +210,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .insert({ user_id: data.user.id, role: selectedRole });
 
         setRole(selectedRole);
+        // Cache role immediately so Dashboard useEffect has it on first render
+        localStorage.setItem('plug_user_role', selectedRole);
       }
 
       return { error: null };
@@ -233,6 +240,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
     setProfile(null);
     setRole(null);
+    // Clear per-user cached data so switching accounts starts fresh
+    localStorage.removeItem('plug_user_role');
+    localStorage.removeItem('plug-onboarding-done');
+    localStorage.removeItem('plug-onboarding-skipped');
+    localStorage.removeItem('plug-fuel-welcome-done');
   };
 
   const refreshProfile = async () => {

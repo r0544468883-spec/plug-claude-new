@@ -26,12 +26,9 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
   };
 
   const handleAuthSuccess = () => {
-    // Show integrations step for all new registrations
-    if (isNewRegistration) {
-      setStep('gmail-connect');
-    } else {
-      onSuccess();
-    }
+    // Gmail/LinkedIn connections are handled inside OnboardingWizard (step 'gmail')
+    // so no separate gmail-connect step needed here
+    onSuccess();
   };
 
   if (step === 'identity') {
