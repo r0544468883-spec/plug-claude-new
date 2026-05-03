@@ -43,7 +43,7 @@ export function ProfileViewsWidget() {
     enabled: !!user?.id,
   });
 
-  const profileUrl = `${window.location.origin}/profile/${user?.id}`;
+  const profileUrl = `${window.location.origin}/p/${user?.id}`;
 
   const copyLink = () => {
     navigator.clipboard.writeText(profileUrl);
@@ -106,7 +106,7 @@ export function ProfileViewsWidget() {
             variant="outline"
             size="sm"
             className="flex-1 gap-1.5 text-xs"
-            onClick={() => navigate(`/profile/${user?.id}`)}
+            onClick={() => navigate(`/p/${user?.id}`)}
           >
             <ExternalLink className="w-3.5 h-3.5" />
             {isRTL ? 'צפה בפרופיל' : 'View Profile'}

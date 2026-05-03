@@ -352,7 +352,7 @@ function ConnectionCard({
         <div className="flex items-center gap-3">
           <Avatar
             className="h-10 w-10 shrink-0 cursor-pointer"
-            onClick={() => profile?.user_id && onNavigate(`/profile/${profile.user_id}`)}
+            onClick={() => profile?.user_id && onNavigate(`/p/${profile.user_id}`)}
           >
             <AvatarImage src={profile?.avatar_url || ''} />
             <AvatarFallback className="bg-primary/10 text-primary text-sm">
@@ -361,7 +361,7 @@ function ConnectionCard({
           </Avatar>
           <div
             className="flex-1 min-w-0 cursor-pointer"
-            onClick={() => profile?.user_id && onNavigate(`/profile/${profile.user_id}`)}
+            onClick={() => profile?.user_id && onNavigate(`/p/${profile.user_id}`)}
           >
             <p className="font-medium text-sm truncate hover:text-primary transition-colors">
               {profile?.full_name || (isHebrew ? 'משתמש' : 'User')}
@@ -377,7 +377,7 @@ function ConnectionCard({
               variant="ghost"
               size="sm"
               className="h-8 w-8 p-0"
-              onClick={() => profile?.user_id && onNavigate(`/profile/${profile.user_id}`)}
+              onClick={() => profile?.user_id && onNavigate(`/p/${profile.user_id}`)}
             >
               <ExternalLink className="w-3.5 h-3.5" />
             </Button>
