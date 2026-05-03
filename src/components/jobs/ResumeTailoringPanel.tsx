@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Sparkles, CheckCircle2, XCircle, FileText, Mail, Loader2, Copy, Check } from 'lucide-react';
+import { Sparkles, CheckCircle2, XCircle, FileText, Mail, Loader2, Copy, Check, MessageSquare, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -16,12 +16,28 @@ interface ResumeTailoringPanelProps {
   companyName?: string | null;
 }
 
+interface InterviewQuestion {
+  question: string;
+  category: 'technical' | 'behavioral' | 'culture';
+  tip: string;
+}
+
+interface STARAnswer {
+  theme: string;
+  situation: string;
+  task: string;
+  action: string;
+  result: string;
+}
+
 interface TailoringResult {
-  strengths: string[];       // מה שכבר מתאים
-  gaps: string[];            // מה חסר
-  tailoredBullets: string[]; // bullet points מותאמים
-  coverLetter: string;       // cover letter
-  fitScore: number;          // 0-100
+  strengths: string[];
+  gaps: string[];
+  tailoredBullets: string[];
+  coverLetter: string;
+  fitScore: number;
+  interviewQuestions: InterviewQuestion[];
+  starAnswers: STARAnswer[];
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -85,7 +101,7 @@ export function ResumeTailoringPanel({ jobTitle, jobDescription, jobRequirements
 
       const jd = [jobRequirements, jobDescription].filter(Boolean).join('\n\n') || `תפקיד: ${jobTitle}${companyName ? ` בחברת ${companyName}` : ''}`;
 
-      const prompt = `אתה מומחה לכתיבת קורות חיים. המשימה: התאם את ה-CV של ${userName} למשרת "${jobTitle}"${companyName ? ` ב-${companyName}` : ''}.
+      const prompt = `אתה מומחה לגיוס וקריירה. המשימה: נתח את ה-CV של ${userName} למשרת "${jobTitle}"${companyName ? ` ב-${companyName}` : ''} וצור חבילת הכנה מלאה.
 
 ## קורות החיים:
 ${cvSummary}
@@ -96,20 +112,28 @@ ${jd}
 ## תשובה בפורמט JSON בלבד:
 {
   "fitScore": <0-100>,
-  "strengths": ["<מה שמתאים טוב - עד 5>", ...],
-  "gaps": ["<מה חסר - עד 5>", ...],
+  "strengths": ["<מה שמתאים טוב - עד 5>"],
+  "gaps": ["<מה חסר - עד 5>"],
   "tailoredBullets": [
     "<bullet point מותאם למשרה - התחל בפועל חזק - כולל מספרים>",
-    "<bullet point 2>",
-    "<bullet point 3>",
-    "<bullet point 4>",
-    "<bullet point 5>",
-    "<bullet point 6>"
+    "<עוד 5 bullets>"
   ],
-  "coverLetter": "<מכתב מקדים קצר 3 פסקאות, מותאם למשרה, מתחיל עם שם ותפקיד>"
+  "coverLetter": "<מכתב מקדים קצר 3 פסקאות, מותאם למשרה>",
+  "interviewQuestions": [
+    {"question": "<שאלת ראיון צפויה>", "category": "technical", "tip": "<על מה לשים דגש בתשובה>"},
+    {"question": "<שאלה>", "category": "behavioral", "tip": "<טיפ>"},
+    {"question": "<שאלה>", "category": "culture", "tip": "<טיפ>"}
+  ],
+  "starAnswers": [
+    {"theme": "<נושא: מנהיגות/פתרון בעיות/עבודת צוות/קונפליקט/הישג/כישלון>", "situation": "<מצב מהניסיון של המועמד>", "task": "<המשימה>", "action": "<מה עשה>", "result": "<התוצאה>"},
+    {"theme": "<נושא>", "situation": "<...>", "task": "<...>", "action": "<...>", "result": "<...>"}
+  ]
 }
 
-כתוב בעברית. החזר JSON תקני בלבד, ללא markdown.`;
+הנחיות:
+- interviewQuestions: 10 שאלות (4 technical, 4 behavioral, 2 culture). מבוססות על דרישות המשרה והרקע של המועמד.
+- starAnswers: 5 תשובות STAR מבוססות על הניסיון האמיתי של המועמד. אל תמציא ניסיון.
+- כתוב בעברית. החזר JSON תקני בלבד, ללא markdown.`;
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('No session');
@@ -187,7 +211,7 @@ ${jd}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-primary" />
-          <h3 className="font-semibold text-sm">{isRTL ? 'התאמת CV למשרה' : 'CV Tailoring'}</h3>
+          <h3 className="font-semibold text-sm">{isRTL ? 'ערכת הכנה למשרה' : 'Job Toolkit'}</h3>
           {result && (
             <Badge variant="outline" className={cn('text-xs font-bold', scoreColor)}>
               {result.fitScore}% {isRTL ? 'התאמה' : 'fit'}
@@ -207,7 +231,7 @@ ${jd}
             ? (isRTL ? 'מנתח...' : 'Analyzing...')
             : result
               ? (isRTL ? 'נתח שוב' : 'Re-analyze')
-              : (isRTL ? 'התאם ל-CV שלי' : 'Tailor to my CV')}
+              : (isRTL ? 'נתח התאמה' : 'Analyze fit')}
         </Button>
       </div>
 
@@ -221,22 +245,30 @@ ${jd}
       {/* Results */}
       {result && (
         <Tabs defaultValue="strengths">
-          <TabsList className="w-full h-8 text-xs">
-            <TabsTrigger value="strengths" className="flex-1 text-xs gap-1">
+          <TabsList className="w-full h-auto flex-wrap gap-0.5 p-1">
+            <TabsTrigger value="strengths" className="text-[11px] gap-1 px-2 py-1">
               <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-              {isRTL ? 'חוזקות' : 'Strengths'} ({result.strengths.length})
+              {isRTL ? 'חוזקות' : 'Strengths'}
             </TabsTrigger>
-            <TabsTrigger value="gaps" className="flex-1 text-xs gap-1">
+            <TabsTrigger value="gaps" className="text-[11px] gap-1 px-2 py-1">
               <XCircle className="w-3 h-3 text-destructive" />
-              {isRTL ? 'פערים' : 'Gaps'} ({result.gaps.length})
+              {isRTL ? 'פערים' : 'Gaps'}
             </TabsTrigger>
-            <TabsTrigger value="bullets" className="flex-1 text-xs gap-1">
+            <TabsTrigger value="bullets" className="text-[11px] gap-1 px-2 py-1">
               <FileText className="w-3 h-3 text-primary" />
-              {isRTL ? 'Bullets' : 'Bullets'}
+              Bullets
             </TabsTrigger>
-            <TabsTrigger value="cover" className="flex-1 text-xs gap-1">
+            <TabsTrigger value="cover" className="text-[11px] gap-1 px-2 py-1">
               <Mail className="w-3 h-3 text-blue-500" />
               {isRTL ? 'מכתב' : 'Cover'}
+            </TabsTrigger>
+            <TabsTrigger value="interview" className="text-[11px] gap-1 px-2 py-1">
+              <MessageSquare className="w-3 h-3 text-violet-500" />
+              {isRTL ? 'ראיון' : 'Interview'}
+            </TabsTrigger>
+            <TabsTrigger value="star" className="text-[11px] gap-1 px-2 py-1">
+              <Star className="w-3 h-3 text-amber-500" />
+              STAR
             </TabsTrigger>
           </TabsList>
 
@@ -286,6 +318,69 @@ ${jd}
                 {result.coverLetter}
               </div>
             </div>
+          </TabsContent>
+
+          {/* Interview Questions */}
+          <TabsContent value="interview" className="mt-2 space-y-1.5">
+            {result.interviewQuestions?.length ? (
+              <>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-[10px] text-muted-foreground">{isRTL ? 'שאלות צפויות לראיון' : 'Expected interview questions'}</p>
+                  <CopyButton text={result.interviewQuestions.map(q => `${q.question}\n→ ${q.tip}`).join('\n\n')} />
+                </div>
+                {(['technical', 'behavioral', 'culture'] as const).map(cat => {
+                  const qs = result.interviewQuestions.filter(q => q.category === cat);
+                  if (!qs.length) return null;
+                  const catLabel = cat === 'technical' ? (isRTL ? 'טכני' : 'Technical')
+                    : cat === 'behavioral' ? (isRTL ? 'התנהגותי' : 'Behavioral')
+                    : (isRTL ? 'תרבות' : 'Culture Fit');
+                  const catColor = cat === 'technical' ? 'text-blue-500' : cat === 'behavioral' ? 'text-violet-500' : 'text-emerald-500';
+                  return (
+                    <div key={cat}>
+                      <p className={cn('text-[10px] font-semibold mb-1 mt-2', catColor)}>{catLabel}</p>
+                      {qs.map((q, i) => (
+                        <div key={i} className="text-xs p-2 rounded-lg bg-violet-500/5 border border-violet-500/15 mb-1.5">
+                          <p className="font-medium">{q.question}</p>
+                          <p className="text-muted-foreground mt-1 text-[10px]">💡 {q.tip}</p>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-3">{isRTL ? 'לא נמצאו שאלות' : 'No questions generated'}</p>
+            )}
+          </TabsContent>
+
+          {/* STAR Answers */}
+          <TabsContent value="star" className="mt-2 space-y-2">
+            {result.starAnswers?.length ? (
+              <>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-[10px] text-muted-foreground">{isRTL ? 'תשובות STAR מהניסיון שלך' : 'STAR answers from your experience'}</p>
+                  <CopyButton text={result.starAnswers.map(s =>
+                    `[${s.theme}]\nS: ${s.situation}\nT: ${s.task}\nA: ${s.action}\nR: ${s.result}`
+                  ).join('\n\n')} />
+                </div>
+                {result.starAnswers.map((s, i) => (
+                  <div key={i} className="text-xs p-3 rounded-lg bg-amber-500/5 border border-amber-500/15 space-y-1.5">
+                    <p className="font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                      <Star className="w-3 h-3" />
+                      {s.theme}
+                    </p>
+                    <div className="space-y-1 text-[11px]">
+                      <p><span className="font-semibold text-muted-foreground">S:</span> {s.situation}</p>
+                      <p><span className="font-semibold text-muted-foreground">T:</span> {s.task}</p>
+                      <p><span className="font-semibold text-muted-foreground">A:</span> {s.action}</p>
+                      <p><span className="font-semibold text-muted-foreground">R:</span> {s.result}</p>
+                    </div>
+                  </div>
+                ))}
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-3">{isRTL ? 'לא נמצאו תשובות STAR' : 'No STAR answers generated'}</p>
+            )}
           </TabsContent>
         </Tabs>
       )}
