@@ -10,7 +10,8 @@ import { PersonalCard } from '@/components/profile/PersonalCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Heart, User, Shield, FileText, Download, Eye, Building2, ExternalLink } from 'lucide-react';
+import { Heart, User, Shield, FileText, Download, Eye, Building2, ExternalLink, Briefcase, GraduationCap, Code2, Languages, ClipboardCheck } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { ConnectButton } from '@/components/connections/ConnectButton';
 import { useConnections } from '@/hooks/useConnections';
 import { Link, useNavigate } from 'react-router-dom';
@@ -77,6 +78,35 @@ export default function PublicProfile() {
 
       if (error) throw error;
       return data;
+    },
+    enabled: !!userId,
+  });
+
+  // Fetch cv_data for skills, experience, education, languages
+  const { data: cvData } = useQuery({
+    queryKey: ['public-cv-data', userId],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('profiles')
+        .select('cv_data')
+        .eq('user_id', userId!)
+        .maybeSingle();
+      return data?.cv_data || null;
+    },
+    enabled: !!userId,
+  });
+
+  // Fetch completed public assignments
+  const { data: completedAssignments = [] } = useQuery({
+    queryKey: ['public-assignments', userId],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('assignment_submissions')
+        .select('id, file_url, notes, created_at, is_public, assignment_templates!template_id(title, category)')
+        .eq('user_id', userId!)
+        .eq('is_public', true)
+        .order('created_at', { ascending: false });
+      return data || [];
     },
     enabled: !!userId,
   });
@@ -304,6 +334,7 @@ export default function PublicProfile() {
             portfolio_url: profile.portfolio_url,
             linkedin_url: profile.linkedin_url,
             github_url: profile.github_url,
+            custom_links: profile.custom_links as any,
             phone: null, // Hidden in public view
             email: profile.email,
             allow_recruiter_contact: profile.allow_recruiter_contact ?? true,
@@ -385,6 +416,165 @@ export default function PublicProfile() {
                   </p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Skills */}
+        {cvData?.skills?.technical?.length > 0 && (
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Code2 className="h-5 w-5 text-primary" />
+                {isHebrew ? 'כישורים' : 'Skills'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {cvData.skills.technical.length > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">{isHebrew ? 'טכניים' : 'Technical'}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {cvData.skills.technical.map((skill: string, i: number) => (
+                        <Badge key={i} variant="secondary" className="text-xs">{skill}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {cvData.skills.soft?.length > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">{isHebrew ? 'רכים' : 'Soft Skills'}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {cvData.skills.soft.map((skill: string, i: number) => (
+                        <Badge key={i} variant="outline" className="text-xs">{skill}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Experience */}
+        {cvData?.experience?.length > 0 && (
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Briefcase className="h-5 w-5 text-primary" />
+                {isHebrew ? 'ניסיון תעסוקתי' : 'Work Experience'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {cvData.experience.map((exp: any, i: number) => (
+                <div key={i} className={i > 0 ? 'pt-4 border-t border-border' : ''}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-semibold text-sm">{exp.role || exp.position}</p>
+                      <p className="text-sm text-muted-foreground">{exp.company}</p>
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {exp.startDate} – {exp.current ? (isHebrew ? 'היום' : 'Present') : exp.endDate || ''}
+                    </span>
+                  </div>
+                  {exp.bullets?.length > 0 && (
+                    <ul className="mt-2 space-y-1">
+                      {exp.bullets.filter((b: string) => b.trim()).map((bullet: string, j: number) => (
+                        <li key={j} className="text-xs text-foreground/80 flex gap-2">
+                          <span className="text-primary shrink-0">•</span>
+                          <span>{bullet}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Education */}
+        {cvData?.education?.length > 0 && (
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <GraduationCap className="h-5 w-5 text-primary" />
+                {isHebrew ? 'השכלה' : 'Education'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {cvData.education.map((edu: any, i: number) => (
+                <div key={i} className={i > 0 ? 'pt-3 border-t border-border' : ''}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-semibold text-sm">{edu.degree}{edu.field ? `, ${edu.field}` : ''}</p>
+                      <p className="text-sm text-muted-foreground">{edu.institution}</p>
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {edu.startDate} – {edu.endDate || ''}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Languages */}
+        {cvData?.skills?.languages?.length > 0 && (
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Languages className="h-5 w-5 text-primary" />
+                {isHebrew ? 'שפות' : 'Languages'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {cvData.skills.languages.map((lang: any, i: number) => (
+                  <Badge key={i} variant="secondary" className="text-xs gap-1.5 py-1">
+                    {lang.name}
+                    <span className="text-muted-foreground">({lang.level})</span>
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Completed Assignments */}
+        {completedAssignments.length > 0 && (
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <ClipboardCheck className="h-5 w-5 text-primary" />
+                {isHebrew ? 'מטלות בית שהושלמו' : 'Completed Assignments'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {completedAssignments.map((sub: any) => {
+                const template = sub.assignment_templates;
+                return (
+                  <div key={sub.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/30 border border-border">
+                    <div className="p-2 rounded-lg bg-emerald-500/10">
+                      <ClipboardCheck className="w-4 h-4 text-emerald-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{template?.title || (isHebrew ? 'מטלה' : 'Assignment')}</p>
+                      {template?.category && (
+                        <Badge variant="outline" className="text-[10px] mt-0.5">{template.category}</Badge>
+                      )}
+                    </div>
+                    {sub.file_url && (
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0" asChild>
+                        <a href={sub.file_url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         )}
