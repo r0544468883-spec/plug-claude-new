@@ -87,17 +87,17 @@ const FuelUp = () => {
           </motion.div>
           
           <h1 className="text-4xl font-bold mb-4">
-            {isRTL ? '🚀 תדלקו את הקריירה' : '🚀 Fuel Your Career'}
+            {isRTL ? '🚀 צברו קרדיטים לקריירה' : '🚀 Earn Career Credits'}
           </h1>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-2">
             {isRTL
-              ? 'כל פעולה AI שתעשו ב-PLUG מקרבת אתכם למשרה הבאה. הדלק שתצברו כאן נשאר לנצח.'
-              : 'Every AI action you take on PLUG brings you closer to your next role. Fuel you earn here stays forever.'}
+              ? 'כל פעולה AI שתעשו ב-PLUG מקרבת אתכם למשרה הבאה. הקרדיטים שתצברו כאן נשארים לנצח.'
+              : 'Every AI action you take on PLUG brings you closer to your next role. Credits you earn here stay forever.'}
           </p>
           <p className="text-sm text-primary/70 max-w-md mx-auto">
             {isRTL
-              ? 'כתיבת CV, הכנה לראיון, חיפוש חכם — הכל מופעל בדלק שלכם.'
-              : 'CV writing, interview prep, smart search — all powered by your fuel.'}
+              ? 'כתיבת CV, הכנה לראיון, חיפוש חכם — הכל מופעל בקרדיטים שלכם.'
+              : 'CV writing, interview prep, smart search — all powered by your credits.'}
           </p>
 
           {/* Progress Section */}
@@ -163,7 +163,7 @@ const FuelUp = () => {
               {isRTL ? 'השפעה מקסימלית' : 'Maximum Impact'}
             </h2>
             <span className="px-2 py-0.5 rounded-full bg-[#00FF9D]/20 text-[#00FF9D] text-xs font-medium">
-              50+ {isRTL ? 'דלק' : 'fuel'}
+              50+ {isRTL ? 'קרדיטים' : 'credits'}
             </span>
           </div>
           
@@ -231,12 +231,12 @@ const FuelUp = () => {
           className="text-center py-12 border-t"
         >
           <h2 className="text-2xl font-bold mb-4">
-            {isRTL ? 'הדלק מוכן. אתם מוכנים?' : 'Fuel is ready. Are you?'}
+            {isRTL ? 'הקרדיטים מוכנים. אתם מוכנים?' : 'Credits are ready. Are you?'}
           </h2>
           <p className="text-muted-foreground mb-6">
             {isRTL
-              ? 'כל יחידת דלק שצברתם מחכה לפעולה — CV מושלם, ראיון מנצח, משרה שמתאימה לכם.'
-              : 'Every fuel unit you earned is waiting — a perfect CV, a winning interview, a job made for you.'}
+              ? 'כל קרדיט שצברתם מחכה לפעולה — CV מושלם, ראיון מנצח, משרה שמתאימה לכם.'
+              : 'Every credit you earned is waiting — a perfect CV, a winning interview, a job made for you.'}
           </p>
           <div className="flex justify-center gap-4 flex-wrap">
             <Button 

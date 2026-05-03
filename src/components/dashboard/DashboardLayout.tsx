@@ -180,7 +180,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
         // ── Discovery & Opportunities ──
         { icon: MessageSquare, label: isRTL ? 'הודעות' : 'Messages', section: 'messages', tooltipHe: 'הודעות פנימיות מקבלים ומגייסים', tooltipEn: 'Internal messages from recruiters and contacts' },
         // ── System ──
-        { icon: Gem, label: isRTL ? 'הקרדיטים שלי' : 'Credits', section: 'credits' as DashboardSection, tooltipHe: 'יתרת דלק, היסטוריה ורכישה', tooltipEn: 'Fuel balance, history & purchase' },
+        { icon: Gem, label: isRTL ? 'הקרדיטים שלי' : 'Credits', section: 'credits' as DashboardSection, tooltipHe: 'יתרת קרדיטים, היסטוריה ורכישה', tooltipEn: 'Credits balance, history & purchase' },
       ];
     }
 
@@ -213,7 +213,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
       { icon: User, label: isRTL ? 'פרופיל והגדרות' : 'Profile & Settings', section: 'profile-settings', tooltipHe: 'פרופיל, הגדרות, אינטגרציות וחשבון', tooltipEn: 'Profile, settings, integrations & account' },
       { icon: Users, label: isRTL ? 'הרשת שלי' : 'My Network', section: 'network' as DashboardSection, tooltipHe: 'קולגות, מגייסים וחברות — כל הקשרים שלך', tooltipEn: 'Colleagues, recruiters and companies — your connections' },
       { icon: Heart, label: isRTL ? 'ההמלצות שלי' : 'My Vouches', section: 'vouches' as DashboardSection, tooltipHe: 'המלצות שקיבלת ונתת', tooltipEn: 'Vouches received and given' },
-      { icon: Share2, label: isRTL ? 'הפניות' : 'Referrals', section: 'referrals', tooltipHe: 'הזמן חברים לPLUG וצבור דלק', tooltipEn: 'Invite friends to PLUG and earn fuel' },
+      { icon: Share2, label: isRTL ? 'הפניות' : 'Referrals', section: 'referrals', tooltipHe: 'הזמן חברים לPLUG וצברו קרדיטים', tooltipEn: 'Invite friends to PLUG and earn credits' },
       { icon: MessageSquare, label: 'Messages', section: 'messages', tooltipHe: 'הודעות פנימיות', tooltipEn: 'Internal messages' },
     ];
   };
@@ -427,7 +427,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
                 <div className="border-t border-sidebar-border mt-3 pt-2 space-y-0.5">
                   {([
                     { icon: Lightbulb, label: isRTL ? 'לוח רעיונות'   : 'Ideas Board', section: 'ideas'   as DashboardSection, tooltipHe: 'הציעו פיצ׳רים חדשים', tooltipEn: 'Suggest new features' },
-                    { icon: Gem,       label: isRTL ? 'הקרדיטים שלי'  : 'Credits',     section: 'credits' as DashboardSection, tooltipHe: 'יתרת דלק והיסטוריה',  tooltipEn: 'Fuel balance & history' },
+                    { icon: Gem,       label: isRTL ? 'הקרדיטים שלי'  : 'Credits',     section: 'credits' as DashboardSection, tooltipHe: 'יתרת קרדיטים והיסטוריה',  tooltipEn: 'Credits balance & history' },
                   ] as NavItemConfig[]).map(item => (
                     <NavTooltip key={item.section} content={isRTL ? item.tooltipHe : item.tooltipEn} side={isRTL ? 'left' : 'right'}>
                       <button

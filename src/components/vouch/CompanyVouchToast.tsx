@@ -47,8 +47,8 @@ export function CompanyVouchToast({
                   </p>
                   <p className="text-xs text-muted-foreground mb-3">
                     {isHebrew 
-                      ? `שתף את החוויה שלך וקבל דלק!`
-                      : `Share your experience and earn Fuel!`}
+                      ? `שתף את החוויה שלך וקבל קרדיטים!`
+                      : `Share your experience and earn Credits!`}
                   </p>
                   
                   <div className="flex gap-2">

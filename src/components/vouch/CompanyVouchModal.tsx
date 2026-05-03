@@ -193,8 +193,8 @@ export function CompanyVouchModal({
     onSuccess: () => {
       toast.success(
         isHebrew 
-          ? `תודה! קיבלת +${creditsReward} דלק קבוע 🚀` 
-          : `Thanks! You earned +${creditsReward} Permanent Fuel 🚀`
+          ? `תודה! קיבלת +${creditsReward} קרדיטים קבועים 🚀`
+          : `Thanks! You earned +${creditsReward} Permanent Credits 🚀`
       );
       refreshCredits();
       queryClient.invalidateQueries({ queryKey: ['company-vouch-prompts'] });
@@ -310,8 +310,8 @@ export function CompanyVouchModal({
           <DialogDescription className="flex items-center gap-2 text-accent font-medium">
             <Fuel className="h-4 w-4" />
             {isHebrew 
-              ? `שתף וקבל +${creditsReward} דלק קבוע!` 
-              : `Share and earn +${creditsReward} Permanent Fuel!`}
+              ? `שתף וקבל +${creditsReward} קרדיטים קבועים!`
+              : `Share and earn +${creditsReward} Permanent Credits!`}
           </DialogDescription>
         </DialogHeader>
 

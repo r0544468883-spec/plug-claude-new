@@ -43,7 +43,7 @@ export const CreditCostBadge = ({
         className
       )}>
         <Zap className="w-3 h-3" />
-        {cost} {isRTL ? 'דלק' : 'fuel'}
+        {cost} {isRTL ? 'קרדיטים' : 'credits'}
       </span>
     );
   }
@@ -64,7 +64,7 @@ export const CreditCostBadge = ({
         <span className="text-sm font-bold text-[#00FF9D]">{cost}</span>
         {showLabel && (
           <span className="text-[10px] text-muted-foreground">
-            {isRTL ? 'דלק לפעולה' : 'fuel per use'}
+            {isRTL ? 'קרדיטים לפעולה' : 'credits per use'}
           </span>
         )}
       </div>
@@ -108,9 +108,9 @@ export const CreditCostBanner = ({
             {isRTL ? 'פיצ\'ר AI מתקדם' : 'AI-Powered Feature'}
           </p>
           <p className="text-xs text-muted-foreground">
-            {description || (isRTL 
-              ? `שימוש בפיצ'ר זה דורש ${cost} יחידות דלק`
-              : `Using this feature costs ${cost} fuel`)}
+            {description || (isRTL
+              ? `שימוש בפיצ'ר זה דורש ${cost} קרדיטים`
+              : `Using this feature costs ${cost} credits`)}
           </p>
         </div>
       </div>

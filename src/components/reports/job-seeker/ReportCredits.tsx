@@ -25,8 +25,8 @@ export function ReportCredits() {
     >
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: isHebrew ? 'דלק יומי' : 'Daily Fuel', value: dailyFuel || 0 },
-          { label: isHebrew ? 'דלק קבוע' : 'Permanent Fuel', value: permanentFuel || 0 },
+          { label: isHebrew ? 'קרדיטים יומיים' : 'Daily Credits', value: dailyFuel || 0 },
+          { label: isHebrew ? 'קרדיטים קבועים' : 'Permanent Credits', value: permanentFuel || 0 },
           { label: isHebrew ? 'סה"כ' : 'Total', value: total },
         ].map((s, i) => (
           <Card key={i}><CardContent className="p-4 text-center">

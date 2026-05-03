@@ -112,7 +112,7 @@ export const CreditHUD = () => {
             <div className="flex items-center gap-2">
               <Zap className="w-5 h-5 text-primary" />
               <div>
-                <p className="text-sm font-medium">{isRTL ? 'דלק יומי' : 'Daily Fuel'}</p>
+                <p className="text-sm font-medium">{isRTL ? 'קרדיטים יומיים' : 'Daily Credits'}</p>
                 <p className="text-xs text-muted-foreground">{isRTL ? 'מתאפס בחצות' : 'Resets at midnight'}</p>
               </div>
             </div>
@@ -123,7 +123,7 @@ export const CreditHUD = () => {
             <div className="flex items-center gap-2">
               <Gem className="w-5 h-5 text-accent" />
               <div>
-                <p className="text-sm font-medium">{isRTL ? 'דלק קבוע' : 'Permanent Fuel'}</p>
+                <p className="text-sm font-medium">{isRTL ? 'קרדיטים קבועים' : 'Permanent Credits'}</p>
                 <p className="text-xs text-muted-foreground">{isRTL ? 'נצבר ממשימות' : 'Earned from tasks'}</p>
               </div>
             </div>
@@ -132,7 +132,7 @@ export const CreditHUD = () => {
 
           <div className="pt-2">
             <div className="flex justify-between text-xs text-muted-foreground mb-1">
-              <span>{isRTL ? 'מצב דלק יומי' : 'Daily Fuel Level'}</span>
+              <span>{isRTL ? 'מצב קרדיטים יומיים' : 'Daily Credits Level'}</span>
               <span>{Math.round(fuelPercentRemaining * 100)}%</span>
             </div>
             <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -152,8 +152,8 @@ export const CreditHUD = () => {
             {fuelWarningLevel !== 'ok' && fuelWarningLevel !== 'info' && (
               <p className="text-xs text-orange-500 mt-1">
                 {fuelWarningLevel === 'empty'
-                  ? (isRTL ? 'נגמר הדלק — השלם משימות או חכה למחר' : 'Out of fuel — complete missions or wait until tomorrow')
-                  : (isRTL ? 'דלק נמוך — שקול לצבור עוד' : 'Low fuel — consider earning more')}
+                  ? (isRTL ? 'נגמרו הקרדיטים — השלימו משימות או חכו למחר' : 'Out of credits — complete missions or wait until tomorrow')
+                  : (isRTL ? 'קרדיטים נמוכים — שקלו לצבור עוד' : 'Low credits — consider earning more')}
               </p>
             )}
           </div>
@@ -182,7 +182,7 @@ export const CreditHUD = () => {
 
         <DropdownMenuItem onClick={() => navigate('/fuel-up')} className="cursor-pointer text-primary">
           <Zap className="w-4 h-4 me-2" />
-          <span>{isRTL ? 'השג עוד דלק' : 'Get More Fuel'}</span>
+          <span>{isRTL ? 'השיגו עוד קרדיטים' : 'Get More Credits'}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

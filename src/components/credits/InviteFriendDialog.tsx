@@ -68,7 +68,7 @@ export function InviteFriendDialog() {
       if (result.success) {
         setSent(true);
         setShowReminder(false);
-        toast.success(isHebrew ? '🎉 קיבלת 150 דלק!' : '🎉 You earned 150 fuel!');
+        toast.success(isHebrew ? '🎉 קיבלת 150 קרדיטים!' : '🎉 You earned 150 credits!');
       } else if (result.error?.includes('already')) {
         toast.info(isHebrew ? 'כבר השלמת משימה זו!' : 'Already completed!');
       }
@@ -184,7 +184,7 @@ export function InviteFriendDialog() {
               className="w-full gap-2 bg-[#00FF9D] text-black hover:bg-[#00FF9D]/90"
             >
               <Check className="w-4 h-4" />
-              {isHebrew ? 'שלחתי — תן לי את הדלק!' : "I sent it — give me the fuel!"}
+              {isHebrew ? 'שלחתי — תן לי את הקרדיטים!' : "I sent it — give me the credits!"}
             </Button>
           </div>
         )}

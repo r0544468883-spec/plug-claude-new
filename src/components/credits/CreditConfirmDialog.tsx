@@ -70,7 +70,7 @@ export const CreditConfirmDialog = ({
               </div>
               <div>
                 <h3 className="font-semibold text-lg">
-                  {isRTL ? 'אישור שימוש בדלק' : 'Confirm Fuel Usage'}
+                  {isRTL ? 'אישור שימוש בקרדיטים' : 'Confirm Credit Usage'}
                 </h3>
                 <p className="text-sm text-muted-foreground">{displayName}</p>
               </div>
@@ -91,7 +91,7 @@ export const CreditConfirmDialog = ({
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
                       <Zap className="w-3.5 h-3.5 text-primary" />
-                      {isRTL ? 'דלק יומי' : 'Daily Fuel'}
+                      {isRTL ? 'קרדיטים יומיים' : 'Daily Credits'}
                     </span>
                     <span className="text-destructive">-{dailyDeduct}</span>
                   </div>
@@ -100,7 +100,7 @@ export const CreditConfirmDialog = ({
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
                       <AlertTriangle className="w-3.5 h-3.5 text-accent" />
-                      {isRTL ? 'דלק קבוע' : 'Permanent Fuel'}
+                      {isRTL ? 'קרדיטים קבועים' : 'Permanent Credits'}
                     </span>
                     <span className="text-destructive">-{permanentDeduct}</span>
                   </div>

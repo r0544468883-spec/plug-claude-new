@@ -340,7 +340,7 @@ export function InterviewPrepContent() {
     }
 
     if (!canAfford(cost)) {
-      toast.error(isRTL ? 'אין מספיק דלק. עבור לדף הקרדיטים לטעינה.' : 'Not enough fuel. Go to Credits to top up.');
+      toast.error(isRTL ? 'אין מספיק קרדיטים. עבור לדף הקרדיטים לטעינה.' : 'Not enough credits. Go to Credits to top up.');
       return;
     }
 
@@ -412,7 +412,7 @@ export function InterviewPrepContent() {
 
   const handleGenerateTips = async () => {
     if (!canAfford(tipsCost)) {
-      toast.error(isRTL ? 'אין מספיק דלק. עבור לדף הקרדיטים לטעינה.' : 'Not enough fuel. Go to Credits to top up.');
+      toast.error(isRTL ? 'אין מספיק קרדיטים. עבור לדף הקרדיטים לטעינה.' : 'Not enough credits. Go to Credits to top up.');
       return;
     }
 

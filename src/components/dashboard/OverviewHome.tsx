@@ -346,7 +346,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
 
                   {/* Earn more CTA */}
                   <Button variant="ghost" size="sm" className="text-xs h-7 gap-1 text-primary" onClick={() => navigate('/fuel-up')}>
-                    + {isRTL ? 'הרוויח דלק' : 'Earn Fuel'}
+                    + {isRTL ? 'הרוויח קרדיטים' : 'Earn Credits'}
                   </Button>
                 </div>
               );

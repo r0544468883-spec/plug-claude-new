@@ -123,7 +123,7 @@ const Credits = () => {
                   {isRTL ? 'מרכז הקרדיטים' : 'Credit Hub'}
                 </h1>
                 <p className="text-muted-foreground">
-                  {isRTL ? 'נהל את הדלק שלך' : 'Manage your fuel'}
+                  {isRTL ? 'נהלו את הקרדיטים שלכם' : 'Manage your credits'}
                 </p>
               </div>
 
@@ -139,7 +139,7 @@ const Credits = () => {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">
-                        {isRTL ? 'דלק יומי' : 'Daily Fuel'}
+                        {isRTL ? 'קרדיטים יומיים' : 'Daily Credits'}
                       </p>
                       <p className="text-3xl font-bold text-[#00FF9D]">
                         {credits?.daily_fuel || 0}
@@ -163,7 +163,7 @@ const Credits = () => {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">
-                        {isRTL ? 'דלק קבוע' : 'Permanent Fuel'}
+                        {isRTL ? 'קרדיטים קבועים' : 'Permanent Credits'}
                       </p>
                       <p className="text-3xl font-bold text-[#B794F4]">
                         {credits?.permanent_fuel || 0}
@@ -388,8 +388,8 @@ const Credits = () => {
                 <CardTitle>{isRTL ? 'הזמן חברים' : 'Invite Friends'}</CardTitle>
                 <CardDescription>
                   {isRTL
-                    ? 'הרווח עד 165 דלק לכל חבר שמצליח!'
-                    : 'Earn up to 165 fuel for each successful friend!'}
+                    ? 'הרוויחו עד 165 קרדיטים לכל חבר שמצליח!'
+                    : 'Earn up to 165 credits for each successful friend!'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -446,23 +446,23 @@ const Credits = () => {
                       <div className="text-sm text-muted-foreground space-y-2">
                         <div className="flex justify-between">
                           <span>{isRTL ? 'נרשם' : 'Signs up'}</span>
-                          <span className="font-bold text-[#00FF9D]">+15 {isRTL ? 'דלק' : 'fuel'} +10 XP</span>
+                          <span className="font-bold text-[#00FF9D]">+15 {isRTL ? 'קרדיטים' : 'credits'} +10 XP</span>
                         </div>
                         <div className="flex justify-between">
                           <span>{isRTL ? 'השלים פרופיל' : 'Completes profile'}</span>
-                          <span className="font-bold text-[#00FF9D]">+10 {isRTL ? 'דלק' : 'fuel'} +5 XP</span>
+                          <span className="font-bold text-[#00FF9D]">+10 {isRTL ? 'קרדיטים' : 'credits'} +5 XP</span>
                         </div>
                         <div className="flex justify-between">
                           <span>{isRTL ? 'הגיש מועמדות' : 'Applied to a job'}</span>
-                          <span className="font-bold text-[#00FF9D]">+25 {isRTL ? 'דלק' : 'fuel'} +25 XP</span>
+                          <span className="font-bold text-[#00FF9D]">+25 {isRTL ? 'קרדיטים' : 'credits'} +25 XP</span>
                         </div>
                         <div className="flex justify-between">
                           <span>{isRTL ? 'פעיל 7 ימים' : 'Active 7 days'}</span>
-                          <span className="font-bold text-[#00FF9D]">+15 {isRTL ? 'דלק' : 'fuel'} +15 XP</span>
+                          <span className="font-bold text-[#00FF9D]">+15 {isRTL ? 'קרדיטים' : 'credits'} +15 XP</span>
                         </div>
                         <div className="flex justify-between border-t border-border pt-2">
                           <span className="font-medium">{isRTL ? 'התקבל לעבודה!' : 'Got hired!'}</span>
-                          <span className="font-bold text-[#00FF9D]">+100 {isRTL ? 'דלק' : 'fuel'} +100 XP</span>
+                          <span className="font-bold text-[#00FF9D]">+100 {isRTL ? 'קרדיטים' : 'credits'} +100 XP</span>
                         </div>
                       </div>
                     </div>
@@ -484,7 +484,7 @@ const Credits = () => {
             <CardHeader>
               <CardTitle>{isRTL ? 'עלויות פעולות' : 'Action Costs'}</CardTitle>
               <CardDescription>
-                {isRTL ? 'כמה דלק עולה כל פעולה' : 'How much fuel each action costs'}
+                {isRTL ? 'כמה קרדיטים עולה כל פעולה' : 'How many credits each action costs'}
               </CardDescription>
             </CardHeader>
             <CardContent>

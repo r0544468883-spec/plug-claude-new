@@ -151,7 +151,7 @@ export function AmbassadorDashboard() {
           { icon: Users, value: credits?.total_referrals || 0, label: isHebrew ? 'הזמנות' : 'Referrals', color: 'text-blue-500' },
           { icon: Flame, value: credits?.login_streak || 0, label: isHebrew ? 'רצף ימים' : 'Day Streak', color: 'text-orange-500' },
           { icon: Heart, value: credits?.total_vouches_given || 0, label: isHebrew ? 'המלצות' : 'Vouches', color: 'text-pink-500' },
-          { icon: Zap, value: tierConfig.dailyFuel, label: isHebrew ? 'דלק יומי' : 'Daily Fuel', color: 'text-green-500' },
+          { icon: Zap, value: tierConfig.dailyFuel, label: isHebrew ? 'קרדיטים יומיים' : 'Daily Credits', color: 'text-green-500' },
         ].map((stat, i) => (
           <Card key={i} className="p-3">
             <div className="flex items-center gap-2 mb-1">
@@ -203,7 +203,7 @@ export function AmbassadorDashboard() {
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm">{isHebrew ? ach.label.he : ach.label.en}</p>
                       <p className="text-xs text-muted-foreground">
-                        +{ach.xp} XP &middot; +{ach.fuel} {isHebrew ? 'דלק' : 'fuel'}
+                        +{ach.xp} XP &middot; +{ach.fuel} {isHebrew ? 'קרדיטים' : 'credits'}
                       </p>
                     </div>
                     {unlocked && (
@@ -315,7 +315,7 @@ export function AmbassadorDashboard() {
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {tier.minXP.toLocaleString()} XP &middot; {tier.dailyFuel} {isHebrew ? 'דלק/יום' : 'fuel/day'}
+                        {tier.minXP.toLocaleString()} XP &middot; {tier.dailyFuel} {isHebrew ? 'קרדיטים/יום' : 'credits/day'}
                         {tier.referralBonus > 0 && ` &middot; +${tier.referralBonus} ${isHebrew ? 'בונוס רפרל' : 'referral bonus'}`}
                       </p>
                     </div>
@@ -338,7 +338,7 @@ export function AmbassadorDashboard() {
       <div className="flex gap-3">
         <Button onClick={() => navigate('/fuel-up')} className="flex-1 gap-2">
           <Zap className="w-4 h-4" />
-          {isHebrew ? 'צבור דלק' : 'Earn Fuel'}
+          {isHebrew ? 'צברו קרדיטים' : 'Earn Credits'}
         </Button>
         <Button variant="outline" onClick={() => navigate('/referrals')} className="flex-1 gap-2">
           <Share2 className="w-4 h-4" />

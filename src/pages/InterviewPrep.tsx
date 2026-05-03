@@ -75,7 +75,7 @@ export default function InterviewPrep() {
     }
 
     if (!canAfford(cost)) {
-      toast.error(isRTL ? 'אין מספיק דלק' : 'Not enough fuel');
+      toast.error(isRTL ? 'אין מספיק קרדיטים' : 'Not enough credits');
       return;
     }
 

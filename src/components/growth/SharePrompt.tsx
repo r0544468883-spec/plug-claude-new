@@ -75,7 +75,7 @@ export function SharePrompt({ messageHe, messageEn, shareText, visible, onDismis
                 {isHe ? messageHe : messageEn}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                {isHe ? 'שתפו חבר/ה וקבלו +5 דלק לכל הזמנה' : 'Share with a friend and earn +5 fuel per invite'}
+                {isHe ? 'שתפו חבר/ה וקבלו +5 קרדיטים לכל הזמנה' : 'Share with a friend and earn +5 credits per invite'}
               </p>
 
               <div className="flex items-center gap-2 mt-3">

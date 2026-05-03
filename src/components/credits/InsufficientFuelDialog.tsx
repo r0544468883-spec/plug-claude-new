@@ -57,12 +57,12 @@ export const InsufficientFuelDialog = ({
             </div>
 
             <h3 className="font-bold text-xl mb-2">
-              {isRTL ? 'נגמר הדלק' : 'Out of fuel'}
+              {isRTL ? 'נגמרו הקרדיטים' : 'Out of credits'}
             </h3>
             <p className="text-muted-foreground mb-4 text-sm">
               {isRTL
-                ? 'אין מספיק דלק לפעולה זו. צבור דלק ממשימות או רכוש עוד.'
-                : 'Not enough fuel for this action. Earn fuel from missions or purchase more.'}
+                ? 'אין מספיק קרדיטים לפעולה זו. צברו קרדיטים ממשימות או רכשו עוד.'
+                : 'Not enough credits for this action. Earn credits from missions or purchase more.'}
             </p>
 
             <div className="bg-muted/50 rounded-xl p-4 mb-6 text-start">
@@ -83,7 +83,7 @@ export const InsufficientFuelDialog = ({
             <div className="space-y-2">
               <Button onClick={handleFuelUp} className="w-full gap-2" size="lg">
                 <Zap className="w-4 h-4" />
-                {isRTL ? 'השג עוד דלק' : 'Get More Fuel'}
+                {isRTL ? 'השיגו עוד קרדיטים' : 'Get More Credits'}
               </Button>
               <Button variant="ghost" onClick={onClose} className="w-full text-muted-foreground">
                 {isRTL ? 'אולי מאוחר יותר' : 'Maybe later'}

@@ -192,7 +192,7 @@ export const FuelCard = ({ taskId, credits, label, url, icon, isCompleted = fals
               +{credits}
             </span>
             <span className="text-xs text-muted-foreground">
-              {isRTL ? 'דלק' : 'fuel'}
+              {isRTL ? 'קרדיטים' : 'credits'}
             </span>
           </div>
         </div>

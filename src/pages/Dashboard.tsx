@@ -26,6 +26,7 @@ import { DailyWelcome } from '@/components/onboarding/DailyWelcome';
 import { TourGuideFAB } from '@/components/onboarding/TourGuideFAB';
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
 import { FuelWelcome } from '@/components/onboarding/FuelWelcome';
+import { InviteFriendDialog } from '@/components/credits/InviteFriendDialog';
 // SmartTriggers removed - notifications now handled by NotificationBell
 import { MobileBottomBar } from '@/components/navigation/MobileBottomBar';
 import { AchievementsPanel } from '@/components/gamification/AchievementsPanel';
@@ -707,6 +708,9 @@ export default function Dashboard() {
           localStorage.setItem('plug-fuel-welcome-done', 'true');
         }} />
       )}
+
+      {/* Invite Friend Dialog — event-driven, must be mounted for FuelWelcome + FuelUp */}
+      <InviteFriendDialog />
 
       {/* Daily Welcome (first visit of the day) — skip if wizard or fuel welcome is showing */}
       {!showOnboardingWizard && !showFuelWelcome && <DailyWelcome />}

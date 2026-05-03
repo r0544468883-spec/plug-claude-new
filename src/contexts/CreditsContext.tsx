@@ -111,12 +111,12 @@ export const CreditsProvider = ({ children }: { children: ReactNode }) => {
     // Only warn on transitions to worse states
     if (fuelWarningLevel === 'warning' && prev === 'ok' || fuelWarningLevel === 'warning' && prev === 'info') {
       toast.warning(
-        isRTL ? `נשאר לך מעט דלק (${credits?.daily_fuel || 0} יומי)` : `Low fuel (${credits?.daily_fuel || 0} daily remaining)`,
+        isRTL ? `נשארו לך מעט קרדיטים (${credits?.daily_fuel || 0} יומי)` : `Low credits (${credits?.daily_fuel || 0} daily remaining)`,
         { duration: 4000 }
       );
     } else if (fuelWarningLevel === 'critical') {
       toast.warning(
-        isRTL ? 'כמעט נגמר הדלק!' : 'Almost out of fuel!',
+        isRTL ? 'כמעט נגמרו הקרדיטים!' : 'Almost out of credits!',
         {
           duration: 6000,
           description: isRTL
@@ -126,12 +126,12 @@ export const CreditsProvider = ({ children }: { children: ReactNode }) => {
       );
     } else if (fuelWarningLevel === 'empty') {
       toast.error(
-        isRTL ? 'נגמר הדלק' : 'Out of fuel',
+        isRTL ? 'נגמרו הקרדיטים' : 'Out of credits',
         {
           duration: 8000,
           description: isRTL
-            ? 'צבור דלק ממשימות שגריר או חכה למחר'
-            : 'Earn fuel from ambassador missions or wait until tomorrow',
+            ? 'צברו קרדיטים ממשימות שגריר או חכו למחר'
+            : 'Earn credits from ambassador missions or wait until tomorrow',
         }
       );
     }
@@ -198,7 +198,7 @@ export const CreditsProvider = ({ children }: { children: ReactNode }) => {
           if (!refillToastShown.current) {
             refillToastShown.current = true;
             toast.success(
-              isRTL ? `הדלק היומי שלך התמלא! (${tierDailyFuel})` : `Daily fuel refilled! (${tierDailyFuel})`,
+              isRTL ? `הקרדיטים היומיים שלך התמלאו! (${tierDailyFuel})` : `Daily credits refilled! (${tierDailyFuel})`,
               { duration: 3000 }
             );
           }
@@ -386,7 +386,7 @@ export const CreditsProvider = ({ children }: { children: ReactNode }) => {
 
       // Show success toast with mint green styling
       toast.success(
-        isRTL ? `⚡ +${data.awarded} דלק קבוע!` : `⚡ +${data.awarded} Permanent Fuel!`,
+        isRTL ? `⚡ +${data.awarded} קרדיטים קבועים!` : `⚡ +${data.awarded} Permanent Credits!`,
         { 
           duration: 3000,
           style: { 

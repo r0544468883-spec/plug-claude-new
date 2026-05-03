@@ -6,13 +6,18 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { SOCIAL_TASK_REWARDS, TOTAL_SOCIAL_CREDITS } from '@/lib/credit-costs';
 import { FuelCard } from '@/components/credits/FuelCard';
 import { Button } from '@/components/ui/button';
-import { Zap, Rocket, ArrowLeft, ArrowRight, Sparkles, Gem, ChevronDown } from 'lucide-react';
+import { Zap, Rocket, ArrowLeft, ArrowRight, Sparkles, Gem, Users, Heart, ChevronDown } from 'lucide-react';
 
 interface FuelWelcomeProps {
   onComplete: () => void;
 }
 
-type Phase = 'reveal' | 'explain' | 'earn';
+type Phase = 'reveal' | 'community' | 'spread' | 'grow';
+
+// Phase 1 tasks (Distribution / הפצה)
+const SPREAD_TASK_IDS = ['invite_friend', 'whatsapp_join', 'linkedin_follow', 'instagram_follow'];
+// Phase 2 tasks (Growth)
+const GROW_TASK_IDS = ['linkedin_post_share', 'facebook_follow', 'tiktok_follow', 'youtube_subscribe'];
 
 export function FuelWelcome({ onComplete }: FuelWelcomeProps) {
   const { credits, totalCredits, markOnboarded } = useCredits();
@@ -25,18 +30,17 @@ export function FuelWelcome({ onComplete }: FuelWelcomeProps) {
   const [countUp, setCountUp] = useState(0);
   const [showContent, setShowContent] = useState(false);
 
-  // Animate count-up for the fuel number
-  const targetFuel = totalCredits || 15;
+  const targetCredits = totalCredits || 15;
   useEffect(() => {
     if (phase !== 'reveal') return;
     const duration = 1200;
     const steps = 30;
-    const increment = targetFuel / steps;
+    const increment = targetCredits / steps;
     let current = 0;
     const timer = setInterval(() => {
       current += increment;
-      if (current >= targetFuel) {
-        setCountUp(targetFuel);
+      if (current >= targetCredits) {
+        setCountUp(targetCredits);
         clearInterval(timer);
         setTimeout(() => setShowContent(true), 400);
       } else {
@@ -44,9 +48,8 @@ export function FuelWelcome({ onComplete }: FuelWelcomeProps) {
       }
     }, duration / steps);
     return () => clearInterval(timer);
-  }, [phase, targetFuel]);
+  }, [phase, targetCredits]);
 
-  // Mark onboarded on mount
   useEffect(() => {
     if (credits && !credits.is_onboarded) {
       markOnboarded();
@@ -62,10 +65,13 @@ export function FuelWelcome({ onComplete }: FuelWelcomeProps) {
     navigate('/fuel-up');
   };
 
-  // Get top 3 high-value tasks for the quick-earn section
-  const topTasks = Object.entries(SOCIAL_TASK_REWARDS)
-    .filter(([, t]) => t.credits >= 50)
-    .slice(0, 3);
+  const spreadTasks = SPREAD_TASK_IDS
+    .map(id => [id, SOCIAL_TASK_REWARDS[id]] as const)
+    .filter(([, t]) => t);
+
+  const growTasks = GROW_TASK_IDS
+    .map(id => [id, SOCIAL_TASK_REWARDS[id]] as const)
+    .filter(([, t]) => t);
 
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
@@ -83,7 +89,6 @@ export function FuelWelcome({ onComplete }: FuelWelcomeProps) {
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-[-120px] right-[-120px] w-[400px] h-[400px] rounded-full bg-[#00FF9D]/5 blur-[120px]" />
           <div className="absolute bottom-[-120px] left-[-120px] w-[400px] h-[400px] rounded-full bg-purple-500/5 blur-[120px]" />
-          {/* Floating particles */}
           {[...Array(6)].map((_, i) => (
             <motion.div
               key={i}
@@ -114,7 +119,6 @@ export function FuelWelcome({ onComplete }: FuelWelcomeProps) {
               animate={{ opacity: 1, y: 0 }}
               className="flex flex-col items-center text-center"
             >
-              {/* Fuel icon with glow */}
               <motion.div
                 animate={{ scale: [1, 1.15, 1] }}
                 transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
@@ -122,11 +126,10 @@ export function FuelWelcome({ onComplete }: FuelWelcomeProps) {
               >
                 <div className="absolute inset-0 w-24 h-24 rounded-full bg-[#00FF9D]/20 blur-xl" />
                 <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-[#00FF9D] to-emerald-600 flex items-center justify-center shadow-[0_0_60px_rgba(0,255,157,0.3)]">
-                  <Zap className="w-12 h-12 text-black" />
+                  <Gem className="w-12 h-12 text-black" />
                 </div>
               </motion.div>
 
-              {/* Count-up number */}
               <motion.div
                 initial={{ scale: 0.5 }}
                 animate={{ scale: 1 }}
@@ -135,10 +138,9 @@ export function FuelWelcome({ onComplete }: FuelWelcomeProps) {
                 {countUp}
               </motion.div>
               <p className="text-lg text-white/60 font-medium mb-2">
-                {isHebrew ? 'יחידות דלק' : 'fuel units'}
+                {isHebrew ? 'קרדיטים' : 'credits'}
               </p>
 
-              {/* Explanation text */}
               <AnimatePresence>
                 {showContent && (
                   <motion.div
@@ -148,20 +150,20 @@ export function FuelWelcome({ onComplete }: FuelWelcomeProps) {
                     className="mt-4 space-y-4"
                   >
                     <h2 className="text-2xl font-bold text-white">
-                      {isHebrew ? 'ברוכים הבאים למערכת הדלק!' : 'Welcome to your Fuel System!'}
+                      {isHebrew ? 'ברוכים הבאים למערכת הקרדיטים!' : 'Welcome to your Credits!'}
                     </h2>
                     <p className="text-white/50 text-sm leading-relaxed max-w-sm mx-auto">
                       {isHebrew
-                        ? 'הדלק מאפשר לך להשתמש ביכולות ה-AI של PLUG — בניית קורות חיים, הכנה לראיונות, התאמת משרות ועוד. ככל שתצבור יותר דלק, תוכל לעשות יותר.'
-                        : 'Fuel powers all of PLUG\'s AI features — CV building, interview prep, job matching and more. The more fuel you have, the more you can do.'}
+                        ? 'הקרדיטים מאפשרים לך להשתמש ביכולות ה-AI של PLUG — בניית קורות חיים, הכנה לראיונות, התאמת משרות ועוד.'
+                        : 'Credits power all of PLUG\'s AI features — CV building, interview prep, job matching and more.'}
                     </p>
 
                     <Button
-                      onClick={() => setPhase('explain')}
+                      onClick={() => setPhase('community')}
                       size="lg"
                       className="mt-6 min-h-[52px] gap-2 rounded-full px-8 text-base font-semibold bg-[#00FF9D] text-black hover:bg-[#00FF9D]/90 hover:shadow-[0_0_30px_rgba(0,255,157,0.3)]"
                     >
-                      {isHebrew ? 'איך זה עובד?' : 'How does it work?'}
+                      {isHebrew ? 'למה קרדיטים?' : 'Why credits?'}
                       <ArrowIcon className="w-5 h-5" />
                     </Button>
                   </motion.div>
@@ -170,20 +172,35 @@ export function FuelWelcome({ onComplete }: FuelWelcomeProps) {
             </motion.div>
           )}
 
-          {/* ── Phase 2: Explain ── */}
-          {phase === 'explain' && (
+          {/* ── Phase 2: Community Story ── */}
+          {phase === 'community' && (
             <motion.div
               initial={{ opacity: 0, x: isRTL ? -40 : 40 }}
               animate={{ opacity: 1, x: 0 }}
               className="flex flex-col items-center text-center"
             >
-              <Sparkles className="w-10 h-10 text-[#00FF9D] mb-4" />
-              <h2 className="text-2xl font-bold text-white mb-6">
-                {isHebrew ? 'שני סוגי דלק' : 'Two Types of Fuel'}
+              <motion.div
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                className="relative mb-6"
+              >
+                <div className="absolute inset-0 w-20 h-20 rounded-full bg-purple-500/20 blur-xl" />
+                <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-[#00FF9D] flex items-center justify-center">
+                  <Users className="w-10 h-10 text-white" />
+                </div>
+              </motion.div>
+
+              <h2 className="text-2xl font-bold text-white mb-3">
+                {isHebrew ? 'PLUG הוא מנוע חברתי' : 'PLUG is a Social Engine'}
               </h2>
 
+              <p className="text-white/50 text-sm leading-relaxed max-w-sm mx-auto mb-6">
+                {isHebrew
+                  ? 'PLUG לא עובד לבד — הוא גדל בזכות הקהילה. כל שיתוף, כל הזמנה, כל עוקב חדש הופך את המערכת לחכמה יותר, לרלוונטית יותר, ולמדויקת יותר. ככל שיותר אנשים מצטרפים ומשתפים — כולם מרוויחים.'
+                  : 'PLUG doesn\'t work alone — it grows through community. Every share, every invite, every new follower makes the system smarter, more relevant, and more accurate. The more people join and share — everyone wins.'}
+              </p>
+
               <div className="w-full space-y-3 mb-8">
-                {/* Daily fuel */}
                 <motion.div
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -195,17 +212,16 @@ export function FuelWelcome({ onComplete }: FuelWelcomeProps) {
                   </div>
                   <div className="text-start flex-1">
                     <p className="font-semibold text-white text-sm">
-                      {isHebrew ? 'דלק יומי' : 'Daily Fuel'}
+                      {isHebrew ? 'קרדיטים יומיים' : 'Daily Credits'}
                     </p>
                     <p className="text-xs text-white/40 mt-0.5">
                       {isHebrew
-                        ? 'מתחדש כל יום — 15 יחידות (יותר ככל שתתקדמו בדרגה)'
-                        : 'Refills every day — 15 units (more as you level up)'}
+                        ? 'מתחדשים כל יום — 15 יחידות (יותר ככל שתתקדמו בדרגה)'
+                        : 'Refill every day — 15 units (more as you level up)'}
                     </p>
                   </div>
                 </motion.div>
 
-                {/* Permanent fuel */}
                 <motion.div
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -217,17 +233,16 @@ export function FuelWelcome({ onComplete }: FuelWelcomeProps) {
                   </div>
                   <div className="text-start flex-1">
                     <p className="font-semibold text-white text-sm">
-                      {isHebrew ? 'דלק קבוע' : 'Permanent Fuel'}
+                      {isHebrew ? 'קרדיטים קבועים' : 'Permanent Credits'}
                     </p>
                     <p className="text-xs text-white/40 mt-0.5">
                       {isHebrew
-                        ? 'נצבר ממשימות חברתיות, הזמנות חברים, ושיתופי משרות — לא נעלם!'
-                        : 'Earned from social tasks, inviting friends, sharing jobs — never expires!'}
+                        ? 'נצברים ממשימות שיתוף, הזמנות חברים, ומעקבים — לא נעלמים!'
+                        : 'Earned from sharing tasks, inviting friends, and follows — never expire!'}
                     </p>
                   </div>
                 </motion.div>
 
-                {/* What it powers */}
                 <motion.div
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -235,54 +250,100 @@ export function FuelWelcome({ onComplete }: FuelWelcomeProps) {
                   className="flex items-center gap-4 p-4 rounded-xl border border-[#00FF9D]/20 bg-[#00FF9D]/[0.03]"
                 >
                   <div className="w-12 h-12 rounded-xl bg-[#00FF9D]/10 flex items-center justify-center shrink-0">
-                    <Rocket className="w-6 h-6 text-[#00FF9D]" />
+                    <Heart className="w-6 h-6 text-[#00FF9D]" />
                   </div>
                   <div className="text-start flex-1">
                     <p className="font-semibold text-white text-sm">
-                      {isHebrew ? 'מה דלק מפעיל?' : 'What does fuel power?'}
+                      {isHebrew ? 'שיתוף = צמיחה' : 'Sharing = Growth'}
                     </p>
                     <p className="text-xs text-white/40 mt-0.5">
                       {isHebrew
-                        ? 'בניית CV, ניתוח קורות חיים, הכנה לראיון, התאמת משרות, חיפוש חכם ועוד'
-                        : 'CV builder, resume analysis, interview prep, job matching, smart search & more'}
+                        ? 'כל שיתוף שלכם מחזק את PLUG, מביא חברים חדשים, ומזכה אתכם בקרדיטים'
+                        : 'Every share strengthens PLUG, brings new members, and earns you credits'}
                     </p>
                   </div>
                 </motion.div>
               </div>
 
               <Button
-                onClick={() => setPhase('earn')}
+                onClick={() => setPhase('spread')}
                 size="lg"
                 className="min-h-[52px] gap-2 rounded-full px-8 text-base font-semibold bg-[#00FF9D] text-black hover:bg-[#00FF9D]/90 hover:shadow-[0_0_30px_rgba(0,255,157,0.3)]"
               >
-                {isHebrew ? 'רוצה עוד דלק? בואו נתחיל!' : 'Want more fuel? Let\'s go!'}
+                {isHebrew ? 'בואו נתחיל להפיץ!' : 'Let\'s start spreading!'}
                 <ArrowIcon className="w-5 h-5" />
               </Button>
             </motion.div>
           )}
 
-          {/* ── Phase 3: Earn — quick social tasks ── */}
-          {phase === 'earn' && (
+          {/* ── Phase 3: Spread (Distribution) ── */}
+          {phase === 'spread' && (
             <motion.div
               initial={{ opacity: 0, x: isRTL ? -40 : 40 }}
               animate={{ opacity: 1, x: 0 }}
               className="flex flex-col items-center"
             >
+              <Sparkles className="w-10 h-10 text-[#00FF9D] mb-3" />
               <h2 className="text-2xl font-bold text-white mb-2 text-center">
-                {isHebrew ? 'צברו דלק עכשיו!' : 'Earn fuel now!'}
+                {isHebrew ? 'שלב 1: הפצה' : 'Step 1: Spread the Word'}
               </h2>
-              <p className="text-sm text-white/40 mb-1 text-center">
+              <p className="text-sm text-white/40 mb-1 text-center max-w-sm">
                 {isHebrew
-                  ? `יש ${TOTAL_SOCIAL_CREDITS} יחידות דלק שמחכות לכם`
-                  : `${TOTAL_SOCIAL_CREDITS} fuel units are waiting for you`}
+                  ? 'הזמינו חברים, הצטרפו לקהילה, ועקבו אחרינו. כל פעולה מזכה בקרדיטים!'
+                  : 'Invite friends, join the community, and follow us. Every action earns credits!'}
               </p>
               <p className="text-xs text-white/30 mb-6 text-center">
                 {isHebrew ? 'תמיד אפשר לחזור ולהשלים' : 'You can always come back later'}
               </p>
 
-              {/* Top 3 social tasks */}
               <div className="w-full space-y-3 mb-6">
-                {topTasks.map(([taskId, task]) => (
+                {spreadTasks.map(([taskId, task]) => (
+                  <FuelCard
+                    key={taskId}
+                    taskId={taskId}
+                    credits={task.credits}
+                    label={isHebrew ? task.labelHe : task.label}
+                    url={task.url}
+                    icon={task.icon}
+                  />
+                ))}
+              </div>
+
+              <Button
+                onClick={() => setPhase('grow')}
+                size="lg"
+                className="w-full min-h-[52px] gap-2 rounded-full text-base font-semibold bg-[#00FF9D] text-black hover:bg-[#00FF9D]/90 hover:shadow-[0_0_30px_rgba(0,255,157,0.3)]"
+              >
+                {isHebrew ? 'המשך לשלב 2' : 'Continue to Step 2'}
+                <ArrowIcon className="w-5 h-5" />
+              </Button>
+            </motion.div>
+          )}
+
+          {/* ── Phase 4: Grow (Follow & Share) ── */}
+          {phase === 'grow' && (
+            <motion.div
+              initial={{ opacity: 0, x: isRTL ? -40 : 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex flex-col items-center"
+            >
+              <Rocket className="w-10 h-10 text-purple-400 mb-3" />
+              <h2 className="text-2xl font-bold text-white mb-2 text-center">
+                {isHebrew ? 'שלב 2: צמיחה' : 'Step 2: Grow Together'}
+              </h2>
+              <p className="text-sm text-white/40 mb-1 text-center max-w-sm">
+                {isHebrew
+                  ? 'שתפו את PLUG ברשתות, עקבו והרשמו — ככה כולנו גדלים ביחד.'
+                  : 'Share PLUG on social, follow and subscribe — that\'s how we all grow together.'}
+              </p>
+              <p className="text-xs text-white/30 mb-6 text-center">
+                {isHebrew
+                  ? `סה"כ ${TOTAL_SOCIAL_CREDITS} קרדיטים מחכים לכם`
+                  : `${TOTAL_SOCIAL_CREDITS} total credits are waiting for you`}
+              </p>
+
+              <div className="w-full space-y-3 mb-6">
+                {growTasks.map(([taskId, task]) => (
                   <FuelCard
                     key={taskId}
                     taskId={taskId}
@@ -305,7 +366,6 @@ export function FuelWelcome({ onComplete }: FuelWelcomeProps) {
                   : `See all ${Object.keys(SOCIAL_TASK_REWARDS).length} tasks`}
               </button>
 
-              {/* CTA */}
               <Button
                 onClick={handleFinish}
                 size="lg"

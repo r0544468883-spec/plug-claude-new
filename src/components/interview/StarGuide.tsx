@@ -295,7 +295,7 @@ export function StarGuide() {
     }
 
     if (!canAfford(feedbackCost)) {
-      toast.error(isRTL ? 'אין מספיק דלק. עבור לדף הקרדיטים.' : 'Not enough fuel. Go to Credits.');
+      toast.error(isRTL ? 'אין מספיק קרדיטים. עבור לדף הקרדיטים.' : 'Not enough credits. Go to Credits.');
       return;
     }
 

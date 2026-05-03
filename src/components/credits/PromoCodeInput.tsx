@@ -61,7 +61,7 @@ export function PromoCodeInput() {
       await refreshCredits();
       
       toast.success(
-        isRTL ? '🚀 דלק בלתי מוגבל הופעל!' : '🚀 Unlimited fuel activated!',
+        isRTL ? '🚀 קרדיטים ללא הגבלה הופעלו!' : '🚀 Unlimited credits activated!',
         {
           description: isRTL 
             ? 'תהנה מגישה מלאה לכל הפיצ\'רים!' 
@@ -91,7 +91,7 @@ export function PromoCodeInput() {
               {isRTL ? 'יש לך קוד פרומו?' : 'Have a promo code?'}
             </h3>
             <p className="text-xs text-muted-foreground">
-              {isRTL ? 'הזן אותו כאן לקבלת דלק!' : 'Enter it here to get fuel!'}
+              {isRTL ? 'הזן אותו כאן לקבלת קרדיטים!' : 'Enter it here to get credits!'}
             </p>
           </div>
         </div>
