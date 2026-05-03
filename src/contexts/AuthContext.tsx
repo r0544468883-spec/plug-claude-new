@@ -187,8 +187,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('plug-onboarding-skipped');
         localStorage.removeItem('plug-fuel-welcome-done');
 
-        // Update profile with phone, visible_to_hr, gender, referred_by
-        const profileUpdate: Record<string, unknown> = { full_name: fullName, phone };
+        // Upsert profile — trigger may not always create it, so INSERT if missing
+        const profileUpdate: Record<string, unknown> = {
+          user_id: data.user.id,
+          email,
+          full_name: fullName,
+          phone,
+        };
         if (typeof visibleToHR === 'boolean') {
           profileUpdate.visible_to_hr = visibleToHR;
         }
@@ -201,8 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         await supabase
           .from('profiles')
-          .update(profileUpdate)
-          .eq('user_id', data.user.id);
+          .upsert(profileUpdate as any, { onConflict: 'user_id' });
 
         // Insert role
         await supabase
