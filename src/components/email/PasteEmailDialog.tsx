@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCredits } from '@/contexts/CreditsContext';
+import { CREDIT_COSTS } from '@/lib/credit-costs';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
@@ -37,6 +39,7 @@ const CLASSIFICATION_LABELS: Record<string, { he: string; en: string }> = {
 export function PasteEmailDialog({ applicationId, trigger }: PasteEmailDialogProps) {
   const { language } = useLanguage();
   const { user } = useAuth();
+  const { deductCredits, canAfford } = useCredits();
   const queryClient = useQueryClient();
   const isHebrew = language === 'he';
   const [open, setOpen] = useState(false);
@@ -57,6 +60,10 @@ export function PasteEmailDialog({ applicationId, trigger }: PasteEmailDialogPro
       toast.error(isHebrew ? 'נא להדביק נושא או תוכן המייל' : 'Please paste subject or body');
       return;
     }
+
+    if (!canAfford(CREDIT_COSTS.EMAIL_CLASSIFY)) return;
+    const dr = await deductCredits('email_classify', CREDIT_COSTS.EMAIL_CLASSIFY);
+    if (!dr.success) return;
 
     setClassifying(true);
     setResult(null);

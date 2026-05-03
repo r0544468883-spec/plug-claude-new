@@ -514,6 +514,18 @@ const Credits = () => {
                   <span className="font-bold text-destructive">-{CREDIT_COSTS.SMART_SEARCH}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <span>{isRTL ? 'שכתוב טקסט בקו"ח' : 'CV Text Rewrite'}</span>
+                  <span className="font-bold text-destructive">-{CREDIT_COSTS.CV_INLINE_REWRITE}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <span>{isRTL ? 'טיוטת מייל AI' : 'AI Email Draft'}</span>
+                  <span className="font-bold text-destructive">-{CREDIT_COSTS.EMAIL_AI_DRAFT}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <span>{isRTL ? 'סיווג מייל' : 'Email Classify'}</span>
+                  <span className="font-bold text-destructive">-{CREDIT_COSTS.EMAIL_CLASSIFY}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                   <div>
                     <span>{isRTL ? 'צ\'אט PLUG' : 'PLUG Chat'}</span>
                     <span className="text-xs text-muted-foreground ms-2">

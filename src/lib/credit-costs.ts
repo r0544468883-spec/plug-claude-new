@@ -11,6 +11,9 @@ export const CREDIT_COSTS = {
   PLUG_CHAT: 0, // free — 5 messages/day limit enforced in context
   FEED_INTERACTION: 0, // free — engagement should never cost credits
   JOB_SWIPE_BATCH: 15,
+  CV_INLINE_REWRITE: 1,
+  EMAIL_AI_DRAFT: 2,
+  EMAIL_CLASSIFY: 1,
 } as const;
 
 // Daily usage limits (not credit-based, count-based)
@@ -34,6 +37,9 @@ export const CREDIT_ACTION_LABELS = {
   feed_comment: { en: 'Feed Comment', he: 'תגובה בפיד' },
   feed_poll_vote: { en: 'Feed Poll Vote', he: 'הצבעה בסקר' },
   job_swipe_batch: { en: 'Job Match Refresh', he: 'רענון התאמות משרות' },
+  cv_inline_rewrite: { en: 'CV Text Rewrite', he: 'שכתוב טקסט בקורות חיים' },
+  email_ai_draft: { en: 'AI Email Draft', he: 'טיוטת מייל AI' },
+  email_classify: { en: 'Email Classification', he: 'סיווג מייל' },
   feature_request_submit: { en: 'Feature Idea Submitted', he: 'רעיון לפיצ׳ר הוגש' },
 } as const;
 

@@ -1,10 +1,13 @@
 import { useRef, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useCredits } from '@/contexts/CreditsContext';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Wand2, Briefcase, Minimize2, Maximize2, SpellCheck, Loader2, Target } from 'lucide-react';
 import { toast } from 'sonner';
+
+const CV_INLINE_COST = 1;
 
 type Action = 'improve' | 'professional' | 'shorten' | 'expand' | 'fix_grammar' | 'ats_optimize';
 type FieldName = 'summary' | 'bullets' | 'description' | 'title' | 'generic';
@@ -48,6 +51,7 @@ export function CVInlineAI({
   showAtsButton = false,
 }: CVInlineAIProps) {
   const { language } = useLanguage();
+  const { deductCredits, canAfford } = useCredits();
   const isHe = language === 'he';
   const ref = useRef<HTMLTextAreaElement & HTMLInputElement>(null);
   const [showToolbar, setShowToolbar]     = useState(false);
@@ -72,6 +76,10 @@ export function CVInlineAI({
   const runAction = async (action: Action) => {
     const selectedText = value.substring(selStart, selEnd);
     if (!selectedText) return;
+
+    if (!canAfford(CV_INLINE_COST)) return; // InsufficientFuelDialog shown by context
+    const deductResult = await deductCredits('cv_inline_rewrite', CV_INLINE_COST);
+    if (!deductResult.success) return;
 
     setLoadingAction(action);
     try {
@@ -112,6 +120,11 @@ export function CVInlineAI({
   // ATS optimize — works on the full field value, no text selection required
   const runAtsOptimize = async () => {
     if (!value.trim()) return;
+
+    if (!canAfford(CV_INLINE_COST)) return;
+    const deductResult = await deductCredits('cv_inline_rewrite', CV_INLINE_COST);
+    if (!deductResult.success) return;
+
     setLoadingAction('ats_optimize');
     try {
       const { data: { session } } = await supabase.auth.getSession();

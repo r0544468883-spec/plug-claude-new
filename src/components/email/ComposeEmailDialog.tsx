@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCredits } from '@/contexts/CreditsContext';
+import { CREDIT_COSTS } from '@/lib/credit-costs';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
@@ -51,6 +53,7 @@ export function ComposeEmailDialog({
 }: ComposeEmailDialogProps) {
   const { language } = useLanguage();
   const { user } = useAuth();
+  const { deductCredits, canAfford } = useCredits();
   const isHebrew = language === 'he';
   const [open, setOpen] = useState(false);
   const [to, setTo] = useState(defaultTo);
@@ -114,6 +117,10 @@ export function ComposeEmailDialog({
   };
 
   const handleDraftWithAI = async () => {
+    if (!canAfford(CREDIT_COSTS.EMAIL_AI_DRAFT)) return;
+    const dr = await deductCredits('email_ai_draft', CREDIT_COSTS.EMAIL_AI_DRAFT);
+    if (!dr.success) return;
+
     setDrafting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
