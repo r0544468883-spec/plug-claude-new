@@ -368,6 +368,25 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [tagline, setTagline] = useState((profile as any)?.personal_tagline || '');
   const [cvUploaded, setCvUploaded] = useState(false);
 
+  // Sync registration data when profile loads late (after mount)
+  const profileSyncedRef = useRef(false);
+  useEffect(() => {
+    if (profileSyncedRef.current || !profile) return;
+    const p = profile as any;
+    if (p.full_name && !fullName) setFullName(p.full_name);
+    if (p.phone && !phone) setPhone(p.phone);
+    if (p.personal_tagline && !tagline) setTagline(p.personal_tagline);
+    if (p.gender && !gender) setGender(p.gender);
+    if (p.preferred_fields?.length && preferredFields.length === 0) setPreferredFields(p.preferred_fields);
+    if (p.preferred_roles?.length && preferredRoles.length === 0) setPreferredRoles(p.preferred_roles);
+    if (p.experience_years && !experienceYears) setExperienceYears(String(p.experience_years));
+    if (p.linkedin_url && !linkedinUrl) setLinkedinUrl(p.linkedin_url);
+    if (p.github_url && !githubUrl) setGithubUrl(p.github_url);
+    if (p.portfolio_url && !portfolioUrl) setPortfolioUrl(p.portfolio_url);
+    if (p.city && !city) setCity(p.city);
+    profileSyncedRef.current = true;
+  }, [profile]);
+
   // Check if user already has a resume — and pre-populate fields from existing analysis
   useEffect(() => {
     if (!user?.id) return;

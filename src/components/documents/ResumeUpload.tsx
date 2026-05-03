@@ -102,6 +102,7 @@ export function ResumeUpload({ onSuccess, compact = false }: ResumeUploadProps) 
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || '',
         },
         body: JSON.stringify({
           fileUrl: signedData.signedUrl,
