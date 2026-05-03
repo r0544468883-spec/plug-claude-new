@@ -132,10 +132,10 @@ export function FuelWelcome({ onComplete }: FuelWelcomeProps) {
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
   // ── Copy variants for reveal phase ──
-  const revealTitle = isHebrew ? 'יש לכם קרדיטים!' : 'You have credits!';
+  const revealTitle = isHebrew ? 'הקרדיטים הראשונים שלכם מוכנים!' : 'Your first credits are ready!';
   const revealDesc = isHebrew
-    ? 'כל קרדיט פותח דלת חדשה — קורות חיים חכמים עם AI, הכנה מותאמת לראיונות, חיפוש משרות ממוקד, ניתוח התאמה אישית, ועוד. ככל שתצברו יותר קרדיטים, יותר כלים יהיו זמינים עבורכם.'
-    : 'Each credit opens a new door — AI-powered CVs, tailored interview prep, targeted job search, personal match analysis, and more. The more credits you earn, the more tools you unlock.';
+    ? 'כל קרדיט הוא צעד קדימה בקריירה — בניית קורות חיים חכמים, הכנה אישית לראיונות, חיפוש משרות ממוקד, וניתוח התאמה. אבל הכוח האמיתי הוא בקהילה: ככל שיותר אנשים מצטרפים ומשתפים, המערכת משתפרת וכולם מרוויחים יותר.'
+    : 'Each credit is a step forward in your career — smart CV building, personalized interview prep, targeted job search, and match analysis. But the real power is in the community: the more people join and share, the better the system gets for everyone.';
 
   const communityTitle = isHebrew ? 'PLUG הוא מנוע חברתי' : 'PLUG is a Social Engine';
   const communityDesc = isHebrew
