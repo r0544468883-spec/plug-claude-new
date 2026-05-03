@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Download, Palette, Type, FileText, Maximize2, AlignJustify, Check, Layers, Wand2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { exportToPdf } from './utils/exportToPdf';
+import { exportToDocx } from './utils/exportToDocx';
 import { computeATSScore } from './utils/atsScore';
 
 interface CVPreviewPanelProps {
@@ -26,6 +27,7 @@ export const CVPreviewPanel = ({ data, onChange, onOpenAIDesign }: CVPreviewPane
   const isHe = language === 'he';
   const previewRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingDocx, setIsExportingDocx] = useState(false);
   const [showAtsBanner, setShowAtsBanner] = useState(false);
 
   const currentTemplate = getTemplateById(data.settings.templateId);
@@ -63,6 +65,27 @@ export const CVPreviewPanel = ({ data, onChange, onOpenAIDesign }: CVPreviewPane
       toast.error(isHe ? 'שגיאה ביצירת PDF' : 'Error generating PDF');
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleExportDocx = async () => {
+    setIsExportingDocx(true);
+    toast.info(isHe ? 'מייצר Word...' : 'Generating Word...');
+    try {
+      const blob = await exportToDocx(data);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${data.personalInfo.fullName || 'resume'}.docx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success(isHe ? 'קובץ Word נוצר בהצלחה!' : 'Word file generated!');
+    } catch {
+      toast.error(isHe ? 'שגיאה ביצירת Word' : 'Error generating Word file');
+    } finally {
+      setIsExportingDocx(false);
     }
   };
 
@@ -375,11 +398,17 @@ export const CVPreviewPanel = ({ data, onChange, onOpenAIDesign }: CVPreviewPane
             )}
           </div>
 
-          {/* Export Button */}
-          <Button onClick={handleExportPDF} disabled={isExporting} size="sm" className="ms-auto h-8 gap-1.5">
-            <Download className="w-3.5 h-3.5" />
-            {isHe ? 'הורד PDF' : 'PDF'}
-          </Button>
+          {/* Export Buttons */}
+          <div className="ms-auto flex gap-1.5">
+            <Button onClick={handleExportPDF} disabled={isExporting} size="sm" className="h-8 gap-1.5">
+              <Download className="w-3.5 h-3.5" />
+              {isHe ? 'הורד PDF' : 'PDF'}
+            </Button>
+            <Button onClick={handleExportDocx} disabled={isExportingDocx} variant="outline" size="sm" className="h-8 gap-1.5">
+              <FileText className="w-3.5 h-3.5" />
+              {isHe ? 'הורד Word' : 'Word'}
+            </Button>
+          </div>
         </div>
       </div>
 
