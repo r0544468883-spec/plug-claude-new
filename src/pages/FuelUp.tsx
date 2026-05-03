@@ -87,12 +87,17 @@ const FuelUp = () => {
           </motion.div>
           
           <h1 className="text-4xl font-bold mb-4">
-            {isRTL ? '🚀 מרכז השליטה' : '🚀 Mission Control'}
+            {isRTL ? '🚀 תדלקו את הקריירה' : '🚀 Fuel Your Career'}
           </h1>
-          <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            {isRTL 
-              ? 'השלם משימות כדי לצבור דלק קבוע! הדלק הזה לעולם לא נגמר.'
-              : 'Complete tasks to earn Permanent Fuel! This fuel never expires.'}
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-2">
+            {isRTL
+              ? 'כל פעולה AI שתעשו ב-PLUG מקרבת אתכם למשרה הבאה. הדלק שתצברו כאן נשאר לנצח.'
+              : 'Every AI action you take on PLUG brings you closer to your next role. Fuel you earn here stays forever.'}
+          </p>
+          <p className="text-sm text-primary/70 max-w-md mx-auto">
+            {isRTL
+              ? 'כתיבת CV, הכנה לראיון, חיפוש חכם — הכל מופעל בדלק שלכם.'
+              : 'CV writing, interview prep, smart search — all powered by your fuel.'}
           </p>
 
           {/* Progress Section */}
@@ -155,7 +160,7 @@ const FuelUp = () => {
           <div className="flex items-center gap-2 mb-6">
             <Sparkles className="w-5 h-5 text-[#00FF9D]" />
             <h2 className="text-xl font-bold">
-              {isRTL ? 'משימות בעלות ערך גבוה' : 'High Value Tasks'}
+              {isRTL ? 'השפעה מקסימלית' : 'Maximum Impact'}
             </h2>
             <span className="px-2 py-0.5 rounded-full bg-[#00FF9D]/20 text-[#00FF9D] text-xs font-medium">
               50+ {isRTL ? 'דלק' : 'fuel'}
@@ -190,9 +195,12 @@ const FuelUp = () => {
           transition={{ delay: 0.2 }}
           className="mb-12"
         >
-          <h2 className="text-xl font-bold mb-6">
-            {isRTL ? 'עוד משימות' : 'More Tasks'}
+          <h2 className="text-xl font-bold mb-2">
+            {isRTL ? 'כל צעד קטן נחשב' : 'Every Step Counts'}
           </h2>
+          <p className="text-sm text-muted-foreground mb-6">
+            {isRTL ? 'עקבו אחרינו ברשתות והישארו מעודכנים' : 'Follow us on social media and stay in the loop'}
+          </p>
           
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {lowValueTasks.map(([taskId, task], index) => (
@@ -223,12 +231,12 @@ const FuelUp = () => {
           className="text-center py-12 border-t"
         >
           <h2 className="text-2xl font-bold mb-4">
-            {isRTL ? 'מוכן להתחיל?' : 'Ready to get started?'}
+            {isRTL ? 'הדלק מוכן. אתם מוכנים?' : 'Fuel is ready. Are you?'}
           </h2>
           <p className="text-muted-foreground mb-6">
-            {isRTL 
-              ? 'השתמש בדלק שלך כדי לבנות קורות חיים מושלמים ולהתכונן לראיונות!'
-              : 'Use your fuel to build the perfect CV and prepare for interviews!'}
+            {isRTL
+              ? 'כל יחידת דלק שצברתם מחכה לפעולה — CV מושלם, ראיון מנצח, משרה שמתאימה לכם.'
+              : 'Every fuel unit you earned is waiting — a perfect CV, a winning interview, a job made for you.'}
           </p>
           <div className="flex justify-center gap-4 flex-wrap">
             <Button 
