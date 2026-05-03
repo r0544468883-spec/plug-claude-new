@@ -207,13 +207,20 @@ function CVAnalysisTransition({ userId, isHebrew, onComplete, onDataFound }: {
           if (info?.portfolio)  dataLines.push({ text: `✓ ${isHebrew ? 'אתר אישי נמצא' : 'Portfolio found'} 🔗`, type: 'success' });
           const tech = (s?.skills?.technical || []).slice(0, 5);
           if (tech.length)      dataLines.push({ text: `⚡ ${tech.join(' · ')}`, type: 'purple' });
-          dataLines.push({ text: isHebrew ? '🎉 הכל מוכן! ממלא פרטים...' : '🎉 Done! Filling in details...', type: 'bold' });
+          dataLines.push({ text: isHebrew ? '🎉 הכל מוכן! ממלא את הפרטים בטופס...' : '🎉 All done! Populating your form...', type: 'bold' });
 
           dataLines.forEach((line, i) => {
             setTimeout(() => {
               setLines(prev => [...prev, line]);
               if (i === dataLines.length - 1) {
-                setTimeout(() => { onDataFoundRef.current(s); onCompleteRef.current(); }, 900);
+                // Fill data first, then wait for React to commit before transitioning
+                setTimeout(() => {
+                  onDataFoundRef.current(s);
+                  // Give React a full paint cycle to commit the state updates
+                  requestAnimationFrame(() => {
+                    setTimeout(() => onCompleteRef.current(), 600);
+                  });
+                }, 900);
               }
             }, 300 + i * 450);
           });
