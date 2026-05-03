@@ -186,6 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('plug-onboarding-done');
         localStorage.removeItem('plug-onboarding-skipped');
         localStorage.removeItem('plug-fuel-welcome-done');
+        localStorage.removeItem('plug-tour-prompt-done');
 
         // Upsert profile — trigger may not always create it, so INSERT if missing
         const profileUpdate: Record<string, unknown> = {
@@ -249,6 +250,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('plug-onboarding-done');
     localStorage.removeItem('plug-onboarding-skipped');
     localStorage.removeItem('plug-fuel-welcome-done');
+    localStorage.removeItem('plug-tour-prompt-done');
   };
 
   const refreshProfile = async () => {

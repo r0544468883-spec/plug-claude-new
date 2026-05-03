@@ -140,6 +140,7 @@ export default function Dashboard() {
   // Must use useEffect because role loads async from DB
   const [showOnboardingWizard, setShowOnboardingWizard] = useState(false);
   const [showFuelWelcome, setShowFuelWelcome] = useState(false);
+  const [showTourGuidePrompt, setShowTourGuidePrompt] = useState(false);
   useEffect(() => {
     // Use role from AuthContext, or fall back to cached localStorage value for faster first render
     const effectiveRole = role || localStorage.getItem('plug_user_role');
@@ -152,6 +153,9 @@ export default function Dashboard() {
     } else if ((done || skipped) && localStorage.getItem('plug-fuel-welcome-done') !== 'true') {
       // Wizard was completed/skipped → now show credits intro
       setShowFuelWelcome(true);
+    } else if ((done || skipped) && localStorage.getItem('plug-fuel-welcome-done') === 'true' && localStorage.getItem('plug-tour-prompt-done') !== 'true') {
+      // Fuel done → show tour guide prompt
+      setShowTourGuidePrompt(true);
     }
   }, [role, profile]);
 
@@ -708,14 +712,60 @@ export default function Dashboard() {
         <FuelWelcome onComplete={() => {
           setShowFuelWelcome(false);
           localStorage.setItem('plug-fuel-welcome-done', 'true');
+          setShowTourGuidePrompt(true);
         }} />
       )}
+
+      {/* Tour Guide Prompt — after fuel welcome, before dashboard */}
+      <Dialog open={showTourGuidePrompt} onOpenChange={(open) => {
+        if (!open) {
+          setShowTourGuidePrompt(false);
+          localStorage.setItem('plug-tour-prompt-done', 'true');
+        }
+      }}>
+        <DialogContent className="sm:max-w-md text-center" dir={isRTL ? 'rtl' : 'ltr'}>
+          <DialogHeader>
+            <DialogTitle className="text-xl">
+              {isRTL ? 'רוצה סיור מודרך במערכת?' : 'Want a guided tour?'}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-muted-foreground text-sm mt-1">
+            {isRTL
+              ? 'סיור קצר שיראה לך את כל הכלים והפיצ\'רים של PLUG. תמיד אפשר לחזור אליו דרך כפתור Tour Guide.'
+              : 'A quick tour to show you all of PLUG\'s tools and features. You can always access it later via the Tour Guide button.'}
+          </p>
+          <div className="flex gap-3 justify-center mt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowTourGuidePrompt(false);
+                localStorage.setItem('plug-tour-prompt-done', 'true');
+              }}
+            >
+              {isRTL ? 'אולי אחר כך' : 'Maybe later'}
+            </Button>
+            <Button
+              className="bg-[#00ff8c] text-black hover:bg-[#00dd7a] font-medium"
+              onClick={() => {
+                setShowTourGuidePrompt(false);
+                localStorage.setItem('plug-tour-prompt-done', 'true');
+                setTimeout(() => {
+                  window.dispatchEvent(new CustomEvent('plug:open-tour-guide'));
+                }, 300);
+              }}
+            >
+              <Sparkles className="w-4 h-4 mr-1" />
+              {isRTL ? 'בוא נתחיל!' : 'Let\'s go!'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Invite Friend Dialog — event-driven, must be mounted for FuelWelcome + FuelUp */}
       <InviteFriendDialog />
 
-      {/* Daily Welcome (first visit of the day) — skip if wizard or fuel welcome is showing */}
-      {!showOnboardingWizard && !showFuelWelcome && <DailyWelcome />}
+      {/* Daily Welcome (first visit of the day) — skip if wizard, fuel, or tour prompt is showing */}
+      {!showOnboardingWizard && !showFuelWelcome && !showTourGuidePrompt && <DailyWelcome />}
 
 
       {renderSectionContent()}
