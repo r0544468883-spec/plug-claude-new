@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { SharePrompt } from '@/components/growth/SharePrompt';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Sparkles, User, Loader2, Paperclip, Mic, Image, FileText, Search, DollarSign, BarChart3, ChevronRight } from 'lucide-react';
@@ -44,6 +45,8 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, con
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const lastContextPageRef = useRef<PlugChatProps['contextPage']>(contextPage);
+
+  const [showSharePrompt, setShowSharePrompt] = useState(false);
 
   // Session management for chat history sidebar
   const [currentSessionId, setCurrentSessionId] = useState<string>(() => crypto.randomUUID());
@@ -678,6 +681,13 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, con
       await saveMessage(aiResponse, 'ai');
       // Bump sidebar refresh
       sidebarRefreshRef.current++;
+
+      // Show share prompt after 4th successful AI exchange (once per session)
+      const aiMsgCount = messages.filter(m => m.sender === 'ai').length + 1;
+      if (aiMsgCount === 4 && !showSharePrompt && sessionStorage.getItem('plug-chat-share-shown') !== '1') {
+        setShowSharePrompt(true);
+        sessionStorage.setItem('plug-chat-share-shown', '1');
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       const errorCode = error instanceof Error ? error.message : 'UNKNOWN';
@@ -1025,6 +1035,13 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, con
             </div>
           </div>
         )}
+
+        <SharePrompt
+          visible={showSharePrompt}
+          onDismiss={() => setShowSharePrompt(false)}
+          messageHe="PLUG עוזר לך? ספר/י לחבר/ה שמחפש/ת עבודה!"
+          messageEn="Is PLUG helping you? Tell a friend who's job searching!"
+        />
 
         <div ref={messagesEndRef} />
       </div>

@@ -5,6 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCredits } from '@/contexts/CreditsContext';
 import { CreditCostBanner } from '@/components/credits/CreditCostBadge';
+import { SharePrompt } from '@/components/growth/SharePrompt';
 import { VoicePracticeSession } from './VoicePracticeSession';
 import { VideoPracticeSession } from './VideoPracticeSession';
 import { Button } from '@/components/ui/button';
@@ -114,6 +115,7 @@ export function InterviewPrepContent() {
   const isRTL = language === 'he';
 
   const [activeTab, setActiveTab] = useState('practice');
+  const [showSharePrompt, setShowSharePrompt] = useState(false);
   const [jobTitle, setJobTitle] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [jobDescription, setJobDescription] = useState('');
@@ -390,6 +392,7 @@ export function InterviewPrepContent() {
       }
 
       toast.success(isRTL ? `${qs.length} שאלות מוכנות! בהצלחה!` : `${qs.length} questions ready! Good luck!`);
+      setShowSharePrompt(true);
     } catch (err: any) {
       console.error('Error generating questions:', err);
       toast.error(
@@ -812,6 +815,13 @@ export function InterviewPrepContent() {
               </p>
             </CardContent>
           </Card>
+
+          <SharePrompt
+            visible={showSharePrompt}
+            onDismiss={() => setShowSharePrompt(false)}
+            messageHe="קיבלת שאלות מותאמות אישית! יש לך חבר/ה שמתכוננ/ת לראיון?"
+            messageEn="Got personalized interview questions! Know someone preparing for an interview?"
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {(
