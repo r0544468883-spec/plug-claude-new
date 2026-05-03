@@ -15,8 +15,9 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Briefcase, Search, FileEdit, Mic,
   Calendar, CheckCircle2, Circle,
-  ClipboardList, Gem, Newspaper, BarChart3, ArrowUpRight,
+  ClipboardList, Gem, Newspaper, BarChart3, ArrowUpRight, Zap, Trophy,
 } from 'lucide-react';
+import { getTierFromXP, AMBASSADOR_TIERS } from '@/lib/credit-costs';
 import { cn } from '@/lib/utils';
 import { useGenderedText } from '@/hooks/useGenderedText';
 
@@ -296,6 +297,63 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
           </div>
         </CardContent>
       </Card>
+
+      {/* ── Fuel + Ambassador Strip ── */}
+      {credits && (
+        <Card className="bg-card border-border">
+          <CardContent className="p-3">
+            {(() => {
+              const xp = (credits as any).xp || 0;
+              const tier = getTierFromXP(xp);
+              const tierData = AMBASSADOR_TIERS[tier];
+              const tierKeys = Object.keys(AMBASSADOR_TIERS) as Array<keyof typeof AMBASSADOR_TIERS>;
+              const tierIdx = tierKeys.indexOf(tier);
+              const nextTier = tierIdx < tierKeys.length - 1 ? tierKeys[tierIdx + 1] : null;
+              const nextMinXP = nextTier ? AMBASSADOR_TIERS[nextTier].minXP : tierData.minXP;
+              const xpInTier = xp - tierData.minXP;
+              const xpNeeded = nextMinXP - tierData.minXP;
+              const xpPct = xpNeeded > 0 ? Math.min(100, Math.round((xpInTier / xpNeeded) * 100)) : 100;
+
+              return (
+                <div className="flex items-center gap-4 flex-wrap">
+                  {/* Fuel balance */}
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-[#00FF9D]" />
+                    <span className="text-sm font-bold text-[#00FF9D]">{credits.daily_fuel}</span>
+                    <span className="text-[10px] text-muted-foreground">{isRTL ? 'יומי' : 'daily'}</span>
+                    <span className="text-muted-foreground/30 mx-1">|</span>
+                    <Gem className="w-4 h-4 text-[#B794F4]" />
+                    <span className="text-sm font-bold text-[#B794F4]">{credits.permanent_fuel}</span>
+                    <span className="text-[10px] text-muted-foreground">{isRTL ? 'קבוע' : 'perm'}</span>
+                  </div>
+
+                  <div className="w-px h-6 bg-border hidden sm:block" />
+
+                  {/* Ambassador tier + XP bar */}
+                  <div className="flex items-center gap-2 flex-1 min-w-[180px] cursor-pointer" onClick={() => navigate('/credits')}>
+                    <Trophy className="w-4 h-4 text-amber-400" />
+                    <span className="text-xs font-semibold">
+                      {isRTL ? tierData.label.he : tierData.label.en}
+                    </span>
+                    <div className="flex-1 flex items-center gap-2">
+                      <Progress value={xpPct} className="h-1.5 flex-1 max-w-[120px]" />
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                        {xp} XP
+                        {nextTier && ` / ${nextMinXP}`}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Earn more CTA */}
+                  <Button variant="ghost" size="sm" className="text-xs h-7 gap-1 text-primary" onClick={() => navigate('/fuel-up')}>
+                    + {isRTL ? 'הרוויח דלק' : 'Earn Fuel'}
+                  </Button>
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── ROW 1: Jobs (wide) + Recent Applications ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
