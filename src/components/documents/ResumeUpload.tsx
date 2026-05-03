@@ -13,6 +13,7 @@ import { PlugTip } from '@/components/tips/PlugTip';
 
 interface ResumeUploadProps {
   onSuccess?: () => void;
+  onAnalysisComplete?: (analysis: any) => void;
   compact?: boolean;
 }
 
@@ -37,7 +38,7 @@ interface ResumeSummary {
   overallScore?: number;
 }
 
-export function ResumeUpload({ onSuccess, compact = false }: ResumeUploadProps) {
+export function ResumeUpload({ onSuccess, onAnalysisComplete, compact = false }: ResumeUploadProps) {
   const { user } = useAuth();
   const { language } = useLanguage();
   const queryClient = useQueryClient();
@@ -200,7 +201,10 @@ export function ResumeUpload({ onSuccess, compact = false }: ResumeUploadProps) 
 
       // Trigger AI analysis in background
       if (data.documentId) {
-        await analyzeResume(data.documentId, data.fileName, data.originalName);
+        const analysis = await analyzeResume(data.documentId, data.fileName, data.originalName);
+        if (analysis) {
+          onAnalysisComplete?.(analysis);
+        }
       }
     },
     onError: (error: any) => {

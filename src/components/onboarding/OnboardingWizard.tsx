@@ -913,7 +913,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             {messageReady && (
               <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }} className="mt-4">
                 <div className="onb-glass-card onb-glass-card-active p-6">
-                  <ResumeUpload compact onSuccess={() => setCvUploaded(true)} />
+                  <ResumeUpload compact onSuccess={() => setCvUploaded(true)} onAnalysisComplete={handleCVDataFound} />
                 </div>
                 {cvUploaded && (
                   <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-2 text-sm text-primary mt-3 justify-center">
