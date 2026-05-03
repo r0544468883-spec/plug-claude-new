@@ -367,7 +367,7 @@ Before responding, verify:
             ],
           },
         ],
-        max_tokens: 4096,
+        max_tokens: 2500,
       }),
     });
 
@@ -462,11 +462,13 @@ Before responding, verify:
 async function blobToBase64(blob: Blob): Promise<string> {
   const arrayBuffer = await blob.arrayBuffer();
   const bytes = new Uint8Array(arrayBuffer);
-  let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  // Process in 32KB chunks to avoid string concat O(n²)
+  const chunks: string[] = [];
+  const CHUNK = 32768;
+  for (let i = 0; i < bytes.byteLength; i += CHUNK) {
+    chunks.push(String.fromCharCode(...bytes.subarray(i, Math.min(i + CHUNK, bytes.byteLength))));
   }
-  const base64 = btoa(binary);
+  const base64 = btoa(chunks.join(""));
   const mimeType = blob.type || "application/pdf";
   return `data:${mimeType};base64,${base64}`;
 }

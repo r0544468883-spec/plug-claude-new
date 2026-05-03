@@ -280,9 +280,9 @@ function CVAnalysisTransition({ userId, isHebrew, onComplete, onDataFound }: {
         setTimeout(onCompleteRef.current, 1000);
         return;
       }
-      setTimeout(poll, 2500);
+      setTimeout(poll, 1500);
     };
-    setTimeout(poll, 2500);
+    setTimeout(poll, 500);
   }, [userId, isHebrew]);
 
   return (
@@ -622,13 +622,32 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     }
   }, []);
 
-  const handleNext = useCallback(() => {
+  const handleNext = useCallback(async () => {
     const idx = STEP_ORDER.indexOf(currentStep);
     if (idx >= STEP_ORDER.length - 1) return;
     const next = STEP_ORDER[idx + 1];
 
     if (currentStep === 'cv' && cvUploaded) {
-      // Show CVAnalysisTransition — polls DB and reveals extracted data live
+      // Quick check: if AI analysis is already done, apply data & skip terminal animation
+      if (user?.id) {
+        try {
+          const { data } = await supabase
+            .from('documents')
+            .select('ai_summary')
+            .eq('owner_id', user.id)
+            .eq('doc_type', 'cv')
+            .not('ai_summary', 'is', null)
+            .limit(1)
+            .maybeSingle();
+          if (data?.ai_summary) {
+            console.log('[CV-AUTOFILL] Analysis already done — skipping terminal animation');
+            handleCVDataFoundRef.current(data.ai_summary as any);
+            goToStep(next);
+            return;
+          }
+        } catch { /* fall through to animation */ }
+      }
+      // Analysis not done yet — show terminal animation with polling
       setShowCVAnalysis(true);
     } else if (currentStep === 'details') {
       goToStep(next, isHebrew
@@ -637,7 +656,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     } else {
       goToStep(next);
     }
-  }, [currentStep, cvUploaded, goToStep, isHebrew, setShowCVAnalysis]);
+  }, [currentStep, cvUploaded, user?.id, goToStep, isHebrew, setShowCVAnalysis]);
 
   // Called by CVAnalysisTransition when a fresh analysis arrives — always overwrite
   const handleCVDataFound = useCallback((s: any) => {
