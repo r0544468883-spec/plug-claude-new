@@ -151,10 +151,72 @@ function CVAnalysisTransition({ userId, isHebrew, onComplete, onDataFound }: {
   useEffect(() => { onCompleteRef.current = onComplete; onDataFoundRef.current = onDataFound; });
 
   useEffect(() => {
-    const addLine = (text: string, type: 'info' | 'success' | 'purple' | 'bold', delay: number) =>
-      setTimeout(() => setLines(prev => [...prev, { text, type }]), delay);
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const addLine = (text: string, type: 'info' | 'success' | 'purple' | 'bold', delay: number) => {
+      timers.push(setTimeout(() => setLines(prev => [...prev, { text, type }]), delay));
+    };
 
-    // Phase 1 — scanning messages while waiting for API (~20s of animation)
+    // Build data display lines from ai_summary
+    const buildDataLines = (s: any) => {
+      const info = s?.personalInfo;
+      const dataLines: Array<{ text: string; type: 'info' | 'success' | 'purple' | 'bold' }> = [];
+
+      if (info?.name)       dataLines.push({ text: `✓ ${isHebrew ? 'שם' : 'Name'}: ${info.name}`, type: 'success' });
+      if (info?.phone)      dataLines.push({ text: `✓ ${isHebrew ? 'טלפון' : 'Phone'}: ${info.phone}`, type: 'success' });
+      if (info?.email)      dataLines.push({ text: `✓ ${isHebrew ? 'אימייל' : 'Email'}: ${info.email}`, type: 'success' });
+      if (info?.location)   dataLines.push({ text: `✓ ${isHebrew ? 'מקום מגורים' : 'Location'}: ${info.location}`, type: 'success' });
+
+      const headline = info?.headline || s?.experience?.recentRole;
+      if (headline)         dataLines.push({ text: `✓ ${isHebrew ? 'כותרת מקצועית' : 'Professional Headline'}: ${headline}`, type: 'success' });
+      const yrs = s?.experience?.totalYears;
+      if (yrs)              dataLines.push({ text: `✓ ${isHebrew ? 'שנות ניסיון' : 'Years of Experience'}: ${yrs} ${isHebrew ? 'שנים' : 'years'}`, type: 'success' });
+      const posCount = s?.experience?.positions?.length;
+      if (posCount)         dataLines.push({ text: `✓ ${isHebrew ? 'תפקידים שזוהו' : 'Positions found'}: ${posCount}`, type: 'success' });
+
+      const edu = s?.skills?.education?.highest || s?.education?.highest;
+      if (edu)              dataLines.push({ text: `✓ ${isHebrew ? 'השכלה' : 'Education'}: ${edu}`, type: 'success' });
+
+      const langs = s?.skills?.languages || [];
+      if (langs.length)     dataLines.push({ text: `✓ ${isHebrew ? 'שפות' : 'Languages'}: ${langs.join(', ')}`, type: 'success' });
+
+      if (info?.linkedin)   dataLines.push({ text: `✓ LinkedIn ${isHebrew ? 'נמצא' : 'found'} 🔗`, type: 'success' });
+      if (info?.github)     dataLines.push({ text: `✓ GitHub ${isHebrew ? 'נמצא' : 'found'} 🔗`, type: 'success' });
+      if (info?.portfolio)  dataLines.push({ text: `✓ ${isHebrew ? 'אתר אישי נמצא' : 'Portfolio found'} 🔗`, type: 'success' });
+
+      const tech = (s?.skills?.technical || []).slice(0, 6);
+      if (tech.length)      dataLines.push({ text: `⚡ ${isHebrew ? 'כישורים טכניים' : 'Technical Skills'}: ${tech.join(' · ')}`, type: 'purple' });
+      const soft = (s?.skills?.soft || []).slice(0, 4);
+      if (soft.length)      dataLines.push({ text: `💡 ${isHebrew ? 'כישורים רכים' : 'Soft Skills'}: ${soft.join(' · ')}`, type: 'purple' });
+
+      const roles = (s?.suggestedRoles || []).slice(0, 3);
+      if (roles.length)     dataLines.push({ text: `🎯 ${isHebrew ? 'תפקידים מומלצים' : 'Suggested Roles'}: ${roles.join(' · ')}`, type: 'purple' });
+
+      const score = s?.overallScore;
+      if (score)            dataLines.push({ text: `📊 ${isHebrew ? 'ציון קורות חיים' : 'CV Score'}: ${score}/100`, type: 'bold' });
+
+      dataLines.push({ text: isHebrew ? '🎉 הכל מוכן! ממלא את הפרטים בטופס...' : '🎉 All done! Populating your form...', type: 'bold' });
+      return dataLines;
+    };
+
+    // Show data lines with animation then transition
+    const showDataLines = (s: any, baseDelay: number) => {
+      const dataLines = buildDataLines(s);
+      dataLines.forEach((line, i) => {
+        timers.push(setTimeout(() => {
+          setLines(prev => [...prev, line]);
+          if (i === dataLines.length - 1) {
+            timers.push(setTimeout(() => {
+              onDataFoundRef.current(s);
+              requestAnimationFrame(() => {
+                timers.push(setTimeout(() => onCompleteRef.current(), 800));
+              });
+            }, 1200));
+          }
+        }, baseDelay + i * 700));
+      });
+    };
+
+    // Phase 1 — scanning messages while waiting for API
     const p1 = isHebrew ? [
       '📄 פותח את קורות החיים...',
       '🔍 עובר שורה שורה...',
@@ -188,10 +250,17 @@ function CVAnalysisTransition({ userId, isHebrew, onComplete, onDataFound }: {
       '🔄 Summarizing & processing...',
       '✨ Almost done...',
     ];
-    p1.forEach((text, i) => addLine(text, i % 2 === 0 ? 'info' : 'purple', i * 1400));
 
-    // Poll DB for ai_summary
+    // Immediate check: if data is already in DB, show short scan + results fast
     const startedAt = Date.now();
+    let phase1Started = false;
+
+    const startPhase1 = () => {
+      if (phase1Started || doneRef.current) return;
+      phase1Started = true;
+      p1.forEach((text, i) => addLine(text, i % 2 === 0 ? 'info' : 'purple', i * 1400));
+    };
+
     const poll = async () => {
       if (doneRef.current) return;
       const elapsed = Math.round((Date.now() - startedAt) / 1000);
@@ -210,79 +279,39 @@ function CVAnalysisTransition({ userId, isHebrew, onComplete, onDataFound }: {
         if (data?.ai_summary) {
           doneRef.current = true;
           const s = data.ai_summary as any;
-          const info = s?.personalInfo;
-          const dataLines: Array<{ text: string; type: 'info' | 'success' | 'purple' | 'bold' }> = [];
 
-          // Personal info
-          if (info?.name)       dataLines.push({ text: `✓ ${isHebrew ? 'שם' : 'Name'}: ${info.name}`, type: 'success' });
-          if (info?.phone)      dataLines.push({ text: `✓ ${isHebrew ? 'טלפון' : 'Phone'}: ${info.phone}`, type: 'success' });
-          if (info?.email)      dataLines.push({ text: `✓ ${isHebrew ? 'אימייל' : 'Email'}: ${info.email}`, type: 'success' });
-          if (info?.location)   dataLines.push({ text: `✓ ${isHebrew ? 'מקום מגורים' : 'Location'}: ${info.location}`, type: 'success' });
-
-          // Headline & experience
-          const headline = info?.headline || s?.experience?.recentRole;
-          if (headline)         dataLines.push({ text: `✓ ${isHebrew ? 'כותרת מקצועית' : 'Professional Headline'}: ${headline}`, type: 'success' });
-          const yrs = s?.experience?.totalYears;
-          if (yrs)              dataLines.push({ text: `✓ ${isHebrew ? 'שנות ניסיון' : 'Years of Experience'}: ${yrs} ${isHebrew ? 'שנים' : 'years'}`, type: 'success' });
-          const posCount = s?.experience?.positions?.length;
-          if (posCount)         dataLines.push({ text: `✓ ${isHebrew ? 'תפקידים שזוהו' : 'Positions found'}: ${posCount}`, type: 'success' });
-
-          // Education
-          const edu = s?.skills?.education?.highest || s?.education?.highest;
-          if (edu)              dataLines.push({ text: `✓ ${isHebrew ? 'השכלה' : 'Education'}: ${edu}`, type: 'success' });
-
-          // Languages
-          const langs = s?.skills?.languages || [];
-          if (langs.length)     dataLines.push({ text: `✓ ${isHebrew ? 'שפות' : 'Languages'}: ${langs.join(', ')}`, type: 'success' });
-
-          // Links
-          if (info?.linkedin)   dataLines.push({ text: `✓ LinkedIn ${isHebrew ? 'נמצא' : 'found'} 🔗`, type: 'success' });
-          if (info?.github)     dataLines.push({ text: `✓ GitHub ${isHebrew ? 'נמצא' : 'found'} 🔗`, type: 'success' });
-          if (info?.portfolio)  dataLines.push({ text: `✓ ${isHebrew ? 'אתר אישי נמצא' : 'Portfolio found'} 🔗`, type: 'success' });
-
-          // Skills
-          const tech = (s?.skills?.technical || []).slice(0, 6);
-          if (tech.length)      dataLines.push({ text: `⚡ ${isHebrew ? 'כישורים טכניים' : 'Technical Skills'}: ${tech.join(' · ')}`, type: 'purple' });
-          const soft = (s?.skills?.soft || []).slice(0, 4);
-          if (soft.length)      dataLines.push({ text: `💡 ${isHebrew ? 'כישורים רכים' : 'Soft Skills'}: ${soft.join(' · ')}`, type: 'purple' });
-
-          // Suggested roles
-          const roles = (s?.suggestedRoles || []).slice(0, 3);
-          if (roles.length)     dataLines.push({ text: `🎯 ${isHebrew ? 'תפקידים מומלצים' : 'Suggested Roles'}: ${roles.join(' · ')}`, type: 'purple' });
-
-          // Overall score
-          const score = s?.overallScore;
-          if (score)            dataLines.push({ text: `📊 ${isHebrew ? 'ציון קורות חיים' : 'CV Score'}: ${score}/100`, type: 'bold' });
-
-          dataLines.push({ text: isHebrew ? '🎉 הכל מוכן! ממלא את הפרטים בטופס...' : '🎉 All done! Populating your form...', type: 'bold' });
-
-          dataLines.forEach((line, i) => {
-            setTimeout(() => {
-              setLines(prev => [...prev, line]);
-              if (i === dataLines.length - 1) {
-                // Fill data first, then wait for React to commit before transitioning
-                setTimeout(() => {
-                  onDataFoundRef.current(s);
-                  requestAnimationFrame(() => {
-                    setTimeout(() => onCompleteRef.current(), 800);
-                  });
-                }, 1200);
-              }
-            }, 400 + i * 700);
-          });
+          if (!phase1Started) {
+            // Data found immediately — show quick scan (4 lines) then results
+            const quickScan = isHebrew
+              ? ['📄 פותח את קורות החיים...', '🔍 סורק את המסמך...', '🧠 AI מנתח...', '✅ הניתוח הושלם!']
+              : ['📄 Opening your CV...', '🔍 Scanning document...', '🧠 AI analyzing...', '✅ Analysis complete!'];
+            quickScan.forEach((text, i) => addLine(text, i < 3 ? 'info' : 'success', i * 600));
+            // Show data lines after quick scan (~2.4s)
+            showDataLines(s, quickScan.length * 600 + 400);
+          } else {
+            // Data found while scanning — show data lines immediately
+            showDataLines(s, 400);
+          }
           return;
         }
       } catch (e) { console.error('[CV-TERMINAL] Poll error:', e); }
 
+      // First poll returned nothing — start the full scanning animation
+      if (!phase1Started) startPhase1();
+
       if (Date.now() - startedAt > 50000) {
         doneRef.current = true;
         setLines(prev => [...prev, { text: isHebrew ? '⚠️ ממשיך בלי ניתוח...' : '⚠️ Timed out, continuing...', type: 'info' }]);
-        setTimeout(onCompleteRef.current, 1000);
+        timers.push(setTimeout(onCompleteRef.current, 1000));
         return;
       }
-      setTimeout(poll, 1500);
+      timers.push(setTimeout(poll, 1500));
     };
-    setTimeout(poll, 500);
+
+    // First poll immediately (0ms)
+    poll();
+
+    return () => timers.forEach(t => clearTimeout(t));
   }, [userId, isHebrew]);
 
   return (
@@ -622,32 +651,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     }
   }, []);
 
-  const handleNext = useCallback(async () => {
+  const handleNext = useCallback(() => {
     const idx = STEP_ORDER.indexOf(currentStep);
     if (idx >= STEP_ORDER.length - 1) return;
     const next = STEP_ORDER[idx + 1];
 
     if (currentStep === 'cv' && cvUploaded) {
-      // Quick check: if AI analysis is already done, apply data & skip terminal animation
-      if (user?.id) {
-        try {
-          const { data } = await supabase
-            .from('documents')
-            .select('ai_summary')
-            .eq('owner_id', user.id)
-            .eq('doc_type', 'cv')
-            .not('ai_summary', 'is', null)
-            .limit(1)
-            .maybeSingle();
-          if (data?.ai_summary) {
-            console.log('[CV-AUTOFILL] Analysis already done — skipping terminal animation');
-            handleCVDataFoundRef.current(data.ai_summary as any);
-            goToStep(next);
-            return;
-          }
-        } catch { /* fall through to animation */ }
-      }
-      // Analysis not done yet — show terminal animation with polling
+      // Always show CVAnalysisTransition — it polls DB and reveals extracted data live
       setShowCVAnalysis(true);
     } else if (currentStep === 'details') {
       goToStep(next, isHebrew
@@ -656,7 +666,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     } else {
       goToStep(next);
     }
-  }, [currentStep, cvUploaded, user?.id, goToStep, isHebrew, setShowCVAnalysis]);
+  }, [currentStep, cvUploaded, goToStep, isHebrew, setShowCVAnalysis]);
 
   // Called by CVAnalysisTransition when a fresh analysis arrives — always overwrite
   const handleCVDataFound = useCallback((s: any) => {
