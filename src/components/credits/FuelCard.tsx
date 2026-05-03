@@ -113,6 +113,12 @@ export const FuelCard = ({ taskId, credits, label, url, icon, isCompleted = fals
       return;
     }
 
+    if (url === '__internal__') {
+      // Internal tasks — show confirmation immediately without opening a tab
+      setShowConfirm(true);
+      return;
+    }
+
     // Open link in new tab
     window.open(url, '_blank', 'noopener,noreferrer');
 

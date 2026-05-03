@@ -82,6 +82,7 @@ export function InviteFriendDialog() {
     setCopied(false);
     setSent(false);
     setShowReminder(false);
+    window.dispatchEvent(new CustomEvent('close-invite-friend'));
   };
 
   return (

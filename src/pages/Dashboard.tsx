@@ -144,11 +144,11 @@ export default function Dashboard() {
     if (role !== 'job_seeker') return;
     const done = localStorage.getItem('plug-onboarding-done') === 'true';
     const skipped = localStorage.getItem('plug-onboarding-skipped') === 'true';
-    const profileDone = (profile as any)?.onboarding_completed === true;
-    if (!done && !skipped && !profileDone) {
+    if (!done && !skipped) {
+      // Always show wizard first — localStorage is the source of truth for ordering
       setShowOnboardingWizard(true);
-    } else if ((done || profileDone) && localStorage.getItem('plug-fuel-welcome-done') !== 'true') {
-      // Profile onboarding done but fuel intro not yet shown
+    } else if ((done || skipped) && localStorage.getItem('plug-fuel-welcome-done') !== 'true') {
+      // Wizard was completed/skipped → now show credits intro
       setShowFuelWelcome(true);
     }
   }, [role, profile]);
