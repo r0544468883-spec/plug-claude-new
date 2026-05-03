@@ -138,11 +138,12 @@ function TransitionScreen({ texts, onComplete }: { texts: string[]; onComplete: 
 }
 
 // CV Analysis Transition — terminal-style live readout with DB polling
-function CVAnalysisTransition({ userId, isHebrew, onComplete, onDataFound }: {
+function CVAnalysisTransition({ userId, isHebrew, onComplete, onDataFound, dataReadyRef }: {
   userId: string;
   isHebrew: boolean;
   onComplete: () => void;
   onDataFound: (summary: any) => void;
+  dataReadyRef: React.MutableRefObject<boolean>;
 }) {
   const [lines, setLines] = useState<Array<{ text: string; type: 'info' | 'success' | 'purple' | 'bold' }>>([]);
   const doneRef = useRef(false);
@@ -198,31 +199,34 @@ function CVAnalysisTransition({ userId, isHebrew, onComplete, onDataFound }: {
       return dataLines;
     };
 
-    // Show data lines with animation, fill form, then transition only after data is committed
+    // Show data lines with animation, fill form, then wait until data is CONFIRMED in state
     const showDataLines = (s: any, baseDelay: number) => {
       const dataLines = buildDataLines(s);
       dataLines.forEach((line, i) => {
         timers.push(setTimeout(() => {
           setLines(prev => [...prev, line]);
           if (i === dataLines.length - 1) {
-            // Step 1: Fill form data
+            // Step 1: Tell parent to fill form fields
             timers.push(setTimeout(() => {
               onDataFoundRef.current(s);
-              // Step 2: Show "loading into form" message
               setLines(prev => [...prev, {
                 text: isHebrew ? '🔄 טוען נתונים לטופס...' : '🔄 Loading data into form...',
                 type: 'info'
               }]);
-              // Step 3: Wait 3s for React to fully commit all state updates
-              timers.push(setTimeout(() => {
-                setLines(prev => [...prev, {
-                  text: isHebrew ? '✅ כל הפרטים נטענו בהצלחה!' : '✅ All details loaded successfully!',
-                  type: 'success'
-                }]);
-                // Step 4: Final pause before transitioning
-                timers.push(setTimeout(() => onCompleteRef.current(), 2000));
-              }, 3000));
-            }, 1500));
+              // Step 2: Poll dataReadyRef until parent confirms all fields are set
+              const waitForReady = () => {
+                if (dataReadyRef.current) {
+                  setLines(prev => [...prev, {
+                    text: isHebrew ? '✅ כל הפרטים נטענו בהצלחה!' : '✅ All details loaded successfully!',
+                    type: 'success'
+                  }]);
+                  timers.push(setTimeout(() => onCompleteRef.current(), 1500));
+                } else {
+                  timers.push(setTimeout(waitForReady, 200));
+                }
+              };
+              timers.push(setTimeout(waitForReady, 200));
+            }, 1200));
           }
         }, baseDelay + i * 900));
       });
@@ -461,6 +465,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [phone, setPhone] = useState((profile as any)?.phone || '');
   const [tagline, setTagline] = useState((profile as any)?.personal_tagline || '');
   const [cvUploaded, setCvUploaded] = useState(false);
+  const cvDataReadyRef = useRef(false);
 
   // Sync registration data when profile loads late (after mount)
   const profileSyncedRef = useRef(false);
@@ -670,6 +675,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
     if (currentStep === 'cv' && cvUploaded) {
       // Always show CVAnalysisTransition — it polls DB and reveals extracted data live
+      cvDataReadyRef.current = false;
       setShowCVAnalysis(true);
     } else if (currentStep === 'details') {
       goToStep(next, isHebrew
@@ -718,6 +724,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     if (matched.length) setPreferredFields(matched);
     const roleSlugMatches = matchRoleSlugs(allRoleNames);
     if (roleSlugMatches.length) setPreferredRoles(roleSlugMatches);
+    // Signal that all form fields have been set
+    cvDataReadyRef.current = true;
   }, []);
 
   // Keep ref in sync so the mount re-analysis fetch can call it even after CVAnalysisTransition ran
@@ -1417,6 +1425,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             isHebrew={isHebrew}
             onDataFound={handleCVDataFound}
             onComplete={handleCVAnalysisDone}
+            dataReadyRef={cvDataReadyRef}
           />
         )}
       </AnimatePresence>
