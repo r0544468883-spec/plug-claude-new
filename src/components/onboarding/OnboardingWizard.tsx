@@ -198,21 +198,33 @@ function CVAnalysisTransition({ userId, isHebrew, onComplete, onDataFound }: {
       return dataLines;
     };
 
-    // Show data lines with animation then transition
+    // Show data lines with animation, fill form, then transition only after data is committed
     const showDataLines = (s: any, baseDelay: number) => {
       const dataLines = buildDataLines(s);
       dataLines.forEach((line, i) => {
         timers.push(setTimeout(() => {
           setLines(prev => [...prev, line]);
           if (i === dataLines.length - 1) {
+            // Step 1: Fill form data
             timers.push(setTimeout(() => {
               onDataFoundRef.current(s);
-              requestAnimationFrame(() => {
-                timers.push(setTimeout(() => onCompleteRef.current(), 800));
-              });
-            }, 1200));
+              // Step 2: Show "loading into form" message
+              setLines(prev => [...prev, {
+                text: isHebrew ? '🔄 טוען נתונים לטופס...' : '🔄 Loading data into form...',
+                type: 'info'
+              }]);
+              // Step 3: Wait 3s for React to fully commit all state updates
+              timers.push(setTimeout(() => {
+                setLines(prev => [...prev, {
+                  text: isHebrew ? '✅ כל הפרטים נטענו בהצלחה!' : '✅ All details loaded successfully!',
+                  type: 'success'
+                }]);
+                // Step 4: Final pause before transitioning
+                timers.push(setTimeout(() => onCompleteRef.current(), 2000));
+              }, 3000));
+            }, 1500));
           }
-        }, baseDelay + i * 700));
+        }, baseDelay + i * 900));
       });
     };
 
@@ -281,13 +293,13 @@ function CVAnalysisTransition({ userId, isHebrew, onComplete, onDataFound }: {
           const s = data.ai_summary as any;
 
           if (!phase1Started) {
-            // Data found immediately — show quick scan (4 lines) then results
+            // Data found immediately — show scan intro (6 lines) then results
             const quickScan = isHebrew
-              ? ['📄 פותח את קורות החיים...', '🔍 סורק את המסמך...', '🧠 AI מנתח...', '✅ הניתוח הושלם!']
-              : ['📄 Opening your CV...', '🔍 Scanning document...', '🧠 AI analyzing...', '✅ Analysis complete!'];
-            quickScan.forEach((text, i) => addLine(text, i < 3 ? 'info' : 'success', i * 600));
-            // Show data lines after quick scan (~2.4s)
-            showDataLines(s, quickScan.length * 600 + 400);
+              ? ['📄 פותח את קורות החיים...', '🔍 סורק את המסמך...', '💼 מחפש ניסיון מקצועי...', '⚡ מזהה כישורים...', '🧠 AI מנתח את הנתונים...', '✅ הניתוח הושלם!']
+              : ['📄 Opening your CV...', '🔍 Scanning document...', '💼 Extracting work history...', '⚡ Identifying skills...', '🧠 AI analyzing data...', '✅ Analysis complete!'];
+            quickScan.forEach((text, i) => addLine(text, i < quickScan.length - 1 ? 'info' : 'success', i * 800));
+            // Show data lines after quick scan
+            showDataLines(s, quickScan.length * 800 + 500);
           } else {
             // Data found while scanning — show data lines immediately
             showDataLines(s, 400);
