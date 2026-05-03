@@ -322,7 +322,7 @@ export const CVBuilder = () => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${cvData.personalInfo.fullName || 'CV'}_resume.docx`;
+      link.download = `${cvData.personalInfo.fullName || 'CV'}_MADE_WITH_PLUG.docx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

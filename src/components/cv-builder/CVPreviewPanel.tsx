@@ -76,7 +76,7 @@ export const CVPreviewPanel = ({ data, onChange, onOpenAIDesign }: CVPreviewPane
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${data.personalInfo.fullName || 'resume'}.docx`;
+      link.download = `${data.personalInfo.fullName || 'CV'}_MADE_WITH_PLUG.docx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
