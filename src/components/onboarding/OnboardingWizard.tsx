@@ -172,92 +172,56 @@ function CVAnalysisTransition({ userId, isHebrew, onComplete, onDataFound }: {
     ];
     p1.forEach((text, i) => addLine(text, i % 2 === 0 ? 'info' : 'purple', i * 900));
 
-    // Trigger analysis ourselves if ResumeUpload's call failed/hasn't started
-    let analysisTriggered = false;
-    const triggerAnalysisIfNeeded = async (doc: { id: string; file_path: string; file_name: string }) => {
-      if (analysisTriggered) return;
-      analysisTriggered = true;
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.access_token) return;
-        const { data: signedData } = await supabase.storage.from('resumes').createSignedUrl(doc.file_path, 300);
-        if (!signedData?.signedUrl) return;
-        console.log('[CV-TERMINAL] Triggering analysis for doc:', doc.id);
-        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-resume`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '',
-          },
-          body: JSON.stringify({ fileUrl: signedData.signedUrl, fileName: doc.file_name, documentId: doc.id }),
-        }).then(async (res) => {
-          if (!res.ok) console.error('[CV-TERMINAL] Analysis request failed:', res.status);
-          else console.log('[CV-TERMINAL] Analysis request succeeded');
-        }).catch(e => console.error('[CV-TERMINAL] Analysis request error:', e));
-      } catch (e) { console.error('[CV-TERMINAL] triggerAnalysis error:', e); }
-    };
-
-    const showFoundData = (s: any) => {
-      const info = s?.personalInfo;
-      const dataLines: Array<{ text: string; type: 'info' | 'success' | 'purple' | 'bold' }> = [];
-
-      if (info?.name)       dataLines.push({ text: `✓ ${isHebrew ? 'שם' : 'Name'}: ${info.name}`, type: 'success' });
-      if (info?.phone)      dataLines.push({ text: `✓ ${isHebrew ? 'טלפון' : 'Phone'}: ${info.phone}`, type: 'success' });
-      if (info?.location)   dataLines.push({ text: `✓ ${isHebrew ? 'מיקום' : 'Location'}: ${info.location}`, type: 'success' });
-      const headline = info?.headline || s?.experience?.recentRole;
-      if (headline)         dataLines.push({ text: `✓ ${isHebrew ? 'כותרת' : 'Headline'}: ${headline}`, type: 'success' });
-      const yrs = s?.experience?.totalYears;
-      if (yrs)              dataLines.push({ text: `✓ ${isHebrew ? 'ניסיון' : 'Experience'}: ${yrs} ${isHebrew ? 'שנים' : 'yrs'}`, type: 'success' });
-      if (info?.linkedin)   dataLines.push({ text: `✓ LinkedIn ${isHebrew ? 'נמצא' : 'found'} 🔗`, type: 'success' });
-      if (info?.github)     dataLines.push({ text: `✓ GitHub ${isHebrew ? 'נמצא' : 'found'} 🔗`, type: 'success' });
-      if (info?.portfolio)  dataLines.push({ text: `✓ ${isHebrew ? 'אתר אישי נמצא' : 'Portfolio found'} 🔗`, type: 'success' });
-      const tech = (s?.skills?.technical || []).slice(0, 5);
-      if (tech.length)      dataLines.push({ text: `⚡ ${tech.join(' · ')}`, type: 'purple' });
-      dataLines.push({ text: isHebrew ? '🎉 הכל מוכן! ממלא פרטים...' : '🎉 Done! Filling in details...', type: 'bold' });
-
-      dataLines.forEach((line, i) => {
-        setTimeout(() => {
-          setLines(prev => [...prev, line]);
-          if (i === dataLines.length - 1) {
-            setTimeout(() => { onDataFoundRef.current(s); onCompleteRef.current(); }, 900);
-          }
-        }, 300 + i * 450);
-      });
-    };
-
-    // Poll DB for ai_summary — also trigger analysis if document exists without it
+    // Poll DB for ai_summary
     const startedAt = Date.now();
     const poll = async () => {
       if (doneRef.current) return;
       const elapsed = Math.round((Date.now() - startedAt) / 1000);
       console.log(`[CV-TERMINAL] Polling... elapsed=${elapsed}s`);
       try {
-        // Query for the latest CV document (with or without ai_summary)
-        const { data: doc, error } = await supabase
+        const { data, error } = await supabase
           .from('documents')
-          .select('id, file_path, file_name, ai_summary')
+          .select('ai_summary')
           .eq('owner_id', userId)
           .eq('doc_type', 'cv')
-          .order('created_at', { ascending: false })
+          .not('ai_summary', 'is', null)
           .limit(1)
           .maybeSingle();
 
-        console.log('[CV-TERMINAL] Poll result:', { found: !!doc, hasAnalysis: !!doc?.ai_summary, error: error?.message });
-
-        if (doc?.ai_summary) {
+        console.log('[CV-TERMINAL] Poll result:', { found: !!data?.ai_summary, error: error?.message });
+        if (data?.ai_summary) {
           doneRef.current = true;
-          showFoundData(doc.ai_summary as any);
-          return;
-        }
+          const s = data.ai_summary as any;
+          const info = s?.personalInfo;
+          const dataLines: Array<{ text: string; type: 'info' | 'success' | 'purple' | 'bold' }> = [];
 
-        // Document exists but no analysis yet — trigger analysis as fallback
-        if (doc && !doc.ai_summary) {
-          triggerAnalysisIfNeeded(doc);
+          if (info?.name)       dataLines.push({ text: `✓ ${isHebrew ? 'שם' : 'Name'}: ${info.name}`, type: 'success' });
+          if (info?.phone)      dataLines.push({ text: `✓ ${isHebrew ? 'טלפון' : 'Phone'}: ${info.phone}`, type: 'success' });
+          if (info?.location)   dataLines.push({ text: `✓ ${isHebrew ? 'מיקום' : 'Location'}: ${info.location}`, type: 'success' });
+          const headline = info?.headline || s?.experience?.recentRole;
+          if (headline)         dataLines.push({ text: `✓ ${isHebrew ? 'כותרת' : 'Headline'}: ${headline}`, type: 'success' });
+          const yrs = s?.experience?.totalYears;
+          if (yrs)              dataLines.push({ text: `✓ ${isHebrew ? 'ניסיון' : 'Experience'}: ${yrs} ${isHebrew ? 'שנים' : 'yrs'}`, type: 'success' });
+          if (info?.linkedin)   dataLines.push({ text: `✓ LinkedIn ${isHebrew ? 'נמצא' : 'found'} 🔗`, type: 'success' });
+          if (info?.github)     dataLines.push({ text: `✓ GitHub ${isHebrew ? 'נמצא' : 'found'} 🔗`, type: 'success' });
+          if (info?.portfolio)  dataLines.push({ text: `✓ ${isHebrew ? 'אתר אישי נמצא' : 'Portfolio found'} 🔗`, type: 'success' });
+          const tech = (s?.skills?.technical || []).slice(0, 5);
+          if (tech.length)      dataLines.push({ text: `⚡ ${tech.join(' · ')}`, type: 'purple' });
+          dataLines.push({ text: isHebrew ? '🎉 הכל מוכן! ממלא פרטים...' : '🎉 Done! Filling in details...', type: 'bold' });
+
+          dataLines.forEach((line, i) => {
+            setTimeout(() => {
+              setLines(prev => [...prev, line]);
+              if (i === dataLines.length - 1) {
+                setTimeout(() => { onDataFoundRef.current(s); onCompleteRef.current(); }, 900);
+              }
+            }, 300 + i * 450);
+          });
+          return;
         }
       } catch (e) { console.error('[CV-TERMINAL] Poll error:', e); }
 
-      if (Date.now() - startedAt > 45000) {
+      if (Date.now() - startedAt > 30000) {
         doneRef.current = true;
         setLines(prev => [...prev, { text: isHebrew ? '⚠️ ממשיך בלי ניתוח...' : '⚠️ Timed out, continuing...', type: 'info' }]);
         setTimeout(onCompleteRef.current, 1000);
@@ -265,7 +229,7 @@ function CVAnalysisTransition({ userId, isHebrew, onComplete, onDataFound }: {
       }
       setTimeout(poll, 2500);
     };
-    setTimeout(poll, 2000);
+    setTimeout(poll, 2500);
   }, [userId, isHebrew]);
 
   return (
@@ -560,6 +524,29 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   useEffect(() => {
     scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentStep]);
+
+  // Fallback: when arriving at 'name' step, query DB for CV data if fields are still empty
+  const nameFallbackDoneRef = useRef(false);
+  useEffect(() => {
+    if (currentStep !== 'name' || !user?.id || nameFallbackDoneRef.current) return;
+    if (fullName) return; // already filled — skip
+    nameFallbackDoneRef.current = true;
+    console.log('[CV-AUTOFILL] Name step fallback — querying DB directly');
+    supabase
+      .from('documents')
+      .select('ai_summary')
+      .eq('owner_id', user.id)
+      .eq('doc_type', 'cv')
+      .not('ai_summary', 'is', null)
+      .limit(1)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        console.log('[CV-AUTOFILL] Name step fallback result:', { found: !!data?.ai_summary, error: error?.message });
+        if (data?.ai_summary) {
+          handleCVDataFoundRef.current(data.ai_summary as any);
+        }
+      });
+  }, [currentStep, user?.id, fullName]);
 
   // Stable callback for PlugMessage
   const onMessageReady = useCallback(() => setMessageReady(true), []);
