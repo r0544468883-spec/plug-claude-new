@@ -15,7 +15,7 @@ import { PhotoUpload } from './PhotoUpload';
 import { IntroVideoUpload } from './IntroVideoUpload';
 import { PersonalCardPreview } from './PersonalCardPreview';
 import { ResumeUpload } from '@/components/documents/ResumeUpload';
-import { User, Sparkles, Eye, Loader2, Save, FileText, Link2, Calendar, Shield, Users2, CreditCard, CheckCircle2, AlertCircle, X, Plus, Trash2 } from 'lucide-react';
+import { User, Sparkles, Eye, Loader2, Save, FileText, Link2, Calendar, Shield, Users2, CreditCard, CheckCircle2, AlertCircle, X, Plus, Trash2, Copy, Check, ExternalLink, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 // Helper text for fields that need explanation
@@ -70,6 +70,52 @@ function SectionStatus({ filled, total }: { filled: number; total: number }) {
       <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
       {filled}/{total}
     </span>
+  );
+}
+
+function PublicProfileBar({ userId, isHebrew }: { userId: string; isHebrew: boolean }) {
+  const [copied, setCopied] = useState(false);
+  const profileUrl = `${window.location.origin}/p/${userId}`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(profileUrl);
+    setCopied(true);
+    toast.success(isHebrew ? 'הקישור הועתק!' : 'Link copied!');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'PLUG Profile', url: profileUrl });
+      } catch { /* user cancelled */ }
+    } else {
+      handleCopy();
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 mt-3 p-2.5 rounded-lg bg-muted/50 border border-border">
+      <div className="flex-1 min-w-0">
+        <p className="text-[11px] text-muted-foreground mb-1">
+          {isHebrew ? 'קישור לפרופיל הציבורי שלך:' : 'Your public profile link:'}
+        </p>
+        <p className="text-xs font-mono truncate text-foreground/80">{profileUrl}</p>
+      </div>
+      <Button variant="outline" size="sm" className="h-8 gap-1.5 shrink-0" onClick={handleCopy}>
+        {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+        {isHebrew ? 'העתק' : 'Copy'}
+      </Button>
+      <Button variant="outline" size="sm" className="h-8 gap-1.5 shrink-0" onClick={handleShare}>
+        <Share2 className="w-3.5 h-3.5" />
+        {isHebrew ? 'שתף' : 'Share'}
+      </Button>
+      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0" asChild>
+        <a href={`/p/${userId}`} target="_blank" rel="noopener noreferrer">
+          <ExternalLink className="w-3.5 h-3.5" />
+        </a>
+      </Button>
+    </div>
   );
 }
 
@@ -333,6 +379,7 @@ export function PersonalCardEditor() {
             ? 'פרטים שישמשו למילוי טפסי הגשת מועמדות אוטומטית'
             : 'Details used for automatic job application form filling'}
         </CardDescription>
+        <PublicProfileBar userId={user.id} isHebrew={isHebrew} />
       </CardHeader>
 
       <CardContent>
