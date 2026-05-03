@@ -25,6 +25,7 @@ import { RecruiterTour } from '@/components/onboarding/RecruiterTour';
 import { DailyWelcome } from '@/components/onboarding/DailyWelcome';
 import { TourGuideFAB } from '@/components/onboarding/TourGuideFAB';
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
+import { FuelWelcome } from '@/components/onboarding/FuelWelcome';
 // SmartTriggers removed - notifications now handled by NotificationBell
 import { MobileBottomBar } from '@/components/navigation/MobileBottomBar';
 import { AchievementsPanel } from '@/components/gamification/AchievementsPanel';
@@ -137,6 +138,7 @@ export default function Dashboard() {
   // Onboarding wizard — show on first login for job seekers
   // Must use useEffect because role loads async from DB
   const [showOnboardingWizard, setShowOnboardingWizard] = useState(false);
+  const [showFuelWelcome, setShowFuelWelcome] = useState(false);
   useEffect(() => {
     if (role !== 'job_seeker') return;
     const done = localStorage.getItem('plug-onboarding-done') === 'true';
@@ -144,6 +146,9 @@ export default function Dashboard() {
     const profileDone = (profile as any)?.onboarding_completed === true;
     if (!done && !skipped && !profileDone) {
       setShowOnboardingWizard(true);
+    } else if ((done || profileDone) && localStorage.getItem('plug-fuel-welcome-done') !== 'true') {
+      // Profile onboarding done but fuel intro not yet shown
+      setShowFuelWelcome(true);
     }
   }, [role, profile]);
 
@@ -689,11 +694,22 @@ export default function Dashboard() {
 
       {/* Onboarding Wizard — first login for job seekers */}
       {showOnboardingWizard && (
-        <OnboardingWizard onComplete={() => setShowOnboardingWizard(false)} />
+        <OnboardingWizard onComplete={() => {
+          setShowOnboardingWizard(false);
+          setShowFuelWelcome(true);
+        }} />
       )}
 
-      {/* Daily Welcome (first visit of the day) — skip if wizard is showing */}
-      {!showOnboardingWizard && <DailyWelcome />}
+      {/* Fuel Welcome — intro to credits system after onboarding */}
+      {showFuelWelcome && (
+        <FuelWelcome onComplete={() => {
+          setShowFuelWelcome(false);
+          localStorage.setItem('plug-fuel-welcome-done', 'true');
+        }} />
+      )}
+
+      {/* Daily Welcome (first visit of the day) — skip if wizard or fuel welcome is showing */}
+      {!showOnboardingWizard && !showFuelWelcome && <DailyWelcome />}
 
 
       {renderSectionContent()}
