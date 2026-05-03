@@ -727,12 +727,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   }, []);
 
   // Signal "data ready" ONLY after React has committed the state updates to the DOM.
-  // This useEffect fires after re-render, so the fields are guaranteed to be populated.
+  // Wait for tagline (professional headline) — it's the last critical field from CV analysis.
   useEffect(() => {
-    if (showCVAnalysis && fullName) {
+    if (showCVAnalysis && fullName && tagline) {
       cvDataReadyRef.current = true;
     }
-  }, [showCVAnalysis, fullName]);
+  }, [showCVAnalysis, fullName, tagline]);
 
   // Keep ref in sync so the mount re-analysis fetch can call it even after CVAnalysisTransition ran
   useEffect(() => { handleCVDataFoundRef.current = handleCVDataFound; });
