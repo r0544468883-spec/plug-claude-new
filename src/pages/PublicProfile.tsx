@@ -10,8 +10,9 @@ import { PersonalCard } from '@/components/profile/PersonalCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Heart, User, Shield, FileText, Download, Eye, Building2, ExternalLink, Briefcase, GraduationCap, Code2, Languages, ClipboardCheck } from 'lucide-react';
+import { Heart, User, Shield, FileText, Download, Eye, Building2, ExternalLink, Briefcase, GraduationCap, Code2, Languages, ClipboardCheck, MessageSquare, Phone, EyeOff, Lock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ConnectButton } from '@/components/connections/ConnectButton';
 import { useConnections } from '@/hooks/useConnections';
 import { Link, useNavigate } from 'react-router-dom';
@@ -82,19 +83,23 @@ export default function PublicProfile() {
     enabled: !!userId,
   });
 
-  // Fetch cv_data for skills, experience, education, languages
-  const { data: cvData } = useQuery({
-    queryKey: ['public-cv-data', userId],
+  // Fetch cv_data, visible_to_hr, phone for extended profile sections
+  const { data: profileExtra } = useQuery({
+    queryKey: ['public-profile-extra', userId],
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('profiles')
-        .select('cv_data')
+        .select('cv_data, visible_to_hr, phone')
         .eq('user_id', userId!)
         .maybeSingle();
-      return data?.cv_data || null;
+      return data as { cv_data: any; visible_to_hr: boolean | null; phone: string | null } | null;
     },
     enabled: !!userId,
   });
+
+  const cvData = profileExtra?.cv_data || null;
+  const isVisible = profileExtra?.visible_to_hr !== false; // default true if null
+  const profilePhone = profileExtra?.phone;
 
   // Fetch completed public assignments
   const { data: completedAssignments = [] } = useQuery({
@@ -202,21 +207,46 @@ export default function PublicProfile() {
     enabled: !!userId,
   });
 
-  // View count for own profile
-  const { data: viewCount } = useQuery({
-    queryKey: ['profile-view-count', userId],
+  // View count + recent viewers for own profile
+  const { data: viewsData } = useQuery({
+    queryKey: ['profile-views-detailed', userId],
     queryFn: async () => {
-      const { count, error } = await (supabase as any)
+      // Total count
+      const { count } = await (supabase as any)
         .from('profile_views')
         .select('id', { count: 'exact', head: true })
         .eq('profile_user_id', userId)
         .eq('action', 'view');
 
-      if (error) return 0;
-      return count || 0;
+      // Recent identified viewers (have viewer_id)
+      const { data: recentViews } = await (supabase as any)
+        .from('profile_views')
+        .select('viewer_id, created_at')
+        .eq('profile_user_id', userId)
+        .eq('action', 'view')
+        .not('viewer_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      // Dedupe by viewer_id, keep latest
+      const uniqueViewerIds = [...new Set((recentViews || []).map((v: any) => v.viewer_id))] as string[];
+
+      // Fetch their profiles
+      let viewers: { user_id: string; full_name: string | null; avatar_url: string | null }[] = [];
+      if (uniqueViewerIds.length > 0) {
+        const { data: viewerProfiles } = await supabase
+          .from('profiles_secure')
+          .select('user_id, full_name, avatar_url')
+          .in('user_id', uniqueViewerIds.slice(0, 10));
+        viewers = viewerProfiles || [];
+      }
+
+      return { totalViews: count || 0, viewers };
     },
     enabled: !!userId && isOwnProfile,
   });
+
+  const viewCount = viewsData?.totalViews || 0;
 
   const handleResumeDownload = async () => {
     if (!resumeData?.file_path || !userId) return;
@@ -298,6 +328,40 @@ export default function PublicProfile() {
     );
   }
 
+  // If profile is not visible (anonymous mode) and viewer is not the owner
+  if (!isVisible && !isOwnProfile) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col" dir={isHebrew ? 'rtl' : 'ltr'}>
+        <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-30">
+          <div className="max-w-3xl mx-auto px-4 h-16 flex items-center">
+            <Link to="/"><PlugLogo size="sm" /></Link>
+          </div>
+        </header>
+        <main className="flex-1 flex items-center justify-center p-4">
+          <Card className="max-w-md w-full">
+            <CardContent className="p-8 text-center">
+              <div className="w-16 h-16 rounded-full bg-muted mx-auto mb-4 flex items-center justify-center">
+                <EyeOff className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h2 className="text-xl font-semibold mb-2">
+                {isHebrew ? 'המשתמש במצב אנונימי' : 'This user is anonymous'}
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                {isHebrew
+                  ? 'המשתמש בחר שלא להציג את הפרופיל שלו באופן ציבורי'
+                  : 'This user has chosen not to display their profile publicly'}
+              </p>
+              <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Lock className="w-3.5 h-3.5" />
+                {isHebrew ? 'פרופיל פרטי' : 'Private profile'}
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background" dir={isHebrew ? 'rtl' : 'ltr'}>
       {/* Header */}
@@ -307,6 +371,12 @@ export default function PublicProfile() {
             <PlugLogo size="sm" />
           </Link>
           <div className="flex items-center gap-3">
+            {isOwnProfile && !isVisible && (
+              <div className="flex items-center gap-1.5 text-xs text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-full">
+                <EyeOff className="w-3.5 h-3.5" />
+                {isHebrew ? 'מצב אנונימי' : 'Anonymous mode'}
+              </div>
+            )}
             {isOwnProfile && typeof viewCount === 'number' && (
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
                 <Eye className="w-3.5 h-3.5" />
@@ -378,10 +448,42 @@ export default function PublicProfile() {
           </Card>
         )}
 
-        {/* Connection + Resume Actions */}
+        {/* Connection + Contact + Resume Actions */}
         {!isOwnProfile && (
           <div className="flex items-center gap-3 flex-wrap">
             {user && userId && <ConnectButton targetUserId={userId} />}
+            {/* WhatsApp — only if visible and has phone */}
+            {isVisible && profilePhone && (
+              <Button
+                variant="outline"
+                className="gap-2"
+                asChild
+              >
+                <a
+                  href={`https://wa.me/${profilePhone.replace(/[^0-9+]/g, '').replace(/^0/, '972')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => userId && trackProfileAction(userId, 'link_click', user?.id)}
+                >
+                  <Phone className="w-4 h-4" />
+                  WhatsApp
+                </a>
+              </Button>
+            )}
+            {/* In-app message — if viewer has PLUG account */}
+            {user && userId && (
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('plug:navigate-to-messages', { detail: { userId } }));
+                  navigate('/');
+                }}
+              >
+                <MessageSquare className="w-4 h-4" />
+                {isHebrew ? 'שלח הודעה' : 'Message'}
+              </Button>
+            )}
             {resumeData && (
               <Button
                 variant="outline"
@@ -416,6 +518,52 @@ export default function PublicProfile() {
                   </p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Profile viewers — own profile only */}
+        {isOwnProfile && viewsData && viewsData.totalViews > 0 && (
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Eye className="h-5 w-5 text-primary" />
+                {isHebrew ? 'מי צפה בפרופיל שלך' : 'Who viewed your profile'}
+                <Badge variant="secondary" className="text-xs ms-auto">{viewsData.totalViews}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {viewsData.viewers.length > 0 ? (
+                <div className="space-y-2">
+                  {viewsData.viewers.map((viewer) => {
+                    const initials = (viewer.full_name || '??').split(' ').map((n: string) => n[0]).join('').toUpperCase();
+                    return (
+                      <button
+                        key={viewer.user_id}
+                        onClick={() => navigate(`/p/${viewer.user_id}`)}
+                        className="flex items-center gap-3 w-full p-2.5 rounded-lg hover:bg-muted/50 transition-colors text-start"
+                      >
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={viewer.avatar_url || ''} />
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs">{initials}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium">{viewer.full_name || (isHebrew ? 'משתמש PLUG' : 'PLUG User')}</span>
+                      </button>
+                    );
+                  })}
+                  {viewsData.totalViews > viewsData.viewers.length && (
+                    <p className="text-xs text-muted-foreground text-center pt-2">
+                      {isHebrew
+                        ? `+ ${viewsData.totalViews - viewsData.viewers.length} צפיות אנונימיות`
+                        : `+ ${viewsData.totalViews - viewsData.viewers.length} anonymous views`}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground text-center py-3">
+                  {isHebrew ? 'כל הצפיות היו אנונימיות' : 'All views were anonymous'}
+                </p>
+              )}
             </CardContent>
           </Card>
         )}
