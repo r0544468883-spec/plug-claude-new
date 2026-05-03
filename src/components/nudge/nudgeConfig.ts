@@ -104,7 +104,7 @@ export const NUDGES: NudgeConfig[] = [
     featuresEn: ['AI job analysis while browsing', 'Auto-apply', 'Instant sync to PLUG'],
     ctaHe: 'להורדת התוסף',
     ctaEn: 'Get the Extension',
-    route: '/extension',
+    route: '/plug-extension.zip',
     badgeHe: 'חינמי',
     badgeEn: 'Free',
   },

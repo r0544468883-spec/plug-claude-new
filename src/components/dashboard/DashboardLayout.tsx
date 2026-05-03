@@ -493,9 +493,8 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
         {/* Extension download banner — shown to job seekers who haven't installed */}
         {role === 'job_seeker' && (
           <a
-            href="https://chrome.google.com/webstore/detail/plug"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/plug-extension.zip"
+            download="plug-extension.zip"
             data-tour="extension-download"
             className="mx-3 mb-2 flex items-center gap-2.5 rounded-lg border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors px-3 py-2.5"
           >
