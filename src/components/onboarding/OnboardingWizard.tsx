@@ -724,9 +724,15 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     if (matched.length) setPreferredFields(matched);
     const roleSlugMatches = matchRoleSlugs(allRoleNames);
     if (roleSlugMatches.length) setPreferredRoles(roleSlugMatches);
-    // Signal that all form fields have been set
-    cvDataReadyRef.current = true;
   }, []);
+
+  // Signal "data ready" ONLY after React has committed the state updates to the DOM.
+  // This useEffect fires after re-render, so the fields are guaranteed to be populated.
+  useEffect(() => {
+    if (showCVAnalysis && fullName) {
+      cvDataReadyRef.current = true;
+    }
+  }, [showCVAnalysis, fullName]);
 
   // Keep ref in sync so the mount re-analysis fetch can call it even after CVAnalysisTransition ran
   useEffect(() => { handleCVDataFoundRef.current = handleCVDataFound; });
