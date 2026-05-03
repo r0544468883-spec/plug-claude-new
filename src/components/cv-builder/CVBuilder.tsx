@@ -18,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { debounce } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { exportToPdf } from './utils/exportToPdf';
+import { exportToDocx } from './utils/exportToDocx';
 import { getBackgroundCSS, BackgroundOverlay, PlugWatermark } from './utils/backgroundPatterns';
 import { getTemplateById } from './templates';
 import { CreditCostBanner } from '@/components/credits/CreditCostBadge';
@@ -87,6 +88,7 @@ export const CVBuilder = () => {
   // Export dialog state
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingDocx, setIsExportingDocx] = useState(false);
   const [isSavingToProfile, setIsSavingToProfile] = useState(false);
   const [savedCVUrl, setSavedCVUrl] = useState<string | null>(null);
   const [exportedPdfBlob, setExportedPdfBlob] = useState<Blob | null>(null);
@@ -312,6 +314,28 @@ export const CVBuilder = () => {
     toast.success(language === 'he' ? 'ה-PDF הורד בהצלחה!' : 'PDF downloaded!');
   };
 
+  // Download as Word .docx
+  const handleDownloadDocx = async () => {
+    setIsExportingDocx(true);
+    try {
+      const blob = await exportToDocx(cvData);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${cvData.personalInfo.fullName || 'CV'}_resume.docx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success(language === 'he' ? 'קובץ Word הורד בהצלחה!' : 'Word file downloaded!');
+    } catch (error) {
+      console.error('DOCX generation error:', error);
+      toast.error(language === 'he' ? 'שגיאה ביצירת קובץ Word' : 'Error creating Word file');
+    } finally {
+      setIsExportingDocx(false);
+    }
+  };
+
   // Save CV to profile (storage)
   const handleSaveToProfile = async () => {
     if (!exportedPdfBlob || !user) return;
@@ -485,8 +509,8 @@ export const CVBuilder = () => {
                 </Button>
 
                 {/* Download as PDF */}
-                <Button 
-                  onClick={handleDownloadPDF} 
+                <Button
+                  onClick={handleDownloadPDF}
                   disabled={isExporting || !exportedPdfBlob}
                   className="gap-2"
                   size="sm"
@@ -496,9 +520,27 @@ export const CVBuilder = () => {
                   ) : (
                     <Download className="w-4 h-4" />
                   )}
-                  {isExporting 
-                    ? (language === 'he' ? 'מייצר...' : 'Generating...') 
+                  {isExporting
+                    ? (language === 'he' ? 'מייצר...' : 'Generating...')
                     : (language === 'he' ? 'הורד PDF' : 'Download PDF')}
+                </Button>
+
+                {/* Download as Word */}
+                <Button
+                  variant="outline"
+                  onClick={handleDownloadDocx}
+                  disabled={isExportingDocx}
+                  className="gap-2"
+                  size="sm"
+                >
+                  {isExportingDocx ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <FileText className="w-4 h-4" />
+                  )}
+                  {isExportingDocx
+                    ? (language === 'he' ? 'מייצר...' : 'Generating...')
+                    : (language === 'he' ? 'הורד Word' : 'Download Word')}
                 </Button>
               </div>
             </div>
