@@ -8,7 +8,8 @@ const SUPABASE_URL         = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const APP_URL              = Deno.env.get("APP_URL") || "https://www.plug-hr.com";
 
-const DIGEST_INTERVAL_HOURS = 48; // send every 2 days
+const DIGEST_INTERVAL_HOURS = 48;
+const MIN_MATCH_SCORE = 70;
 
 async function refreshGmailToken(refreshToken: string): Promise<string> {
   const res = await fetch("https://oauth2.googleapis.com/token", {
@@ -26,23 +27,44 @@ async function refreshGmailToken(refreshToken: string): Promise<string> {
   return access_token;
 }
 
-function buildEmailHtml(jobs: Array<{ title: string; company?: string; location?: string; id: string; job_url?: string }>, isHe: boolean): string {
+interface DigestJob {
+  title: string;
+  company?: string;
+  location?: string;
+  id: string;
+  job_url?: string;
+  score?: number;
+}
+
+function buildEmailHtml(jobs: DigestJob[], isHe: boolean): string {
   const jobRows = jobs.map(job => {
     const url = job.job_url || `${APP_URL}/jobs/${job.id}`;
+    const scoreTag = job.score
+      ? `<span style="display:inline-block;background:#00FF9D;color:#0A1128;font-weight:700;font-size:11px;padding:2px 8px;border-radius:50px;margin-${isHe ? 'left' : 'right'}:8px;">${job.score}% ${isHe ? 'התאמה' : 'match'}</span>`
+      : '';
     return `
       <tr>
-        <td style="padding:12px 0;border-bottom:1px solid #1e2a4a;">
-          <a href="${url}" style="color:#00FF9D;font-weight:600;font-size:15px;text-decoration:none;">${job.title}</a><br/>
+        <td style="padding:14px 0;border-bottom:1px solid #1e2a4a;">
+          <div>
+            ${scoreTag}
+            <a href="${url}" style="color:#00FF9D;font-weight:600;font-size:15px;text-decoration:none;">${job.title}</a>
+          </div>
           <span style="color:#8899aa;font-size:13px;">${[job.company, job.location].filter(Boolean).join(' · ')}</span>
         </td>
       </tr>
     `;
   }).join('');
 
-  const headline = isHe ? `🔍 ${jobs.length} משרות חדשות מחכות לך` : `🔍 ${jobs.length} new jobs waiting for you`;
-  const subtitle = isHe ? 'PLUG מצא בשבילך את המשרות הכי רלוונטיות השבוע' : 'PLUG found the most relevant jobs for you this week';
-  const ctaText  = isHe ? 'ראה את כל המשרות' : 'View all jobs';
-  const footerText = isHe ? 'קיבלת מייל זה כי יש לך חשבון PLUG פעיל.' : 'You received this email because you have an active PLUG account.';
+  const headline = isHe
+    ? `🎯 ${jobs.length} משרות שהכי מתאימות לך`
+    : `🎯 ${jobs.length} top matches for you`;
+  const subtitle = isHe
+    ? 'המשרות האלה נבחרו במיוחד בשבילך על סמך הפרופיל, הכישורים והניסיון שלך'
+    : 'These jobs were hand-picked for you based on your profile, skills, and experience';
+  const ctaText = isHe ? 'צפה בכל ההתאמות שלך' : 'View all your matches';
+  const footerText = isHe
+    ? 'קיבלת מייל זה כי יש לך חשבון PLUG פעיל. רק משרות מעל 70% התאמה נכללות.'
+    : 'You received this email because you have an active PLUG account. Only 70%+ matches are included.';
 
   return `<!DOCTYPE html>
 <html dir="${isHe ? 'rtl' : 'ltr'}" lang="${isHe ? 'he' : 'en'}">
@@ -53,7 +75,7 @@ function buildEmailHtml(jobs: Array<{ title: string; company?: string; location?
     <div style="background:linear-gradient(135deg,#0a1840,#0d2855);padding:28px 32px;border-bottom:1px solid #1e3a5f;">
       <div style="display:flex;align-items:center;gap:10px;">
         <span style="background:#00FF9D;color:#0A1128;font-weight:900;font-size:18px;padding:4px 10px;border-radius:8px;">PLUG</span>
-        <span style="color:#8899aa;font-size:13px;">Job Digest</span>
+        <span style="color:#8899aa;font-size:13px;">AI Job Digest</span>
       </div>
       <h1 style="margin:16px 0 4px;font-size:22px;color:#ffffff;">${headline}</h1>
       <p style="margin:0;color:#8899aa;font-size:14px;">${subtitle}</p>
@@ -104,31 +126,27 @@ async function sendGmailDigest(accessToken: string, toEmail: string, subject: st
 }
 
 serve(async (req) => {
-  // Only allow POST (called by cron or manually)
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-  // Parse optional test params
   let testTo: string | null = null;
   try {
     const body = await req.json().catch(() => ({}));
     testTo = body.test_to || null;
   } catch { /* no body */ }
 
-  // Test mode — send sample email immediately
+  // Test mode — send sample email
   if (testTo) {
-    const sampleJobs = [
-      { id: '1', title: 'מפתח Full Stack', company: 'WalkMe', location: 'תל אביב', job_url: `${APP_URL}` },
-      { id: '2', title: 'Frontend Engineer (React)', company: 'Wix', location: 'תל אביב', job_url: `${APP_URL}` },
-      { id: '3', title: 'Backend Developer — Node.js', company: 'Monday.com', location: 'תל אביב / היברידי', job_url: `${APP_URL}` },
-      { id: '4', title: 'DevOps Engineer', company: 'Fiverr', location: 'תל אביב', job_url: `${APP_URL}` },
-      { id: '5', title: 'Mobile Developer (React Native)', company: 'Gett', location: 'תל אביב', job_url: `${APP_URL}` },
+    const sampleJobs: DigestJob[] = [
+      { id: '1', title: 'Full Stack Developer', company: 'WalkMe', location: 'Tel Aviv', job_url: APP_URL, score: 92 },
+      { id: '2', title: 'Frontend Engineer (React)', company: 'Wix', location: 'Tel Aviv', job_url: APP_URL, score: 87 },
+      { id: '3', title: 'Backend Developer — Node.js', company: 'Monday.com', location: 'Tel Aviv / Hybrid', job_url: APP_URL, score: 81 },
+      { id: '4', title: 'DevOps Engineer', company: 'Fiverr', location: 'Tel Aviv', job_url: APP_URL, score: 75 },
+      { id: '5', title: 'Mobile Developer (React Native)', company: 'Gett', location: 'Tel Aviv', job_url: APP_URL, score: 71 },
     ];
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-    // Use any connected Gmail token to send the test email
     const { data: token } = await supabase
       .from("email_oauth_tokens")
       .select("access_token, refresh_token, expires_at")
@@ -138,9 +156,8 @@ serve(async (req) => {
       .maybeSingle();
 
     if (!token) {
-      return new Response(JSON.stringify({ error: "No Gmail account connected in PLUG" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ error: "No Gmail account connected" }), {
+        status: 404, headers: { "Content-Type": "application/json" },
       });
     }
 
@@ -149,14 +166,14 @@ serve(async (req) => {
       accessToken = await refreshGmailToken(token.refresh_token);
     }
 
-    const subject = "🔍 5 משרות חדשות מחכות לך — PLUG (דוגמה)";
+    const subject = "🎯 5 משרות שהכי מתאימות לך — PLUG (דוגמה)";
     await sendGmailDigest(accessToken, testTo, subject, buildEmailHtml(sampleJobs, true));
     return new Response(JSON.stringify({ sent: 1, test: true }), {
       headers: { "Content-Type": "application/json" },
     });
   }
 
-  // Fetch all users with Gmail connected and sync enabled
+  // ── Real digest flow ─────────────────────────────────────────────
   const { data: tokens, error: tokensErr } = await supabase
     .from("email_oauth_tokens")
     .select("user_id, provider, access_token, refresh_token, expires_at, email_address")
@@ -168,22 +185,21 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: tokensErr.message }), { status: 500 });
   }
 
-  const results = { sent: 0, skipped: 0, errors: 0 };
+  const results = { sent: 0, skipped: 0, skipped_no_matches: 0, errors: 0 };
   const now = new Date();
-  const twoDaysAgo = new Date(now.getTime() - DIGEST_INTERVAL_HOURS * 60 * 60 * 1000).toISOString();
 
   for (const token of (tokens || [])) {
     try {
       const userId = token.user_id;
 
-      // Check if digest was sent recently (skip in test mode)
+      // Check if digest was sent recently
       const { data: profile } = await supabase
         .from("profiles")
         .select("last_digest_sent_at, languages")
         .eq("user_id", userId)
         .single();
 
-      if (!testTo && profile?.last_digest_sent_at) {
+      if (profile?.last_digest_sent_at) {
         const lastSent = new Date(profile.last_digest_sent_at);
         const hoursSince = (now.getTime() - lastSent.getTime()) / (1000 * 60 * 60);
         if (hoursSince < DIGEST_INTERVAL_HOURS - 1) {
@@ -195,46 +211,50 @@ serve(async (req) => {
       const langs = profile?.languages;
       const isHe = Array.isArray(langs) ? langs.includes('he') : langs === 'he';
 
-      // Get applied job IDs for this user
+      // Get applied job IDs
       const { data: applications } = await supabase
         .from("applications")
         .select("job_id")
         .eq("candidate_id", userId);
       const appliedJobIds = new Set((applications || []).map((a: any) => a.job_id).filter(Boolean));
 
-      // Fetch jobs — in test mode skip date filter
-      const jobQuery = supabase
-        .from("jobs")
-        .select("id, title, company_name, location, source_url, created_at")
-        .order("created_at", { ascending: false })
-        .limit(testTo ? 8 : 20);
+      // Fetch jobs with match scores >= 70% for this user
+      const { data: matchedJobs } = await supabase
+        .from("job_match_scores")
+        .select("job_id, score, jobs!inner(id, title, company_name, location, source_url, created_at)")
+        .eq("user_id", userId)
+        .gte("score", MIN_MATCH_SCORE)
+        .order("score", { ascending: false })
+        .limit(20);
 
-      if (!testTo) jobQuery.gte("created_at", twoDaysAgo);
+      // Filter out applied jobs and build digest list
+      const digestJobs: DigestJob[] = [];
+      for (const match of (matchedJobs || [])) {
+        const job = (match as any).jobs;
+        if (!job || appliedJobIds.has(job.id)) continue;
+        digestJobs.push({
+          id: job.id,
+          title: job.title,
+          company: job.company_name || undefined,
+          location: job.location || undefined,
+          job_url: job.source_url || undefined,
+          score: match.score,
+        });
+        if (digestJobs.length >= 8) break;
+      }
 
-      const { data: jobs } = await jobQuery;
-
-      // Filter out already applied jobs
-      const newJobs = (jobs || []).filter((j: any) => !appliedJobIds.has(j.id)).slice(0, 8);
-
-      if (newJobs.length === 0) {
-        results.skipped++;
+      // No 70%+ matches → skip this user (don't send random jobs)
+      if (digestJobs.length === 0) {
+        console.log(`job-digest: no 70%+ matches for user ${userId}, skipping`);
+        results.skipped_no_matches++;
         continue;
       }
 
-      const enrichedJobs = newJobs.map((j: any) => ({
-        id: j.id,
-        title: j.title,
-        company: j.company_name || undefined,
-        location: j.location || undefined,
-        job_url: j.source_url || undefined,
-      }));
-
-      // Refresh Gmail token if expiring soon
+      // Refresh Gmail token if needed
       let accessToken = token.access_token;
       const expiresAt = new Date(token.expires_at);
       if (expiresAt.getTime() - now.getTime() < 5 * 60 * 1000) {
         accessToken = await refreshGmailToken(token.refresh_token);
-        // Update token in DB
         await supabase
           .from("email_oauth_tokens")
           .update({ access_token: accessToken, expires_at: new Date(now.getTime() + 3600 * 1000).toISOString() })
@@ -243,20 +263,19 @@ serve(async (req) => {
       }
 
       const subject = isHe
-        ? `🔍 ${enrichedJobs.length} משרות חדשות מחכות לך — PLUG`
-        : `🔍 ${enrichedJobs.length} new jobs waiting for you — PLUG`;
+        ? `🎯 ${digestJobs.length} משרות שהכי מתאימות לך — PLUG`
+        : `🎯 ${digestJobs.length} top matches for you — PLUG`;
 
-      const sendTo = testTo || token.email_address;
-      await sendGmailDigest(accessToken, sendTo, subject, buildEmailHtml(enrichedJobs, isHe));
+      await sendGmailDigest(accessToken, token.email_address, subject, buildEmailHtml(digestJobs, isHe));
 
-      // Update last digest sent time
+      // Update last digest sent
       await supabase
         .from("profiles")
         .update({ last_digest_sent_at: now.toISOString() })
         .eq("user_id", userId);
 
       results.sent++;
-      console.log(`job-digest: sent to ${token.email_address} (${enrichedJobs.length} jobs)`);
+      console.log(`job-digest: sent to ${token.email_address} (${digestJobs.length} jobs, top score: ${digestJobs[0].score}%)`);
     } catch (err: any) {
       console.error(`job-digest: error for user ${token.user_id}:`, err.message);
       results.errors++;
