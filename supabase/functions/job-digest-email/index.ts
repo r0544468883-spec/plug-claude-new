@@ -6,7 +6,7 @@ const GOOGLE_CLIENT_ID     = Deno.env.get("GOOGLE_CLIENT_ID")!;
 const GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET")!;
 const SUPABASE_URL         = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const APP_URL              = Deno.env.get("APP_URL") || "https://plug-claude-new-psi.vercel.app";
+const APP_URL              = Deno.env.get("APP_URL") || "https://www.plug-hr.com";
 
 const DIGEST_INTERVAL_HOURS = 48; // send every 2 days
 
@@ -179,7 +179,7 @@ serve(async (req) => {
       // Check if digest was sent recently (skip in test mode)
       const { data: profile } = await supabase
         .from("profiles")
-        .select("last_digest_sent_at, language")
+        .select("last_digest_sent_at, languages")
         .eq("user_id", userId)
         .single();
 
@@ -192,19 +192,20 @@ serve(async (req) => {
         }
       }
 
-      const isHe = profile?.language === 'he';
+      const langs = profile?.languages;
+      const isHe = Array.isArray(langs) ? langs.includes('he') : langs === 'he';
 
       // Get applied job IDs for this user
       const { data: applications } = await supabase
         .from("applications")
         .select("job_id")
-        .eq("user_id", userId);
+        .eq("candidate_id", userId);
       const appliedJobIds = new Set((applications || []).map((a: any) => a.job_id).filter(Boolean));
 
       // Fetch jobs — in test mode skip date filter
       const jobQuery = supabase
         .from("jobs")
-        .select("id, title, company_id, location, job_url, created_at")
+        .select("id, title, company_name, location, source_url, created_at")
         .order("created_at", { ascending: false })
         .limit(testTo ? 8 : 20);
 
@@ -220,23 +221,12 @@ serve(async (req) => {
         continue;
       }
 
-      // Enrich with company names if available
-      const companyIds = [...new Set(newJobs.map((j: any) => j.company_id).filter(Boolean))];
-      let companyMap: Record<string, string> = {};
-      if (companyIds.length > 0) {
-        const { data: companies } = await supabase
-          .from("clients")
-          .select("id, name")
-          .in("id", companyIds);
-        companyMap = Object.fromEntries((companies || []).map((c: any) => [c.id, c.name]));
-      }
-
       const enrichedJobs = newJobs.map((j: any) => ({
         id: j.id,
         title: j.title,
-        company: companyMap[j.company_id] || undefined,
+        company: j.company_name || undefined,
         location: j.location || undefined,
-        job_url: j.job_url || undefined,
+        job_url: j.source_url || undefined,
       }));
 
       // Refresh Gmail token if expiring soon
