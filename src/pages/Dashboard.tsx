@@ -145,6 +145,18 @@ export default function Dashboard() {
     // Use role from AuthContext, or fall back to cached localStorage value for faster first render
     const effectiveRole = role || localStorage.getItem('plug_user_role');
     if (effectiveRole !== 'job_seeker') return;
+
+    // Skip onboarding entirely for existing users with a filled profile
+    const p = profile as any;
+    const isExistingUser = p?.full_name && (p?.skills?.length > 0 || p?.preferred_fields?.length > 0 || p?.experience_years);
+    if (isExistingUser) {
+      // Mark all onboarding steps as done so they never show again
+      localStorage.setItem('plug-onboarding-done', 'true');
+      localStorage.setItem('plug-fuel-welcome-done', 'true');
+      localStorage.setItem('plug-tour-prompt-done', 'true');
+      return;
+    }
+
     const done = localStorage.getItem('plug-onboarding-done') === 'true';
     const skipped = localStorage.getItem('plug-onboarding-skipped') === 'true';
     if (!done && !skipped) {
