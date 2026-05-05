@@ -7,6 +7,7 @@ const GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET")!;
 const SUPABASE_URL         = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const APP_URL              = Deno.env.get("APP_URL") || "https://www.plug-hr.com";
+const SYSTEM_SENDER_EMAIL  = Deno.env.get("SYSTEM_SENDER_EMAIL") || "plug.hotjobs@gmail.com";
 
 const DIGEST_INTERVAL_HOURS = 48;
 const MIN_MATCH_SCORE = 80;
@@ -198,10 +199,10 @@ function buildEmailHtml(jobs: DigestJob[], isHe: boolean): string {
 </html>`;
 }
 
-async function sendGmailDigest(accessToken: string, toEmail: string, subject: string, bodyHtml: string): Promise<void> {
+async function sendGmailDigest(accessToken: string, fromEmail: string, toEmail: string, subject: string, bodyHtml: string): Promise<void> {
   const subjectEncoded = `=?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`;
   const rawMessage = [
-    `From: PLUG Jobs <${toEmail}>`,
+    `From: PLUG Jobs <${fromEmail}>`,
     `To: ${toEmail}`,
     `Subject: ${subjectEncoded}`,
     `MIME-Version: 1.0`,
@@ -238,21 +239,45 @@ serve(async (req) => {
       { id: '4', title: 'Account Executive — SaaS', company: 'Fiverr', location: 'תל אביב', job_url: APP_URL, score: 80 },
       { id: '5', title: 'Head of Growth & Marketing', company: 'Gett', location: 'Tel Aviv', job_url: APP_URL, score: 100 },
     ];
-    const { data: token } = await supabase.from("email_oauth_tokens")
-      .select("access_token, refresh_token, expires_at").eq("provider", "gmail").eq("sync_enabled", true).limit(1).maybeSingle();
-    if (!token) return new Response(JSON.stringify({ error: "No Gmail connected" }), { status: 404, headers: { "Content-Type": "application/json" } });
+    const { data: sysToken } = await supabase.from("email_oauth_tokens")
+      .select("access_token, refresh_token, expires_at, user_id").eq("provider", "gmail").eq("email_address", SYSTEM_SENDER_EMAIL).limit(1).maybeSingle();
+    if (!sysToken) return new Response(JSON.stringify({ error: `System sender ${SYSTEM_SENDER_EMAIL} not connected` }), { status: 404, headers: { "Content-Type": "application/json" } });
 
-    let accessToken = token.access_token;
-    if (new Date(token.expires_at).getTime() - Date.now() < 5 * 60 * 1000) accessToken = await refreshGmailToken(token.refresh_token);
+    let accessToken = sysToken.access_token;
+    if (new Date(sysToken.expires_at).getTime() - Date.now() < 5 * 60 * 1000) {
+      accessToken = await refreshGmailToken(sysToken.refresh_token);
+      await supabase.from("email_oauth_tokens")
+        .update({ access_token: accessToken, expires_at: new Date(Date.now() + 3600 * 1000).toISOString() })
+        .eq("user_id", sysToken.user_id).eq("provider", "gmail");
+    }
 
-    await sendGmailDigest(accessToken, testTo, "🎯 5 משרות שהכי מתאימות לך — PLUG (דוגמה)", buildEmailHtml(sampleJobs, true));
+    await sendGmailDigest(accessToken, SYSTEM_SENDER_EMAIL, testTo, "🎯 5 משרות שהכי מתאימות לך — PLUG (דוגמה)", buildEmailHtml(sampleJobs, true));
     return new Response(JSON.stringify({ sent: 1, test: true }), { headers: { "Content-Type": "application/json" } });
   }
 
   // ── Real digest ─────────────────────────────────────────────────
 
-  const { data: tokens, error: tokensErr } = await supabase.from("email_oauth_tokens")
+  // Get system sender Gmail token (plug.hotjobs@gmail.com)
+  const { data: senderToken, error: senderErr } = await supabase.from("email_oauth_tokens")
     .select("user_id, provider, access_token, refresh_token, expires_at, email_address")
+    .eq("provider", "gmail").eq("email_address", SYSTEM_SENDER_EMAIL).limit(1).maybeSingle();
+
+  if (senderErr || !senderToken) {
+    return new Response(JSON.stringify({ error: `System sender ${SYSTEM_SENDER_EMAIL} not connected. Please connect it via Gmail OAuth first.` }), { status: 500 });
+  }
+
+  // Refresh system sender token if needed
+  let senderAccessToken = senderToken.access_token;
+  if (new Date(senderToken.expires_at).getTime() - Date.now() < 5 * 60 * 1000) {
+    senderAccessToken = await refreshGmailToken(senderToken.refresh_token);
+    await supabase.from("email_oauth_tokens")
+      .update({ access_token: senderAccessToken, expires_at: new Date(Date.now() + 3600 * 1000).toISOString() })
+      .eq("user_id", senderToken.user_id).eq("provider", "gmail");
+  }
+
+  // Get all users who have email connected (to know their email address)
+  const { data: tokens, error: tokensErr } = await supabase.from("email_oauth_tokens")
+    .select("user_id, email_address")
     .eq("provider", "gmail").eq("sync_enabled", true);
 
   if (tokensErr) return new Response(JSON.stringify({ error: tokensErr.message }), { status: 500 });
@@ -327,15 +352,6 @@ serve(async (req) => {
         if (error) console.error(`job-digest: cache error:`, error.message);
       });
 
-      // Refresh Gmail token
-      let accessToken = token.access_token;
-      if (new Date(token.expires_at).getTime() - now.getTime() < 5 * 60 * 1000) {
-        accessToken = await refreshGmailToken(token.refresh_token);
-        await supabase.from("email_oauth_tokens")
-          .update({ access_token: accessToken, expires_at: new Date(now.getTime() + 3600 * 1000).toISOString() })
-          .eq("user_id", userId).eq("provider", "gmail");
-      }
-
       const digestJobs: DigestJob[] = topJobs.map(j => ({
         id: j.id, title: j.title, score: j.score,
         company: j.company_name || undefined,
@@ -347,7 +363,7 @@ serve(async (req) => {
         ? `PLUG — מצאתי לך ${digestJobs.length} משרות שמתאימות לך במעל 80%`
         : `PLUG — Found ${digestJobs.length} jobs with 80%+ match for you`;
 
-      await sendGmailDigest(accessToken, token.email_address, subject, buildEmailHtml(digestJobs, isHe));
+      await sendGmailDigest(senderAccessToken, SYSTEM_SENDER_EMAIL, token.email_address, subject, buildEmailHtml(digestJobs, isHe));
       await supabase.from("profiles").update({ last_digest_sent_at: now.toISOString() }).eq("user_id", userId);
 
       results.sent++;

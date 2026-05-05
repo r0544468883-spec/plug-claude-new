@@ -685,9 +685,22 @@ serve(async (req) => {
                 metadata: { emails_scanned: saved, auto_updates: updatedCount },
               });
 
-              // Send summary email via user's connected account
-              const SEND_EMAIL_URL = `${SUPABASE_URL}/functions/v1/send-email-via-user`;
-              const emailHtml = `
+              // Send summary email from system sender (plug.hotjobs@gmail.com)
+              const SYSTEM_SENDER = "plug.hotjobs@gmail.com";
+              const { data: senderToken } = await supabase.from("email_oauth_tokens")
+                .select("access_token, refresh_token, expires_at, user_id")
+                .eq("provider", "gmail").eq("email_address", SYSTEM_SENDER).limit(1).maybeSingle();
+
+              if (senderToken) {
+                let senderAccessToken = senderToken.access_token;
+                if (new Date(senderToken.expires_at).getTime() - Date.now() < 5 * 60 * 1000) {
+                  senderAccessToken = await getValidAccessToken(supabase, senderToken as any);
+                }
+
+                const userEmail = token.email || (await supabase.from("profiles").select("email").eq("user_id", token.user_id).single()).data?.email;
+                if (userEmail) {
+                  const emailSubject = `PLUG — ${updatedCount} עדכוני סטטוס נמצאו במיילים שלך`;
+                  const emailHtml = `
 <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
   <div style="text-align: center; margin-bottom: 24px;">
     <h1 style="color: #1a1a2e; font-size: 22px; margin: 0;">PLUG</h1>
@@ -707,24 +720,28 @@ serve(async (req) => {
     </a>
   </div>
   <p style="text-align: center; color: #999; font-size: 11px; margin-top: 24px;">
-    PLUG — הפלטפורמה ה��כמה לחיפוש עבודה
+    PLUG — הפלטפורמה החכמה לחיפוש עבודה
   </p>
 </div>`;
-
-              await fetch(SEND_EMAIL_URL, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
-                  "apikey": SUPABASE_SERVICE_KEY,
-                },
-                body: JSON.stringify({
-                  user_id: token.user_id,
-                  to: token.email || null,
-                  subject: `PLUG — ${updatedCount} עדכוני סטטוס נמצאו במיילים שלך`,
-                  body_html: emailHtml,
-                }),
-              }).catch(err => console.error(`[sync-emails] Failed to send scan summary email:`, err));
+                  const subjectEncoded = `=?UTF-8?B?${btoa(unescape(encodeURIComponent(emailSubject)))}?=`;
+                  const rawMessage = [
+                    `From: PLUG <${SYSTEM_SENDER}>`,
+                    `To: ${userEmail}`,
+                    `Subject: ${subjectEncoded}`,
+                    `MIME-Version: 1.0`,
+                    `Content-Type: text/html; charset=UTF-8`,
+                    ``,
+                    emailHtml,
+                  ].join('\r\n');
+                  const { encode: b64url } = await import("https://deno.land/std@0.190.0/encoding/base64url.ts");
+                  const encoded = b64url(new TextEncoder().encode(rawMessage));
+                  await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${senderAccessToken}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({ raw: encoded }),
+                  }).catch(err => console.error(`[sync-emails] Gmail send failed:`, err));
+                }
+              }
             }
           } catch (notifErr) {
             console.error(`[sync-emails] Post-scan notification error:`, notifErr);
