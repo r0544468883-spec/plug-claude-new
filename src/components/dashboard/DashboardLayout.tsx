@@ -74,6 +74,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
   const isMobile = useIsMobile();
   const { zoom, cycleZoom } = useZoom();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('plug-sidebar-collapsed') === 'true');
   const [showMobileCVWarning, setShowMobileCVWarning] = useState(false);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
 
@@ -256,7 +257,8 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
 
       {/* Sidebar - Added bg-background to fix transparency issue on mobile */}
       <aside className={cn(
-        'fixed lg:sticky lg:top-0 inset-y-0 z-50 w-64 h-screen bg-background border-e border-sidebar-border flex flex-col transition-transform duration-300',
+        'fixed lg:sticky lg:top-0 inset-y-0 z-50 h-screen bg-background border-e border-sidebar-border flex flex-col transition-all duration-300',
+        sidebarCollapsed ? 'lg:w-0 lg:overflow-hidden lg:border-e-0' : 'w-64',
         direction === 'rtl' ? 'right-0' : 'left-0',
         sidebarOpen ? 'translate-x-0' : direction === 'rtl' ? 'translate-x-full lg:translate-x-0' : '-translate-x-full lg:translate-x-0'
       )}>
@@ -573,10 +575,23 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
           "bg-card/50 backdrop-blur-sm border-border"
         )}>
           <div className="flex items-center gap-2">
+            {/* Desktop sidebar toggle */}
+            <button
+              onClick={() => {
+                const next = !sidebarCollapsed;
+                setSidebarCollapsed(next);
+                localStorage.setItem('plug-sidebar-collapsed', String(next));
+              }}
+              className="hidden lg:flex p-2 -ms-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted active:bg-muted/80"
+              aria-label={sidebarCollapsed ? (isRTL ? 'פתח תפריט' : 'Open sidebar') : (isRTL ? 'סגור תפריט' : 'Close sidebar')}
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
             {/* Back button */}
             {canGoBack && (
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="icon"
                 onClick={() => navigate(-1)}
                 className="text-muted-foreground hover:text-foreground"
@@ -584,7 +599,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
                 <BackIcon className="w-5 h-5" />
               </Button>
             )}
-            
+
             {/* Mobile menu button */}
             <button
               onClick={() => setSidebarOpen(true)}
