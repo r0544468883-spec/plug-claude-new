@@ -18,7 +18,7 @@ import { NavTooltip } from '@/components/ui/nav-tooltip';
 import { VisibleToHRBanner } from '@/components/sidebar/VisibleToHRBanner';
 // PlugFloatingHint removed - notifications now in NotificationBell
 import {
-  LayoutDashboard, Users, Briefcase, FileText, MessageSquare, Settings, LogOut, Menu, X, User, Search, ArrowLeft, ArrowRight, Heart, FileEdit, Route, Sparkles, Mic, Newspaper, Video, Globe, DollarSign, Building2, Target, Calendar, LayoutGrid, Gem, ClipboardList, BarChart3, UserSearch, Monitor, Share2, History, Lightbulb, Eye, ChevronDown, ZoomIn, ZoomOut
+  LayoutDashboard, Users, Briefcase, FileText, MessageSquare, Settings, LogOut, Menu, X, User, Search, ArrowLeft, ArrowRight, Heart, FileEdit, Route, Sparkles, Mic, Newspaper, Video, Globe, DollarSign, Building2, Target, Calendar, LayoutGrid, Gem, ClipboardList, BarChart3, UserSearch, Monitor, Share2, History, Lightbulb, Eye, ChevronDown, ZoomIn, ZoomOut, Smartphone
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -73,6 +73,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
   usePresenceTracker();
   const isMobile = useIsMobile();
   const { zoom, cycleZoom } = useZoom();
+  const [mobilePreview, setMobilePreview] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('plug-sidebar-collapsed') === 'true');
   const [showMobileCVWarning, setShowMobileCVWarning] = useState(false);
@@ -631,7 +632,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
 
             {/* Desktop-only: Zoom, Vouch, Language, Logout */}
             <div className="hidden sm:flex items-center gap-4">
-              {/* Zoom control */}
+              {/* Zoom control + mobile preview */}
               <div className="flex items-center gap-1 border border-border rounded-lg px-1.5 py-0.5">
                 <button
                   onClick={() => cycleZoom('out')}
@@ -649,6 +650,18 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
                   aria-label="Zoom in"
                 >
                   <ZoomIn className="w-3.5 h-3.5" />
+                </button>
+                <div className="w-px h-4 bg-border mx-0.5" />
+                <button
+                  onClick={() => setMobilePreview(p => !p)}
+                  className={cn(
+                    "p-1 rounded transition-colors",
+                    mobilePreview ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"
+                  )}
+                  aria-label={mobilePreview ? 'Desktop view' : 'Mobile preview'}
+                  title={isRTL ? 'תצוגת מובייל' : 'Mobile preview'}
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
                 </button>
               </div>
 
@@ -724,11 +737,15 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
         {/* Page content */}
         <main id="main-content" className={cn(
           "flex-1 overflow-auto pb-20 lg:pb-6",
-          isSocialSection ? "p-0" : "p-4 md:p-6"
+          isSocialSection ? "p-0" : "p-4 md:p-6",
+          mobilePreview && "flex justify-center bg-muted/30"
         )} data-dashboard-scroll>
           <div
-            className="transition-transform duration-200 origin-top"
-            style={zoom !== 100 ? {
+            className={cn(
+              "transition-all duration-300 origin-top",
+              mobilePreview && "w-[390px] min-h-full bg-background shadow-2xl rounded-xl border border-border overflow-hidden my-4"
+            )}
+            style={!mobilePreview && zoom !== 100 ? {
               transform: `scale(${zoom / 100})`,
               transformOrigin: isRTL ? 'top right' : 'top left',
               width: `${10000 / zoom}%`,
