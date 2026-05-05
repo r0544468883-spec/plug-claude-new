@@ -59,7 +59,7 @@ const App = () => (
                   href="https://wa.me/972544468883?text=%D7%94%D7%99%D7%99%2C%20%D7%A4%D7%A0%D7%99%D7%AA%D7%99%20%D7%93%D7%A8%D7%9A%20PLUG%20%F0%9F%91%8B"
                   target="_blank"
                   rel="noreferrer"
-                  className="fixed bottom-6 left-6 z-50 flex items-center gap-2 bg-[#25D366] hover:bg-[#1ebe57] text-white pl-4 pr-5 py-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 group"
+                  className="fixed bottom-6 right-6 lg:right-[17.5rem] z-40 flex items-center gap-2 bg-[#25D366] hover:bg-[#1ebe57] text-white pl-4 pr-5 py-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 group"
                   aria-label="WhatsApp support"
                 >
                   <svg className="w-6 h-6 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
