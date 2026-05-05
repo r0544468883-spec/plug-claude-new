@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useCredits } from '@/contexts/CreditsContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Header } from '@/components/Header';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -94,22 +94,19 @@ const Credits = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container max-w-4xl mx-auto px-4 py-8 flex items-center justify-center">
+      <DashboardLayout currentSection="credits" onSectionChange={() => {}}>
+        <div className="flex items-center justify-center min-h-[50vh]">
           <div className="animate-pulse text-muted-foreground">
             {isRTL ? 'טוען...' : 'Loading...'}
           </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
-      <Header />
-      
-      <main className="container max-w-4xl mx-auto px-4 py-8">
+    <DashboardLayout currentSection="credits" onSectionChange={() => {}}>
+      <div className="container max-w-4xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
         {/* Hero Balance Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -547,8 +544,8 @@ const Credits = () => {
             </CardContent>
           </Card>
         </motion.div>
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 };
 

@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Header } from '@/components/Header';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Loader2, Plus, ClipboardList, ArrowLeft, ArrowRight, Search, Sparkles, BookOpen, Send, Info, X, Bookmark } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -354,9 +354,8 @@ export default function Assignments() {
   const favCount = templates.filter(t => favorites.has(t.id)).length;
 
   return (
-    <div className="min-h-screen bg-background" dir={isHebrew ? 'rtl' : 'ltr'}>
-      <Header />
-      <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+    <DashboardLayout currentSection="assignments" onSectionChange={() => {}}>
+      <div className="space-y-6" dir={isHebrew ? 'rtl' : 'ltr'}>
 
         {/* Page header */}
         <div className="flex items-center justify-between gap-4">
@@ -711,7 +710,7 @@ export default function Assignments() {
             ))}
           </div>
         )}
-      </main>
+      </div>
 
       <CreateAssignmentDialog
         open={showCreate}
@@ -785,6 +784,6 @@ export default function Assignments() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </DashboardLayout>
   );
 }

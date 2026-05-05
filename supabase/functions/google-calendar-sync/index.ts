@@ -159,7 +159,7 @@ serve(async (req) => {
     }).eq("user_id", user.id);
 
     return new Response(
-      JSON.stringify({ success: true, synced, total: events.length }),
+      JSON.stringify({ success: true, synced, total: allEvents.length }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (e: any) {

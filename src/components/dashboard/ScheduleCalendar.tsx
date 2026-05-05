@@ -386,6 +386,13 @@ export function ScheduleCalendar() {
         if (data) {
           setGcalConnected(true);
           setGcalLastSynced((data as any).last_synced_at);
+          // Auto-sync if last sync was more than 1 hour ago
+          const lastSync = (data as any).last_synced_at;
+          const oneHourAgo = Date.now() - 60 * 60 * 1000;
+          if (!lastSync || new Date(lastSync).getTime() < oneHourAgo) {
+            // Defer to avoid running during mount
+            setTimeout(() => handleGcalSync(), 500);
+          }
         }
       });
   }, [user?.id]);

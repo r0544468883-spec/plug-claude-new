@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCredits } from '@/contexts/CreditsContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Header } from '@/components/Header';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { FuelCard } from '@/components/credits/FuelCard';
 import { InviteFriendDialog } from '@/components/credits/InviteFriendDialog';
 import { PromoCodeInput } from '@/components/credits/PromoCodeInput';
@@ -65,10 +65,8 @@ const FuelUp = () => {
   const lowValueTasks = taskEntries.filter(([, t]) => t.credits < 50);
 
   return (
-    <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
-      <Header />
-      
-      <main className="container max-w-6xl mx-auto px-4 py-8">
+    <DashboardLayout currentSection="fuel-up" onSectionChange={() => {}}>
+      <div className="container max-w-6xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
         {/* Hero Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -256,11 +254,11 @@ const FuelUp = () => {
             </Button>
           </div>
         </motion.section>
-      </main>
+      </div>
 
       {/* Invite Friend Dialog (event-driven) */}
       <InviteFriendDialog />
-    </div>
+    </DashboardLayout>
   );
 };
 

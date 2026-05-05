@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCredits } from '@/contexts/CreditsContext';
-import { Header } from '@/components/Header';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { CreditCostBanner } from '@/components/credits/CreditCostBadge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -450,39 +450,35 @@ export default function InterviewPrep() {
 
   if (sessionStarted && practiceMode === 'voice') {
     return (
-      <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
-        <Header />
-        <main className="container max-w-4xl py-6 px-4">
+      <DashboardLayout currentSection="interview-prep" onSectionChange={() => {}}>
+        <div className="container max-w-4xl" dir={isRTL ? 'rtl' : 'ltr'}>
           <VoicePracticeSession
             questions={questions}
             onComplete={handlePracticeComplete}
             onBack={handleBackToModeSelection}
           />
-        </main>
-      </div>
+        </div>
+      </DashboardLayout>
     );
   }
 
   if (sessionStarted && practiceMode === 'video') {
     return (
-      <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
-        <Header />
-        <main className="container max-w-4xl py-6 px-4">
+      <DashboardLayout currentSection="interview-prep" onSectionChange={() => {}}>
+        <div className="container max-w-4xl" dir={isRTL ? 'rtl' : 'ltr'}>
           <VideoPracticeSession
             questions={questions}
             onComplete={handlePracticeComplete}
             onBack={handleBackToModeSelection}
           />
-        </main>
-      </div>
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
-      <Header />
-      
-      <main className="container max-w-4xl py-6 px-4 space-y-6">
+    <DashboardLayout currentSection="interview-prep" onSectionChange={() => {}}>
+      <div className="container max-w-4xl space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
         {/* Page Header */}
         <div className="space-y-2">
           <h1 className="text-3xl font-bold flex items-center gap-3">
@@ -527,7 +523,7 @@ export default function InterviewPrep() {
             {renderTipsTab()}
           </TabsContent>
         </Tabs>
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
