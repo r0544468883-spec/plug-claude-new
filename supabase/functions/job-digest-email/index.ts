@@ -9,7 +9,7 @@ const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const APP_URL              = Deno.env.get("APP_URL") || "https://www.plug-hr.com";
 
 const DIGEST_INTERVAL_HOURS = 48;
-const MIN_MATCH_SCORE = 70;
+const MIN_MATCH_SCORE = 80;
 
 // ── Keyword-based matching (title-only, bilingual) ────────────────
 
@@ -69,53 +69,51 @@ interface ScoredJob {
 
 function scoreJobByTitle(jobTitle: string, prefs: UserPrefs): { score: number; reasons: string[] } {
   const titleLower = jobTitle.toLowerCase();
-  let totalPoints = 0;
-  let earnedPoints = 0;
   const reasons: string[] = [];
 
-  // Field matching (40 weight)
-  if (prefs.preferred_fields.length > 0) {
-    totalPoints += 40;
-    for (const field of prefs.preferred_fields) {
-      const keywords = FIELD_KEYWORDS[field] || [field.replace(/-/g, ' ')];
-      if (keywords.some(kw => titleLower.includes(kw.toLowerCase()))) {
-        earnedPoints += 40;
-        reasons.push(`תחום: ${field}`);
-        break;
-      }
-    }
+  // Field matching → quality 0-1.0
+  let fieldQuality = 0;
+  const matchedFields: string[] = [];
+  for (const field of prefs.preferred_fields) {
+    const keywords = FIELD_KEYWORDS[field] || [field.replace(/-/g, ' ')];
+    const matchCount = keywords.filter(kw => titleLower.includes(kw.toLowerCase())).length;
+    if (matchCount >= 3) { fieldQuality = Math.max(fieldQuality, 1.0); matchedFields.push(field); }
+    else if (matchCount === 2) { fieldQuality = Math.max(fieldQuality, 0.95); matchedFields.push(field); }
+    else if (matchCount === 1) { fieldQuality = Math.max(fieldQuality, 0.88); matchedFields.push(field); }
   }
 
-  // Role matching (40 weight)
-  if (prefs.preferred_roles.length > 0) {
-    totalPoints += 40;
-    for (const role of prefs.preferred_roles) {
-      const keywords = ROLE_KEYWORDS[role] || [role.replace(/-/g, ' ')];
-      if (keywords.some(kw => titleLower.includes(kw.toLowerCase()))) {
-        earnedPoints += 40;
-        reasons.push(`תפקיד: ${role}`);
-        break;
-      }
-    }
+  // Role matching → quality 0-1.0
+  let roleQuality = 0;
+  const matchedRoles: string[] = [];
+  for (const role of prefs.preferred_roles) {
+    const keywords = ROLE_KEYWORDS[role] || [role.replace(/-/g, ' ')];
+    const matchCount = keywords.filter(kw => titleLower.includes(kw.toLowerCase())).length;
+    if (matchCount >= 3) { roleQuality = Math.max(roleQuality, 1.0); matchedRoles.push(role); }
+    else if (matchCount === 2) { roleQuality = Math.max(roleQuality, 0.95); matchedRoles.push(role); }
+    else if (matchCount === 1) { roleQuality = Math.max(roleQuality, 0.9); matchedRoles.push(role); }
   }
 
-  // Skills matching (20 weight) — check if job title mentions any skill
-  if (prefs.skills.length > 0) {
-    totalPoints += 20;
-    const matchedSkills: string[] = [];
-    for (const skill of prefs.skills) {
-      if (skill.length >= 3 && titleLower.includes(skill.toLowerCase())) {
-        matchedSkills.push(skill);
-      }
-    }
-    if (matchedSkills.length > 0) {
-      earnedPoints += 20;
-      reasons.push(`כישורים: ${matchedSkills.join(', ')}`);
+  // Skills bonus (0-10 points)
+  const matchedSkills: string[] = [];
+  for (const skill of prefs.skills) {
+    if (skill.length >= 3 && titleLower.includes(skill.toLowerCase())) {
+      matchedSkills.push(skill);
     }
   }
+  const skillBonus = Math.min(10, matchedSkills.length * 5);
 
-  if (totalPoints === 0) return { score: 0, reasons: [] };
-  return { score: Math.round((earnedPoints / totalPoints) * 100), reasons };
+  // Build reasons
+  if (matchedFields.length > 0) reasons.push(`תחום: ${matchedFields.join(', ')}`);
+  if (matchedRoles.length > 0) reasons.push(`תפקיד: ${matchedRoles.join(', ')}`);
+  if (matchedSkills.length > 0) reasons.push(`כישורים: ${matchedSkills.join(', ')}`);
+
+  // Score calculation: field(50) * quality + role(50) * quality + skillBonus
+  // Requires BOTH field AND role to match for 80%+
+  if (fieldQuality === 0 || roleQuality === 0) return { score: 0, reasons: [] };
+
+  const score = Math.round(fieldQuality * 45 + roleQuality * 45 + skillBonus);
+  if (score < MIN_MATCH_SCORE) return { score, reasons: [] };
+  return { score: Math.min(100, score), reasons };
 }
 
 // ── Gmail helpers ─────────────────────────────────────────────────
@@ -163,15 +161,15 @@ function buildEmailHtml(jobs: DigestJob[], isHe: boolean): string {
   }).join('');
 
   const headline = isHe
-    ? `🎯 ${jobs.length} משרות שהכי מתאימות לך`
-    : `🎯 ${jobs.length} top matches for you`;
+    ? `🎯 מצאתי לך ${jobs.length} משרות שמתאימות לך במעל 80%`
+    : `🎯 Found ${jobs.length} jobs with 80%+ match for you`;
   const subtitle = isHe
-    ? 'המשרות האלה נבחרו במיוחד בשבילך על סמך הפרופיל, הכישורים והניסיון שלך'
-    : 'These jobs were hand-picked for you based on your profile, skills, and experience';
-  const ctaText = isHe ? 'צפה בכל ההתאמות שלך' : 'View all your matches';
+    ? 'מומלץ להיכנס לפלטפורמה לפירוט מלא, סטטוסים, והגשה מהירה'
+    : 'Log in to see full details, track statuses, and apply quickly';
+  const ctaText = isHe ? 'היכנס לפירוט מלא' : 'View full details';
   const footerText = isHe
-    ? 'קיבלת מייל זה כי יש לך חשבון PLUG פעיל. רק משרות מעל 70% התאמה נכללות.'
-    : 'You received this email because you have an active PLUG account. Only 70%+ matches are included.';
+    ? 'קיבלת מייל זה כי יש לך חשבון PLUG פעיל. רק משרות מעל 80% התאמה נכללות.'
+    : 'You received this email because you have an active PLUG account. Only 80%+ matches are included.';
 
   return `<!DOCTYPE html>
 <html dir="${isHe ? 'rtl' : 'ltr'}" lang="${isHe ? 'he' : 'en'}">
@@ -346,8 +344,8 @@ serve(async (req) => {
       }));
 
       const subject = isHe
-        ? `🎯 ${digestJobs.length} משרות שהכי מתאימות לך — PLUG`
-        : `🎯 ${digestJobs.length} top matches for you — PLUG`;
+        ? `PLUG — מצאתי לך ${digestJobs.length} משרות שמתאימות לך במעל 80%`
+        : `PLUG — Found ${digestJobs.length} jobs with 80%+ match for you`;
 
       await sendGmailDigest(accessToken, token.email_address, subject, buildEmailHtml(digestJobs, isHe));
       await supabase.from("profiles").update({ last_digest_sent_at: now.toISOString() }).eq("user_id", userId);
