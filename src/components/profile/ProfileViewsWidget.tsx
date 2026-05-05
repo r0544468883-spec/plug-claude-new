@@ -76,7 +76,7 @@ export function ProfileViewsWidget() {
               <Eye className="w-3 h-3 text-blue-400" />
               <span className="text-sm font-bold">{analytics?.weekViews || 0}</span>
             </div>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground">
               {isRTL ? 'צפיות השבוע' : 'This week'}
             </p>
           </div>
@@ -85,7 +85,7 @@ export function ProfileViewsWidget() {
               <Download className="w-3 h-3 text-emerald-400" />
               <span className="text-sm font-bold">{analytics?.totalDownloads || 0}</span>
             </div>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground">
               {isRTL ? 'הורדות קו"ח' : 'CV downloads'}
             </p>
           </div>

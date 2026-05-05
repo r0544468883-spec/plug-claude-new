@@ -36,7 +36,7 @@ function SectionHeader({
 }) {
   return (
     <div className="flex items-center justify-between mb-3">
-      <h3 className={cn('text-sm font-semibold text-foreground flex items-center gap-2')}>
+      <h3 className={cn('text-[13px] sm:text-sm font-semibold text-foreground flex items-center gap-2')}>
         <Icon className={cn('w-4 h-4', color)} />
         {title}
       </h3>
@@ -80,7 +80,7 @@ function StageBadge({ stage, isRTL }: { stage: string; isRTL: boolean }) {
   const style = STAGE_STYLES[stage] || 'bg-muted text-muted-foreground';
   const label = STAGE_LABELS[stage]?.[isRTL ? 'he' : 'en'] || stage;
   return (
-    <span className={cn('inline-block text-[10px] font-bold uppercase px-2 py-0.5 rounded-full mt-1', style)}>
+    <span className={cn('inline-block text-[11px] font-bold uppercase px-2 py-0.5 rounded-full mt-1', style)}>
       {label}
     </span>
   );
@@ -269,7 +269,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
       onsite: 'bg-cyan-500/15 text-cyan-400',
     };
     return (
-      <span className={cn('text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full shrink-0', colors[type] || 'bg-muted text-muted-foreground')}>
+      <span className={cn('text-[11px] font-bold uppercase px-1.5 py-0.5 rounded-full shrink-0', colors[type] || 'bg-muted text-muted-foreground')}>
         {type?.toUpperCase()}
       </span>
     );
@@ -287,7 +287,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
       hard:   isRTL ? 'קשה'    : 'Hard',
     };
     return (
-      <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-full', colors[diff] || 'bg-muted text-muted-foreground')}>
+      <span className={cn('text-[11px] font-bold px-1.5 py-0.5 rounded-full', colors[diff] || 'bg-muted text-muted-foreground')}>
         {labels[diff] || diff}
       </span>
     );
@@ -303,7 +303,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-bold text-foreground">{greeting}</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-foreground">{greeting}</h1>
               {profileCompletion < 100 && (
                 <div className="flex items-center gap-2 mt-2">
                   <Progress value={profileCompletion} className="h-1.5 w-28" />
@@ -330,7 +330,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
               ].map((s, i) => (
                 <div key={i} className={cn('px-3 py-1.5 rounded-lg text-center min-w-[56px] cursor-pointer', s.cls)} onClick={() => onNavigate('my-stats')}>
                   <p className="text-lg font-bold leading-none">{s.value}</p>
-                  <p className="text-[10px] mt-0.5 opacity-80 whitespace-nowrap">{s.label}</p>
+                  <p className="text-[11px] sm:text-[10px] mt-0.5 opacity-80 whitespace-nowrap">{s.label}</p>
                 </div>
               ))}
             </div>
@@ -360,11 +360,11 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-[#00FF9D]" />
                     <span className="text-sm font-bold text-[#00FF9D]">{credits.daily_fuel}</span>
-                    <span className="text-[10px] text-muted-foreground">{isRTL ? 'יומי' : 'daily'}</span>
+                    <span className="text-[11px] text-muted-foreground">{isRTL ? 'יומי' : 'daily'}</span>
                     <span className="text-muted-foreground/30 mx-1">|</span>
                     <Gem className="w-4 h-4 text-[#B794F4]" />
                     <span className="text-sm font-bold text-[#B794F4]">{credits.permanent_fuel}</span>
-                    <span className="text-[10px] text-muted-foreground">{isRTL ? 'קבוע' : 'perm'}</span>
+                    <span className="text-[11px] text-muted-foreground">{isRTL ? 'קבוע' : 'perm'}</span>
                   </div>
 
                   <div className="w-px h-6 bg-border hidden sm:block" />
@@ -377,7 +377,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
                     </span>
                     <div className="flex-1 flex items-center gap-2">
                       <Progress value={xpPct} className="h-1.5 flex-1 max-w-[120px]" />
-                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                      <span className="text-[11px] text-muted-foreground whitespace-nowrap">
                         {xp} XP
                         {nextTier && ` / ${nextMinXP}`}
                       </span>
@@ -394,6 +394,12 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
           </CardContent>
         </Card>
       )}
+
+      {/* ── Profile Views + Extension Agent ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <ProfileViewsWidget />
+        <ExtensionAgentPanel />
+      </div>
 
       {/* ── ROW 1: Jobs (wide) + Recent Applications ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -425,11 +431,11 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
                     onClick={() => onNavigate('job-search')}
                   >
                     <div className="flex items-start justify-between gap-1 mb-1">
-                      <p className="text-[11px] text-muted-foreground truncate">{job.company_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{job.company_name}</p>
                       {job.job_type && jobTypeBadge(job.job_type)}
                     </div>
                     <p className="text-sm font-semibold text-foreground truncate">{job.title}</p>
-                    {job.location && <p className="text-[10px] text-muted-foreground mt-1 truncate">{job.location}</p>}
+                    {job.location && <p className="text-[11px] text-muted-foreground mt-1 truncate">{job.location}</p>}
                   </div>
                 ))}
               </div>
@@ -461,7 +467,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
                     className="p-2.5 rounded-lg border border-border hover:border-violet-500/30 hover:bg-violet-500/5 cursor-pointer transition-all"
                     onClick={() => onNavigate('applications')}
                   >
-                    <p className="text-[11px] text-muted-foreground truncate">{app.jobs?.company_name || ''}</p>
+                    <p className="text-xs text-muted-foreground truncate">{app.jobs?.company_name || ''}</p>
                     <p className="text-sm font-medium text-foreground truncate">{app.jobs?.title || (isRTL ? 'משרה' : 'Job')}</p>
                     <StageBadge stage={app.current_stage || 'applied'} isRTL={isRTL} />
                   </div>
@@ -556,9 +562,9 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">{app.jobs?.title || (isRTL ? 'ראיון' : 'Interview')}</p>
-                      <p className="text-[11px] text-muted-foreground truncate">{app.jobs?.company_name || ''}</p>
+                      <p className="text-xs text-muted-foreground truncate">{app.jobs?.company_name || ''}</p>
                     </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 font-bold shrink-0">
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 font-bold shrink-0">
                       {isRTL ? 'ראיון' : 'Interview'}
                     </span>
                   </div>
@@ -597,7 +603,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
               ].map((s, i) => (
                 <div key={i} className={cn('p-2.5 rounded-lg text-center cursor-pointer', s.cls)} onClick={() => onNavigate('my-stats')}>
                   <p className="text-xl font-bold leading-none">{s.value}</p>
-                  <p className="text-[10px] mt-1 opacity-80">{s.label}</p>
+                  <p className="text-[11px] mt-1 opacity-80">{s.label}</p>
                 </div>
               ))}
             </div>
@@ -682,22 +688,16 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
               <div className="flex gap-2">
                 <div className="flex-1 p-2 rounded-lg bg-emerald-500/10 text-center">
                   <p className="text-sm font-bold text-emerald-400">{credits?.daily_fuel || 0}</p>
-                  <p className="text-[10px] text-muted-foreground">{isRTL ? 'יומי' : 'Daily'}</p>
+                  <p className="text-[11px] text-muted-foreground">{isRTL ? 'יומי' : 'Daily'}</p>
                 </div>
                 <div className="flex-1 p-2 rounded-lg bg-violet-500/10 text-center">
                   <p className="text-sm font-bold text-violet-400">{credits?.permanent_fuel || 0}</p>
-                  <p className="text-[10px] text-muted-foreground">{isRTL ? 'קבוע' : 'Perm'}</p>
+                  <p className="text-[11px] text-muted-foreground">{isRTL ? 'קבוע' : 'Perm'}</p>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
-      </div>
-
-      {/* ── ROW 4: Extension Agent + Profile Views ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <ExtensionAgentPanel />
-        <ProfileViewsWidget />
       </div>
 
     </div>
