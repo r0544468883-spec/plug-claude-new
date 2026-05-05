@@ -659,6 +659,78 @@ serve(async (req) => {
         debugInfo.failed = failed;
         console.log(`[sync-emails] Results: saved=${saved}, skipped=${skipped}, failed=${failed}`);
 
+        // ─── Post-scan notification: count auto-updated applications ───
+        if (saved > 0) {
+          try {
+            // Count how many applications were auto-updated in this scan window
+            const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+            const { data: updatedEmails } = await supabase
+              .from("application_emails")
+              .select("id")
+              .eq("user_id", token.user_id)
+              .eq("auto_updated", true)
+              .gte("created_at", fiveMinAgo);
+
+            const updatedCount = updatedEmails?.length || 0;
+            console.log(`[sync-emails] Post-scan: ${updatedCount} application(s) auto-updated for user ${token.user_id}`);
+
+            if (updatedCount > 0) {
+              // Insert summary notification
+              await supabase.from("notifications").insert({
+                user_id: token.user_id,
+                type: "scan_summary",
+                title: `PLUG סרק את המייל שלך`,
+                message: `נמצאו ${updatedCount} עדכוני סטטוס אוטומטיים למועמדויות שלך. מומלץ להיכנס לפלטפורמה ��לבדוק.`,
+                is_read: false,
+                metadata: { emails_scanned: saved, auto_updates: updatedCount },
+              });
+
+              // Send summary email via user's connected account
+              const SEND_EMAIL_URL = `${SUPABASE_URL}/functions/v1/send-email-via-user`;
+              const emailHtml = `
+<div dir="rtl" style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
+  <div style="text-align: center; margin-bottom: 24px;">
+    <h1 style="color: #1a1a2e; font-size: 22px; margin: 0;">PLUG</h1>
+    <p style="color: #666; font-size: 14px; margin-top: 4px;">סריקת מיילים הושלמה</p>
+  </div>
+  <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
+    <p style="font-size: 16px; color: #1a1a2e; margin: 0 0 8px 0; font-weight: bold;">
+      נמצאו ${updatedCount} עדכונים אוטומטיים
+    </p>
+    <p style="font-size: 14px; color: #555; margin: 0;">
+      סרקנו ${saved} מיילים חדשים ועדכנו אוטומטית ${updatedCount} מועמדויות בפלטפורמה.
+    </p>
+  </div>
+  <div style="text-align: center; margin-top: 20px;">
+    <a href="https://www.plug-hr.com" style="display: inline-block; background: #00ff8c; color: #1a1a2e; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px;">
+      כנס לפלטפורמה לצפות בעדכונים
+    </a>
+  </div>
+  <p style="text-align: center; color: #999; font-size: 11px; margin-top: 24px;">
+    PLUG — הפלטפורמה ה��כמה לחיפוש עבודה
+  </p>
+</div>`;
+
+              await fetch(SEND_EMAIL_URL, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
+                  "apikey": SUPABASE_SERVICE_KEY,
+                },
+                body: JSON.stringify({
+                  user_id: token.user_id,
+                  to: token.email || null,
+                  subject: `PLUG — ${updatedCount} עדכוני סטטוס נמצאו במיילים שלך`,
+                  body_html: emailHtml,
+                }),
+              }).catch(err => console.error(`[sync-emails] Failed to send scan summary email:`, err));
+            }
+          } catch (notifErr) {
+            console.error(`[sync-emails] Post-scan notification error:`, notifErr);
+          }
+        }
+
         // Update sync state
         await supabase
           .from("email_sync_state")

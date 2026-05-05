@@ -117,6 +117,57 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Server-to-server: notify action (service role only) — push to any user
+    if (action === "notify") {
+      const authHeader = req.headers.get('authorization');
+      const token = authHeader?.replace('Bearer ', '') || '';
+      // Accept service role key
+      const isService = token === supabaseServiceKey || (() => {
+        try {
+          if (!token.startsWith("eyJ")) return false;
+          const parts = token.split(".");
+          if (parts.length !== 3) return false;
+          let b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+          while (b64.length % 4 !== 0) b64 += "=";
+          return atob(b64).includes('"service_role"');
+        } catch { return false; }
+      })();
+
+      if (!isService) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized — service role required' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { user_id, title, body, type, metadata, url: notifUrl } = await req.json();
+      if (!user_id || !title || !body) {
+        return new Response(
+          JSON.stringify({ error: 'user_id, title, and body are required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+      // Insert notification in DB
+      await supabaseAdmin.from("notifications").insert({
+        user_id,
+        title,
+        message: body,
+        type: type || "general",
+        metadata: metadata || {},
+        is_read: false,
+      });
+
+      console.log(`[push-notifications] notify: sent "${title}" to user ${user_id}`);
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     // All other actions require authentication
     const authHeader = req.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

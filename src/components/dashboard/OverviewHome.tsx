@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -11,7 +11,7 @@ import { FeedCarouselWidget } from '@/components/feed/FeedCarouselWidget';
 import { ExtensionAgentPanel } from '@/components/extension/ExtensionAgentPanel';
 import { ProfileViewsWidget } from '@/components/profile/ProfileViewsWidget';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Briefcase, Search, FileEdit, Mic,
   Calendar, CheckCircle2, Circle,
@@ -163,6 +163,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
   });
 
   // ── Latest jobs ─────────────────────────────────────────────────────────────
+  const queryClient = useQueryClient();
   const { data: latestJobs } = useQuery({
     queryKey: ['overview-latest-jobs'],
     queryFn: async () => {
@@ -174,6 +175,45 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
       return data || [];
     },
   });
+
+  // ── Live feed: realtime new jobs + new posts counter ───────────────────────
+  const [newJobsCount, setNewJobsCount] = useState(0);
+  const [newPostsCount, setNewPostsCount] = useState(0);
+
+  useEffect(() => {
+    const jobChannel = supabase
+      .channel('dashboard-new-jobs')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'jobs' },
+        () => { setNewJobsCount(prev => prev + 1); }
+      )
+      .subscribe();
+
+    const postChannel = supabase
+      .channel('dashboard-new-posts')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'feed_posts', filter: 'is_published=eq.true' },
+        () => { setNewPostsCount(prev => prev + 1); }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(jobChannel);
+      supabase.removeChannel(postChannel);
+    };
+  }, []);
+
+  const handleRefreshJobs = useCallback(() => {
+    setNewJobsCount(0);
+    queryClient.invalidateQueries({ queryKey: ['overview-latest-jobs'] });
+  }, [queryClient]);
+
+  const handleRefreshPosts = useCallback(() => {
+    setNewPostsCount(0);
+    queryClient.invalidateQueries({ queryKey: ['feed-posts-real'] });
+  }, [queryClient]);
 
   // ── Assignments preview ─────────────────────────────────────────────────────
   const { data: assignments } = useQuery({
@@ -367,6 +407,15 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
               actionLabel={isRTL ? 'כל המשרות ←' : '→ All jobs'}
               onAction={() => onNavigate('job-search')}
             />
+            {newJobsCount > 0 && (
+              <button
+                onClick={handleRefreshJobs}
+                className="w-full mb-3 py-2 px-3 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-bold flex items-center justify-center gap-2 hover:bg-blue-500/20 transition-colors animate-pulse"
+              >
+                <ArrowUpRight className="w-3.5 h-3.5" />
+                {isRTL ? `${newJobsCount} משרות חדשות נוספו — לחץ לרענון` : `${newJobsCount} new jobs added — click to refresh`}
+              </button>
+            )}
             {latestJobs?.length ? (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {latestJobs.map((job: any) => (
@@ -442,6 +491,15 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
               actionLabel={isRTL ? 'לכל הפיד ←' : '→ Full feed'}
               onAction={() => onNavigate('feed')}
             />
+            {newPostsCount > 0 && (
+              <button
+                onClick={handleRefreshPosts}
+                className="w-full mb-3 py-2 px-3 rounded-lg bg-pink-500/10 border border-pink-500/30 text-pink-400 text-xs font-bold flex items-center justify-center gap-2 hover:bg-pink-500/20 transition-colors animate-pulse"
+              >
+                <Newspaper className="w-3.5 h-3.5" />
+                {isRTL ? `${newPostsCount} פוסטים חדשים — לחץ לרענון` : `${newPostsCount} new posts — click to refresh`}
+              </button>
+            )}
             <FeedCarouselWidget onNavigateToFeed={() => onNavigate('feed')} />
           </CardContent>
         </Card>
