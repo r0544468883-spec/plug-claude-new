@@ -296,7 +296,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
   // ────────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-4" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="w-full space-y-4" dir={isRTL ? 'rtl' : 'ltr'}>
 
       {/* ── HERO: Greeting + Profile + 4 stat chips ── */}
       <Card className="bg-card border-border">
@@ -396,16 +396,20 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
       )}
 
       {/* ── Profile Views + Extension Agent ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <ProfileViewsWidget />
-        <ExtensionAgentPanel />
+      <div className="flex flex-wrap gap-4">
+        <div className="flex-1 min-w-[280px]">
+          <ProfileViewsWidget />
+        </div>
+        <div className="flex-1 min-w-[280px]">
+          <ExtensionAgentPanel />
+        </div>
       </div>
 
       {/* ── ROW 1: Jobs (wide) + Recent Applications ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="flex flex-wrap gap-4">
 
-        {/* Jobs preview — 2 cols wide */}
-        <Card className="bg-card border-border lg:col-span-2 border-t-2 border-t-blue-500/50">
+        {/* Jobs preview — takes more space */}
+        <Card className="bg-card border-border border-t-2 border-t-blue-500/50 flex-[2] min-w-[320px]">
           <CardContent className="p-4">
             <SectionHeader
               icon={Search} color="text-blue-400"
@@ -451,7 +455,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
         </Card>
 
         {/* Recent Applications */}
-        <Card className="bg-card border-border border-t-2 border-t-violet-500/50">
+        <Card className="bg-card border-border border-t-2 border-t-violet-500/50 flex-1 min-w-[280px]">
           <CardContent className="p-4">
             <SectionHeader
               icon={Briefcase} color="text-violet-400"
@@ -486,10 +490,10 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
       </div>
 
       {/* ── ROW 2: Feed + Daily Tasks + Schedule ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="flex flex-wrap gap-4">
 
         {/* Feed preview */}
-        <Card className="bg-card border-border border-t-2 border-t-pink-500/50">
+        <Card className="bg-card border-border border-t-2 border-t-pink-500/50 flex-1 min-w-[280px]">
           <CardContent className="p-4">
             <SectionHeader
               icon={Newspaper} color="text-pink-400"
@@ -511,7 +515,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
         </Card>
 
         {/* Daily Tasks */}
-        <Card className="bg-card border-border border-t-2 border-t-emerald-500/50">
+        <Card className="bg-card border-border border-t-2 border-t-emerald-500/50 flex-1 min-w-[280px]">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -541,7 +545,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
         </Card>
 
         {/* Schedule — apps in interview stage */}
-        <Card className="bg-card border-border border-t-2 border-t-amber-500/50">
+        <Card className="bg-card border-border border-t-2 border-t-amber-500/50 flex-1 min-w-[280px]">
           <CardContent className="p-4">
             <SectionHeader
               icon={Calendar} color="text-amber-400"
@@ -583,10 +587,10 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
       </div>
 
       {/* ── ROW 3: Stats + Assignments + CV & Credits ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="flex flex-wrap gap-4">
 
         {/* Stats */}
-        <Card className="bg-card border-border border-t-2 border-t-cyan-500/50">
+        <Card className="bg-card border-border border-t-2 border-t-cyan-500/50 flex-1 min-w-[280px]">
           <CardContent className="p-4">
             <SectionHeader
               icon={BarChart3} color="text-cyan-400"
@@ -611,7 +615,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
         </Card>
 
         {/* Assignments */}
-        <Card className="bg-card border-border border-t-2 border-t-purple-500/50">
+        <Card className="bg-card border-border border-t-2 border-t-purple-500/50 flex-1 min-w-[280px]">
           <CardContent className="p-4">
             <SectionHeader
               icon={ClipboardList} color="text-purple-400"
@@ -647,7 +651,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
         </Card>
 
         {/* CV + Credits — combined card */}
-        <Card className="bg-card border-border border-t-2 border-t-rose-500/50">
+        <Card className="bg-card border-border border-t-2 border-t-rose-500/50 flex-1 min-w-[280px]">
           <CardContent className="p-4 space-y-4">
             {/* CV */}
             <div>
