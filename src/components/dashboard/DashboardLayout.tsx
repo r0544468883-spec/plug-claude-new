@@ -18,11 +18,33 @@ import { NavTooltip } from '@/components/ui/nav-tooltip';
 import { VisibleToHRBanner } from '@/components/sidebar/VisibleToHRBanner';
 // PlugFloatingHint removed - notifications now in NotificationBell
 import {
-  LayoutDashboard, Users, Briefcase, FileText, MessageSquare, Settings, LogOut, Menu, X, User, Search, ArrowLeft, ArrowRight, Heart, FileEdit, Route, Sparkles, Mic, Newspaper, Video, Globe, DollarSign, Building2, Target, Calendar, LayoutGrid, Gem, ClipboardList, BarChart3, UserSearch, Monitor, Share2, History, Lightbulb, Eye, ChevronDown
+  LayoutDashboard, Users, Briefcase, FileText, MessageSquare, Settings, LogOut, Menu, X, User, Search, ArrowLeft, ArrowRight, Heart, FileEdit, Route, Sparkles, Mic, Newspaper, Video, Globe, DollarSign, Building2, Target, Calendar, LayoutGrid, Gem, ClipboardList, BarChart3, UserSearch, Monitor, Share2, History, Lightbulb, Eye, ChevronDown, ZoomIn, ZoomOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+
+// ── Zoom control ─────────────────────────────────────────────────────────────
+const ZOOM_LEVELS = [100, 125, 150, 180] as const;
+type ZoomLevel = typeof ZOOM_LEVELS[number];
+
+function useZoom() {
+  const [zoom, setZoom] = useState<ZoomLevel>(() => {
+    const saved = localStorage.getItem('plug-zoom-level');
+    return (saved && ZOOM_LEVELS.includes(Number(saved) as ZoomLevel)) ? Number(saved) as ZoomLevel : 100;
+  });
+
+  const cycleZoom = (direction: 'in' | 'out') => {
+    const idx = ZOOM_LEVELS.indexOf(zoom);
+    const next = direction === 'in'
+      ? ZOOM_LEVELS[Math.min(idx + 1, ZOOM_LEVELS.length - 1)]
+      : ZOOM_LEVELS[Math.max(idx - 1, 0)];
+    setZoom(next);
+    localStorage.setItem('plug-zoom-level', String(next));
+  };
+
+  return { zoom, cycleZoom };
+}
 
 export type DashboardSection = 'overview' | 'profile-docs' | 'profile-settings' | 'applications' | 'candidates' | 'jobs' | 'job-search' | 'chat' | 'settings' | 'messages' | 'post-job' | 'saved-jobs' | 'cv-builder' | 'interview-prep' | 'feed' | 'create-feed-post' | 'create-webinar' | 'communities' | 'create-community' | 'community-view' | 'content-dashboard' | 'negotiation-sandbox' | 'content-hub' | 'b2b-suite' | 'recruiter-profile' | 'clients' | 'client-profile' | 'missions' | 'create-mission' | 'my-missions' | 'schedule' | 'hr-tools' | 'credits' | 'referrals' | 'analyses' | 'favorite-companies' | 'assignments' | 'candidate-search' | 'analytics' | 'my-stats' | 'vouches' | 'network' | 'job-swipe' | 'my-matches' | 'my-secrets' | 'ideas' | 'my-company' | 'companies';
 
@@ -50,6 +72,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
   const isRTL = language === 'he';
   usePresenceTracker();
   const isMobile = useIsMobile();
+  const { zoom, cycleZoom } = useZoom();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showMobileCVWarning, setShowMobileCVWarning] = useState(false);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
@@ -591,8 +614,29 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
               </span>
             </NavTooltip>
 
-            {/* Desktop-only: Vouch, Language, Logout (available in sidebar on mobile) */}
+            {/* Desktop-only: Zoom, Vouch, Language, Logout */}
             <div className="hidden sm:flex items-center gap-4">
+              {/* Zoom control */}
+              <div className="flex items-center gap-1 border border-border rounded-lg px-1.5 py-0.5">
+                <button
+                  onClick={() => cycleZoom('out')}
+                  disabled={zoom === ZOOM_LEVELS[0]}
+                  className="p-1 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                  aria-label="Zoom out"
+                >
+                  <ZoomOut className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-[11px] font-bold text-muted-foreground min-w-[36px] text-center">{zoom}%</span>
+                <button
+                  onClick={() => cycleZoom('in')}
+                  disabled={zoom === ZOOM_LEVELS[ZOOM_LEVELS.length - 1]}
+                  className="p-1 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                  aria-label="Zoom in"
+                >
+                  <ZoomIn className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
               <NavTooltip content={direction === 'rtl' ? 'תן המלצה (Vouch) - המלץ על אנשי קשר מקצועיים' : 'Give Vouch - Recommend professional contacts'} side="bottom">
                 <span>
                   <GiveVouchDialog
@@ -667,7 +711,16 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
           "flex-1 overflow-auto pb-20 lg:pb-6",
           isSocialSection ? "p-0" : "p-4 md:p-6"
         )} data-dashboard-scroll>
-          {children}
+          <div
+            className="transition-transform duration-200 origin-top"
+            style={zoom !== 100 ? {
+              transform: `scale(${zoom / 100})`,
+              transformOrigin: isRTL ? 'top right' : 'top left',
+              width: `${10000 / zoom}%`,
+            } : undefined}
+          >
+            {children}
+          </div>
         </main>
 
       </div>
