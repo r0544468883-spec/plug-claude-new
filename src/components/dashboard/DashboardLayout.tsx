@@ -736,14 +736,14 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
 
         {/* Page content */}
         <main id="main-content" className={cn(
-          "flex-1 overflow-auto pb-20 lg:pb-6",
-          isSocialSection ? "p-0" : "p-4 md:p-6",
-          mobilePreview && "flex justify-center bg-muted/30"
+          "flex-1 pb-20 lg:pb-6",
+          mobilePreview ? "overflow-hidden flex justify-center items-start bg-muted/30 p-4" : "overflow-auto",
+          !mobilePreview && (isSocialSection ? "p-0" : "p-4 md:p-6")
         )} data-dashboard-scroll>
           <div
             className={cn(
               "transition-all duration-300 origin-top",
-              mobilePreview && "w-[390px] min-h-full bg-background shadow-2xl rounded-xl border border-border overflow-hidden my-4"
+              mobilePreview && "w-[390px] h-[calc(100vh-8rem)] bg-background shadow-2xl rounded-xl border border-border overflow-auto"
             )}
             style={!mobilePreview && zoom !== 100 ? {
               transform: `scale(${zoom / 100})`,
