@@ -71,6 +71,7 @@ import Ideas from "./pages/Ideas";
 import CompanyProfile from "./pages/CompanyProfile";
 import CompanyDashboard from "./pages/CompanyDashboard";
 import Companies from "./pages/Companies";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -121,6 +122,7 @@ const App = () => (
                   <Route path="/companies" element={<Companies />} />
                   <Route path="/company/:companyId" element={<CompanyProfile />} />
                   <Route path="/company/:companyId/dashboard" element={<CompanyDashboard />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

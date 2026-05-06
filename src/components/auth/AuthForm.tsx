@@ -27,9 +27,11 @@ export function AuthForm({ selectedRole, onBack, onSuccess, onRegistration }: Au
   const { signUp, signIn } = useAuth();
 
   const [isLogin, setIsLogin] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [resetSent, setResetSent] = useState(false);
   const [visibleToHR, setVisibleToHR] = useState(true);
   const [consentTerms, setConsentTerms] = useState(false);
   const [consentPrivacy, setConsentPrivacy] = useState(false);
@@ -59,6 +61,28 @@ export function AuthForm({ selectedRole, onBack, onSuccess, onRegistration }: Au
       setShowReferral(true);
     }
   }, []);
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.email) return;
+    setIsLoading(true);
+    setLoginError(null);
+    try {
+      const redirectUrl = `${window.location.origin}/reset-password`;
+      const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+        redirectTo: redirectUrl,
+      });
+      if (error) {
+        setLoginError(isHebrew ? 'שגיאה בשליחת המייל. נסה שוב.' : 'Error sending email. Try again.');
+      } else {
+        setResetSent(true);
+      }
+    } catch {
+      setLoginError(isHebrew ? 'שגיאה בשליחת המייל' : 'Error sending email');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,31 +166,101 @@ export function AuthForm({ selectedRole, onBack, onSuccess, onRegistration }: Au
               <PlugLogo size="lg" />
             </div>
             <h1 className="text-2xl font-bold mb-2">
-              {isLogin ? t('auth.welcome_back') : t('auth.create_account_title')}
+              {isForgotPassword
+                ? (isHebrew ? 'איפוס סיסמה' : 'Reset Password')
+                : isLogin ? t('auth.welcome_back') : t('auth.create_account_title')}
             </h1>
-            {!isLogin && (
+            {isForgotPassword ? (
+              <p className="text-muted-foreground">
+                {isHebrew ? 'נשלח לך קישור לאיפוס הסיסמה למייל' : "We'll send you a password reset link"}
+              </p>
+            ) : !isLogin && (
               <p className="text-muted-foreground">
                 {t('auth.create_account_subtitle')}
               </p>
             )}
           </div>
 
-          {/* Toggle login/register - Moved to TOP for easier access */}
-          <div className="mb-6 text-center p-3 rounded-lg bg-muted/50 border border-border">
-            <p className="text-muted-foreground">
-              {isLogin ? t('auth.no_account') : t('auth.have_account')}{' '}
+          {/* Forgot password — success message */}
+          {isForgotPassword && resetSent && (
+            <div className="mb-6 p-4 rounded-lg bg-primary/10 border border-primary/30 text-center space-y-2">
+              <p className="text-sm font-medium">
+                {isHebrew ? 'נשלח! בדוק את תיבת המייל שלך' : 'Sent! Check your email inbox'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {isHebrew ? 'לא קיבלת? בדוק בספאם או נסה שוב' : "Didn't receive it? Check spam or try again"}
+              </p>
               <button
                 type="button"
-                onClick={() => { setIsLogin(!isLogin); setLoginError(null); }}
-                className="text-primary hover:underline font-semibold"
+                onClick={() => { setIsForgotPassword(false); setResetSent(false); setLoginError(null); }}
+                className="text-sm text-primary hover:underline font-semibold mt-2"
               >
-                {isLogin ? t('auth.sign_up') : t('auth.sign_in')}
+                {isHebrew ? 'חזרה להתחברות' : 'Back to login'}
               </button>
-            </p>
-          </div>
+            </div>
+          )}
+
+          {/* Forgot password — email form */}
+          {isForgotPassword && !resetSent && (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="resetEmail">{t('auth.email')}</Label>
+                <Input
+                  id="resetEmail"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => updateField('email', e.target.value)}
+                  required
+                  className="h-11"
+                  placeholder="you@example.com"
+                  dir="ltr"
+                />
+              </div>
+
+              {loginError && (
+                <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-md px-3 py-2 text-center">
+                  {loginError}
+                </div>
+              )}
+
+              <Button type="submit" className="w-full h-11 text-base" disabled={isLoading}>
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  isHebrew ? 'שלח קישור איפוס' : 'Send Reset Link'
+                )}
+              </Button>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => { setIsForgotPassword(false); setLoginError(null); }}
+                  className="text-sm text-primary hover:underline"
+                >
+                  {isHebrew ? 'חזרה להתחברות' : 'Back to login'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Toggle login/register - Moved to TOP for easier access */}
+          {!isForgotPassword && (
+            <div className="mb-6 text-center p-3 rounded-lg bg-muted/50 border border-border">
+              <p className="text-muted-foreground">
+                {isLogin ? t('auth.no_account') : t('auth.have_account')}{' '}
+                <button
+                  type="button"
+                  onClick={() => { setIsLogin(!isLogin); setLoginError(null); }}
+                  className="text-primary hover:underline font-semibold"
+                >
+                  {isLogin ? t('auth.sign_up') : t('auth.sign_in')}
+                </button>
+              </p>
+            </div>
+          )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {!isForgotPassword && <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <>
                 <div className="space-y-2">
@@ -248,6 +342,18 @@ export function AuthForm({ selectedRole, onBack, onSuccess, onRegistration }: Au
                 </button>
               </div>
             </div>
+
+            {isLogin && (
+              <div className="text-end -mt-2">
+                <button
+                  type="button"
+                  onClick={() => { setIsForgotPassword(true); setLoginError(null); }}
+                  className="text-xs text-muted-foreground hover:text-primary hover:underline transition-colors"
+                >
+                  {isHebrew ? 'שכחתי סיסמה' : 'Forgot password?'}
+                </button>
+              </div>
+            )}
 
             {!isLogin && (
               <>
@@ -340,7 +446,7 @@ export function AuthForm({ selectedRole, onBack, onSuccess, onRegistration }: Au
                 t('auth.register')
               )}
             </Button>
-          </form>
+          </form>}
 
           {/* Additional help text at bottom */}
           <div className="mt-6 text-center">
