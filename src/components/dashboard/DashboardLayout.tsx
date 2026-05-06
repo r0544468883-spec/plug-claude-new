@@ -166,6 +166,12 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
       setSidebarOpen(false);
       return;
     }
+    // If we're on a standalone page (not dashboard), navigate back to dashboard with section
+    if (location.pathname !== '/') {
+      navigate(section === 'overview' ? '/' : `/?section=${section}`);
+      setSidebarOpen(false);
+      return;
+    }
     onSectionChange(section);
     setSidebarOpen(false); // Close sidebar on mobile after selection
   };
@@ -265,7 +271,9 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
       )}>
         {/* Logo */}
         <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
-          <PlugLogo size="sm" />
+          <button onClick={() => { navigate('/'); setSidebarOpen(false); }} className="hover:opacity-80 transition-opacity">
+            <PlugLogo size="sm" />
+          </button>
           <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden text-muted-foreground hover:text-foreground"
