@@ -8,6 +8,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout, DashboardSection } from '@/components/dashboard/DashboardLayout';
 import { TodaysFocus } from '@/components/dashboard/TodaysFocus';
 import { ExtensionAgentPanel } from '@/components/extension/ExtensionAgentPanel';
+import { ExtensionPromoBanner } from '@/components/extension/ExtensionPromoBanner';
 import { OverviewHome } from '@/components/dashboard/OverviewHome';
 import { MyStatsPage } from '@/components/dashboard/MyStatsPage';
 import { PlugChat } from '@/components/chat/PlugChat';
@@ -779,6 +780,9 @@ export default function Dashboard() {
       {/* Daily Welcome (first visit of the day) — skip if wizard, fuel, or tour prompt is showing */}
       {!showOnboardingWizard && !showFuelWelcome && !showTourGuidePrompt && <DailyWelcome />}
 
+
+      {/* Extension promo banner — shows once until dismissed */}
+      {currentSection === 'overview' && <ExtensionPromoBanner />}
 
       {renderSectionContent()}
 
