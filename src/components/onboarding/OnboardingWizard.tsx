@@ -1366,6 +1366,16 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     {pushDone && <span className="text-xs text-primary font-medium">{isHebrew ? 'מופעל' : 'Enabled'}</span>}
                   </button>
 
+                  <a href={`${SUPABASE_URL}/storage/v1/object/public/public-assets/extension/plug-extension.zip`} download
+                    className="onb-option flex items-center gap-3">
+                    <Chrome className="w-6 h-6 text-primary shrink-0" />
+                    <div className="flex-1 min-w-0 text-start">
+                      <p className="text-sm font-medium">{isHebrew ? 'תוסף פלאג לכרום — מומלץ!' : 'PLUG Chrome Extension — Recommended!'}</p>
+                      <p className="text-xs text-muted-foreground">{isHebrew ? 'סריקת משרות אוטומטית מלינקדין ואולג\'ובס + מילוי טפסים' : 'Auto-scan jobs from LinkedIn & AllJobs + auto-fill forms'}</p>
+                    </div>
+                    <span className="text-xs text-primary font-medium whitespace-nowrap">{isHebrew ? '⬇️ הורדה' : '⬇️ Download'}</span>
+                  </a>
+
                   <div className="flex items-center gap-2 px-4 py-2 text-xs text-muted-foreground">
                     <Shield className="w-3.5 h-3.5 shrink-0 text-primary/50" />
                     {isHebrew ? 'כל החיבורים מאובטחים עם OAuth — אנחנו לא שומרים סיסמאות' : 'All connections secured with OAuth — we never store passwords'}
