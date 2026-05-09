@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, Globe, Palette, Bell, Loader2, Save, PlayCircle } from 'lucide-react';
+import { Settings, Globe, Palette, Bell, Loader2, Save, PlayCircle, Mail } from 'lucide-react';
 import { TOUR_STORAGE_KEY } from '@/components/onboarding/JobSeekerTour';
 
 export function PreferencesSettings() {
@@ -35,6 +35,7 @@ export function PreferencesSettings() {
   const [emailNotifications, setEmailNotifications] = useState(
     (profile as any)?.email_notifications ?? true
   );
+  const [marketingConsent, setMarketingConsent] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -42,6 +43,21 @@ export function PreferencesSettings() {
       setEmailNotifications((profile as any)?.email_notifications ?? true);
     }
   }, [profile]);
+
+  // Load marketing consent from consent_records
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('consent_records')
+      .select('granted')
+      .eq('user_id', user.id)
+      .eq('consent_type', 'marketing')
+      .order('granted_at', { ascending: false })
+      .limit(1)
+      .then(({ data }) => {
+        if (data?.[0]) setMarketingConsent(data[0].granted);
+      });
+  }, [user]);
 
   const updateMutation = useMutation({
     mutationFn: async () => {
@@ -57,6 +73,12 @@ export function PreferencesSettings() {
         .eq('user_id', user.id);
 
       if (error) throw error;
+
+      // Save marketing consent
+      await supabase.from('consent_records').upsert(
+        { user_id: user.id, consent_type: 'marketing', granted: marketingConsent } as any,
+        { onConflict: 'user_id,consent_type' }
+      );
     },
     onSuccess: () => {
       toast.success(isHebrew ? 'ההעדפות נשמרו!' : 'Preferences saved!');
@@ -138,6 +160,23 @@ export function PreferencesSettings() {
           <Switch
             checked={emailNotifications}
             onCheckedChange={setEmailNotifications}
+          />
+        </div>
+
+        {/* Marketing emails consent */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <Label className="flex items-center gap-2">
+              <Mail className="w-4 h-4" />
+              {isHebrew ? 'מיילים שיווקיים' : 'Marketing Emails'}
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              {isHebrew ? 'קבל טיפים, עדכונים ומבצעים מפלאג' : 'Receive tips, updates and offers from PLUG'}
+            </p>
+          </div>
+          <Switch
+            checked={marketingConsent}
+            onCheckedChange={setMarketingConsent}
           />
         </div>
 

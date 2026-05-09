@@ -8,6 +8,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { PlugLogo } from '@/components/PlugLogo';
 import { ResumeUpload } from '@/components/documents/ResumeUpload';
 import { useTypingEffect } from '@/hooks/useTypingEffect';
@@ -465,6 +467,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [phone, setPhone] = useState((profile as any)?.phone || '');
   const [tagline, setTagline] = useState((profile as any)?.personal_tagline || '');
   const [cvUploaded, setCvUploaded] = useState(false);
+  const [onbConsentMarketing, setOnbConsentMarketing] = useState(false);
   const cvDataReadyRef = useRef(false);
 
   // Sync registration data when profile loads late (after mount)
@@ -793,6 +796,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         .eq('user_id', user.id);
       if (error) throw error;
 
+      // Save marketing consent (upsert — may already exist from registration)
+      await supabase.from('consent_records').upsert(
+        { user_id: user.id, consent_type: 'marketing', granted: onbConsentMarketing } as any,
+        { onConflict: 'user_id,consent_type' }
+      ).then(() => {});
+
       await refreshProfile();
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       localStorage.setItem('plug-onboarding-done', 'true');
@@ -1046,8 +1055,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder={isHebrew ? 'השם המלא שלך' : 'Your full name'} autoFocus className="onb-input" />
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1.5 block font-medium">{isHebrew ? 'מספר טלפון' : 'Phone Number'}</label>
-                    <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="050-1234567" type="tel" className="onb-input" dir="ltr" />
+                    <label className="text-xs text-muted-foreground mb-1.5 block font-medium">{isHebrew ? 'מספר טלפון *' : 'Phone Number *'}</label>
+                    <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="050-1234567" type="tel" className="onb-input" dir="ltr" required />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1.5 block font-medium">
@@ -1058,7 +1067,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   </div>
                 </div>
                 <div className="flex justify-center mt-6">
-                  <Button onClick={handleNext} disabled={fullName.trim().length < 2} size="lg" className="min-h-[52px] gap-2 rounded-full px-8 text-base font-semibold hover:shadow-[0_0_30px_hsl(156_100%_50%/0.3)]">
+                  <Button onClick={handleNext} disabled={fullName.trim().length < 2 || phone.trim().length < 9} size="lg" className="min-h-[52px] gap-2 rounded-full px-8 text-base font-semibold hover:shadow-[0_0_30px_hsl(156_100%_50%/0.3)]">
                     {isHebrew ? 'המשך' : 'Continue'} <Rocket className="w-5 h-5" />
                   </Button>
                 </div>
@@ -1407,7 +1416,20 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               onComplete={onMessageReady}
             />
             {messageReady && (
-              <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
+              <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="mt-6 space-y-4">
+                <div className="flex items-start gap-2 justify-center max-w-sm mx-auto">
+                  <Checkbox
+                    id="onbConsentMarketing"
+                    checked={onbConsentMarketing}
+                    onCheckedChange={(v) => setOnbConsentMarketing(!!v)}
+                    className="mt-0.5"
+                  />
+                  <Label htmlFor="onbConsentMarketing" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                    {isHebrew
+                      ? 'אני מאשר/ת לקבל עדכונים, טיפים ומיילים מפלאג'
+                      : 'I agree to receive updates, tips, and emails from PLUG'}
+                  </Label>
+                </div>
                 <Button onClick={handleFinish} disabled={saving} size="lg"
                   className="min-h-[56px] gap-3 rounded-full px-10 text-lg font-bold hover:shadow-[0_0_40px_hsl(156_100%_50%/0.4)]">
                   {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Rocket className="w-6 h-6" /> {isHebrew ? 'קדימה, בואו נתחיל!' : "Let's go!"}</>}

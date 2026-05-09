@@ -47,7 +47,7 @@ interface AuthContextType {
   profile: Profile | null;
   role: AppRole | null;
   isLoading: boolean;
-  signUp: (email: string, password: string, fullName: string, phone: string, role: AppRole, visibleToHR?: boolean, gender?: string, referredBy?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string, phone: string, role: AppRole, visibleToHR?: boolean, gender?: string, referredBy?: string, consentMarketing?: boolean) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
@@ -166,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     visibleToHR?: boolean,
     gender?: string,
     referredBy?: string,
+    consentMarketing?: boolean,
   ): Promise<{ error: Error | null }> => {
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -213,6 +214,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await supabase
           .from('user_roles')
           .insert({ user_id: data.user.id, role: selectedRole });
+
+        // Save consent records
+        const consentRows = [
+          { user_id: data.user.id, consent_type: 'terms', granted: true },
+          { user_id: data.user.id, consent_type: 'privacy', granted: true },
+          { user_id: data.user.id, consent_type: 'marketing', granted: !!consentMarketing },
+        ];
+        await supabase.from('consent_records').insert(consentRows as any);
 
         setRole(selectedRole);
         // Cache role immediately so Dashboard useEffect has it on first render

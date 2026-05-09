@@ -122,6 +122,7 @@ export function AuthForm({ selectedRole, onBack, onSuccess, onRegistration }: Au
           isJobSeeker ? visibleToHR : undefined,
           gender || undefined,
           referredBy.trim() || undefined,
+          consentMarketing,
         );
 
         if (error) {
@@ -277,14 +278,15 @@ export function AuthForm({ selectedRole, onBack, onSuccess, onRegistration }: Au
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">{t('auth.phone')}</Label>
+                  <Label htmlFor="phone">{isHebrew ? 'טלפון *' : 'Phone *'}</Label>
                   <Input
                     id="phone"
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => updateField('phone', e.target.value)}
+                    required
                     className="h-11"
-                    placeholder="+1 (555) 000-0000"
+                    placeholder="050-0000000"
                     dir="ltr"
                   />
                 </div>
@@ -427,6 +429,38 @@ export function AuthForm({ selectedRole, onBack, onSuccess, onRegistration }: Au
               </>
             )}
 
+            {/* Consent checkboxes — registration only */}
+            {!isLogin && (
+              <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id="consentTerms"
+                    checked={consentTerms}
+                    onCheckedChange={(v) => setConsentTerms(!!v)}
+                    className="mt-0.5"
+                  />
+                  <Label htmlFor="consentTerms" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                    {isHebrew
+                      ? 'אני מאשר/ת את תנאי השימוש ומדיניות הפרטיות *'
+                      : 'I agree to the Terms of Service and Privacy Policy *'}
+                  </Label>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id="consentMarketing"
+                    checked={consentMarketing}
+                    onCheckedChange={(v) => setConsentMarketing(!!v)}
+                    className="mt-0.5"
+                  />
+                  <Label htmlFor="consentMarketing" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                    {isHebrew
+                      ? 'אני מאשר/ת לקבל עדכונים, טיפים ומיילים מפלאג'
+                      : 'I agree to receive updates, tips, and emails from PLUG'}
+                  </Label>
+                </div>
+              </div>
+            )}
+
             {loginError && (
               <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-md px-3 py-2 text-center">
                 {loginError}
@@ -436,7 +470,7 @@ export function AuthForm({ selectedRole, onBack, onSuccess, onRegistration }: Au
             <Button
               type="submit"
               className="w-full h-11 text-base"
-              disabled={isLoading}
+              disabled={isLoading || (!isLogin && !consentTerms)}
             >
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />

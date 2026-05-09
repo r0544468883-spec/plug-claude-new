@@ -472,8 +472,8 @@ export function PersonalCardEditor() {
                   {/* Phone / Email */}
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="phone">{isHebrew ? 'טלפון' : 'Phone'}</Label>
-                      <Input id="phone" type="tel" value={formData.phone} onChange={set('phone')} placeholder="050-0000000" dir="ltr" />
+                      <Label htmlFor="phone">{isHebrew ? 'טלפון *' : 'Phone *'}</Label>
+                      <Input id="phone" type="tel" value={formData.phone} onChange={set('phone')} placeholder="050-0000000" dir="ltr" required />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="email">{isHebrew ? 'אימייל' : 'Email'}</Label>
