@@ -13,8 +13,8 @@ const GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const SYSTEM_SENDER_EMAIL = Deno.env.get("SYSTEM_SENDER_EMAIL") || "plug.hotjobs@gmail.com";
-const EXTENSION_ZIP_URL = `${SUPABASE_URL}/storage/v1/object/public/public-assets/extension/plug-extension.zip`;
 const APP_URL = Deno.env.get("APP_URL") || "https://www.plug-hr.com";
+const EXTENSION_PAGE_URL = `${APP_URL}/extension`;
 
 async function refreshGmailToken(refreshToken: string): Promise<string> {
   const res = await fetch("https://oauth2.googleapis.com/token", {
@@ -84,7 +84,7 @@ function buildPromoHtml(name: string): string {
     <p style="color:#f3f4f6;font-size:15px;font-weight:600;margin:0 0 16px;text-align:center;">בקיצור: במקום לגלוש שעות — התוסף עושה את העבודה בשבילך.</p>
 
     <div style="text-align:center;margin-bottom:16px;">
-      <a href="${EXTENSION_ZIP_URL}" style="display:inline-block;background:linear-gradient(135deg,#00ff8c,#00d4ff);color:#0a0e1a;font-weight:700;font-size:16px;padding:14px 32px;border-radius:12px;text-decoration:none;">⬇️ הורד את התוסף של פלאג</a>
+      <a href="${EXTENSION_PAGE_URL}" style="display:inline-block;background:linear-gradient(135deg,#00ff8c,#00d4ff);color:#0a0e1a;font-weight:700;font-size:16px;padding:14px 32px;border-radius:12px;text-decoration:none;">⬇️ הורד את התוסף של פלאג</a>
     </div>
 
     <!-- Install instructions -->
@@ -145,7 +145,7 @@ function buildOnboardingHtml(name: string): string {
     <p style="color:#f3f4f6;font-size:15px;font-weight:600;margin:0 0 16px;text-align:center;">זה לוקח 30 שניות להתקנה. באמת.</p>
 
     <div style="text-align:center;margin-bottom:16px;">
-      <a href="${EXTENSION_ZIP_URL}" style="display:inline-block;background:linear-gradient(135deg,#00ff8c,#00d4ff);color:#0a0e1a;font-weight:700;font-size:16px;padding:14px 32px;border-radius:12px;text-decoration:none;">⬇️ הורד את התוסף של פלאג</a>
+      <a href="${EXTENSION_PAGE_URL}" style="display:inline-block;background:linear-gradient(135deg,#00ff8c,#00d4ff);color:#0a0e1a;font-weight:700;font-size:16px;padding:14px 32px;border-radius:12px;text-decoration:none;">⬇️ הורד את התוסף של פלאג</a>
     </div>
 
     <!-- Install instructions -->

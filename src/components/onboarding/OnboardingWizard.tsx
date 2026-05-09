@@ -1366,7 +1366,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     {pushDone && <span className="text-xs text-primary font-medium">{isHebrew ? 'מופעל' : 'Enabled'}</span>}
                   </button>
 
-                  <a href={`${SUPABASE_URL}/storage/v1/object/public/public-assets/extension/plug-extension.zip`} download
+                  <a href="/extension" target="_blank"
                     className="onb-option flex items-center gap-3">
                     <Chrome className="w-6 h-6 text-primary shrink-0" />
                     <div className="flex-1 min-w-0 text-start">

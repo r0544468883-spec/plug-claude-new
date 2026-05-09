@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { X, Download, Chrome, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
-const EXTENSION_ZIP_URL = 'https://llrzeexnzgknpwcxdxpm.supabase.co/storage/v1/object/public/public-assets/extension/plug-extension.zip';
 const DISMISSED_KEY = 'plug-extension-promo-dismissed';
 
 export function ExtensionPromoBanner() {
   const { direction } = useLanguage();
   const isHebrew = direction === 'rtl';
+  const navigate = useNavigate();
   const [dismissed, setDismissed] = useState(() =>
     localStorage.getItem(DISMISSED_KEY) === 'true'
   );
@@ -50,12 +51,10 @@ export function ExtensionPromoBanner() {
         </div>
 
         {/* CTA */}
-        <a href={EXTENSION_ZIP_URL} download>
-          <Button size="sm" className="gap-1.5 whitespace-nowrap">
-            <Download className="w-3.5 h-3.5" />
-            {isHebrew ? 'הורד תוסף' : 'Download'}
-          </Button>
-        </a>
+        <Button size="sm" className="gap-1.5 whitespace-nowrap" onClick={() => navigate('/extension')}>
+          <Download className="w-3.5 h-3.5" />
+          {isHebrew ? 'הורד תוסף' : 'Download'}
+        </Button>
       </div>
     </div>
   );
