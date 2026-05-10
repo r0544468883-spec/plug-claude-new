@@ -73,6 +73,7 @@ import CompanyDashboard from "./pages/CompanyDashboard";
 import Companies from "./pages/Companies";
 import ResetPassword from "./pages/ResetPassword";
 import Extension from "./pages/Extension";
+import Admin from "./pages/Admin";
 
 const queryClient = new QueryClient();
 
@@ -125,6 +126,7 @@ const App = () => (
                   <Route path="/company/:companyId/dashboard" element={<CompanyDashboard />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/extension" element={<Extension />} />
+                  <Route path="/admin" element={<Admin />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

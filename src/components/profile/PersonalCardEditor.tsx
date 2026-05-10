@@ -143,6 +143,7 @@ export function PersonalCardEditor() {
     date_of_birth: '',
     is_reservist: false,
     driver_license: false,
+    consent_marketing: false,
     // Card
     personal_tagline: '',
     about_me: '',
@@ -216,6 +217,7 @@ export function PersonalCardEditor() {
         date_of_birth: p.date_of_birth || '',
         is_reservist: p.is_reservist || false,
         driver_license: p.driver_license || false,
+        consent_marketing: p.consent_marketing || false,
         personal_tagline: p.personal_tagline || '',
         about_me: p.about_me || '',
         avatar_url: profile.avatar_url || null,
@@ -331,6 +333,7 @@ export function PersonalCardEditor() {
           date_of_birth: formData.date_of_birth || null,
           is_reservist: formData.is_reservist,
           driver_license: formData.driver_license,
+          consent_marketing: formData.consent_marketing,
           personal_tagline: formData.personal_tagline || null,
           about_me: formData.about_me || null,
           portfolio_url: formData.portfolio_url || null,
@@ -518,6 +521,10 @@ export function PersonalCardEditor() {
                     <div className="flex items-center gap-3">
                       <Checkbox id="driver_license" checked={formData.driver_license} onCheckedChange={setCheck('driver_license')} />
                       <Label htmlFor="driver_license" className="cursor-pointer">{isHebrew ? "בעל/ת רישיון נהיגה" : "Driver's License"}</Label>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Checkbox id="consent_marketing" checked={formData.consent_marketing} onCheckedChange={setCheck('consent_marketing')} />
+                      <Label htmlFor="consent_marketing" className="cursor-pointer">{isHebrew ? "מאשר/ת קבלת עדכונים ומיילים מפלאג" : "I agree to receive updates and emails from PLUG"}</Label>
                     </div>
                   </div>
                 </AccordionContent>

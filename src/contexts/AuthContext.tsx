@@ -205,6 +205,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (referredBy) {
           profileUpdate.referred_by = referredBy;
         }
+        if (typeof consentMarketing === 'boolean') {
+          profileUpdate.consent_marketing = consentMarketing;
+        }
 
         await supabase
           .from('profiles')

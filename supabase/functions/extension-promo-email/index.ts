@@ -56,7 +56,7 @@ function buildPromoHtml(name: string): string {
   return `<!DOCTYPE html>
 <html dir="rtl" lang="he">
 <head><meta charset="UTF-8"/></head>
-<body style="margin:0;padding:0;background:#0a0e1a;font-family:'Segoe UI',system-ui,sans-serif;">
+<body style="margin:0;padding:0;background:#0a0e1a;font-family:'Segoe UI',system-ui,sans-serif;direction:rtl;text-align:right;unicode-bidi:embed;">
 <div style="max-width:580px;margin:0 auto;padding:32px 20px;">
   <div style="background:#111827;border-radius:16px;padding:32px;border:1px solid #1f2937;">
     <!-- Logo -->
@@ -74,7 +74,7 @@ function buildPromoHtml(name: string): string {
       <p style="color:#00ff8c;font-weight:700;font-size:14px;margin:0 0 12px;">מה התוסף עושה:</p>
       <table style="width:100%;">
         <tr><td style="padding:6px 0;color:#d1d5db;font-size:14px;">✅ סורק אוטומטית משרות מ-AllJobs ולינקדין</td></tr>
-        <tr><td style="padding:6px 0;color:#d1d5db;font-size:14px;">✅ מנתח עם AI אם המשרה מתאימה לך</td></tr>
+        <tr><td style="padding:6px 0;color:#d1d5db;font-size:14px;">✅ מנתח עם בינה מלאכותית אם המשרה מתאימה לך</td></tr>
         <tr><td style="padding:6px 0;color:#d1d5db;font-size:14px;">✅ שומר הכל אוטומטית בחשבון פלאג שלך</td></tr>
         <tr><td style="padding:6px 0;color:#d1d5db;font-size:14px;">✅ מילוי טפסים אוטומטי בהגשת מועמדות</td></tr>
       </table>
@@ -113,7 +113,7 @@ function buildOnboardingHtml(name: string): string {
   return `<!DOCTYPE html>
 <html dir="rtl" lang="he">
 <head><meta charset="UTF-8"/></head>
-<body style="margin:0;padding:0;background:#0a0e1a;font-family:'Segoe UI',system-ui,sans-serif;">
+<body style="margin:0;padding:0;background:#0a0e1a;font-family:'Segoe UI',system-ui,sans-serif;direction:rtl;text-align:right;unicode-bidi:embed;">
 <div style="max-width:580px;margin:0 auto;padding:32px 20px;">
   <div style="background:#111827;border-radius:16px;padding:32px;border:1px solid #1f2937;">
     <!-- Logo -->
@@ -197,15 +197,23 @@ serve(async (req) => {
   }
 
   // Parse mode: "blast" (all users) or "onboarding" (users who signed up yesterday)
+  // Optional: test_email + test_name to send a single test
   let mode = "blast";
+  let testEmail: string | null = null;
+  let testName: string | null = null;
   try {
     const body = await req.json();
     if (body.mode) mode = body.mode;
+    if (body.test_email) testEmail = body.test_email;
+    if (body.test_name) testName = body.test_name;
   } catch { /* no body = blast */ }
 
   let users: { email: string; full_name: string | null }[] = [];
 
-  if (mode === "onboarding") {
+  // Test mode: send to a single email only
+  if (testEmail) {
+    users = [{ email: testEmail, full_name: testName || testEmail.split("@")[0] }];
+  } else if (mode === "onboarding") {
     // Users who signed up ~24h ago (between 24-48h ago to avoid timing issues)
     const { data } = await supabase
       .from("profiles")
