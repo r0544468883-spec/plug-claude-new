@@ -18,7 +18,7 @@ import { NavTooltip } from '@/components/ui/nav-tooltip';
 import { VisibleToHRBanner } from '@/components/sidebar/VisibleToHRBanner';
 // PlugFloatingHint removed - notifications now in NotificationBell
 import {
-  LayoutDashboard, Users, Briefcase, FileText, MessageSquare, Settings, LogOut, Menu, X, User, Search, ArrowLeft, ArrowRight, Heart, FileEdit, Route, Sparkles, Mic, Newspaper, Video, Globe, DollarSign, Building2, Target, Calendar, LayoutGrid, Gem, ClipboardList, BarChart3, UserSearch, Monitor, Share2, History, Lightbulb, Eye, ChevronDown, ZoomIn, ZoomOut, Smartphone
+  LayoutDashboard, Users, Briefcase, FileText, MessageSquare, Settings, LogOut, Menu, X, User, Search, ArrowLeft, ArrowRight, Heart, FileEdit, Route, Sparkles, Mic, Newspaper, Video, Globe, DollarSign, Building2, Target, Calendar, LayoutGrid, Gem, ClipboardList, BarChart3, UserSearch, Monitor, Share2, History, Lightbulb, Eye, ChevronDown, ZoomIn, ZoomOut, Smartphone, Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -67,7 +67,7 @@ interface DashboardLayoutProps {
 const SOCIAL_SECTIONS: DashboardSection[] = ['feed', 'communities', 'community-view', 'create-community', 'create-feed-post'];
 
 export function DashboardLayout({ children, currentSection, onSectionChange, onChatOpen, onStartTour }: DashboardLayoutProps) {
-  const { profile, role, signOut } = useAuth();
+  const { user, profile, role, signOut } = useAuth();
   const { t, direction, language } = useLanguage();
   const isRTL = language === 'he';
   usePresenceTracker();
@@ -478,6 +478,19 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
                       </button>
                     </NavTooltip>
                   ))}
+
+                  {/* Admin link — only for admin emails */}
+                  {user?.email === 'r0544468883@gmail.com' && (
+                    <NavTooltip content={isRTL ? 'דשבורד ניהולי' : 'Admin Dashboard'} side={isRTL ? 'left' : 'right'}>
+                      <button
+                        onClick={() => navigate('/admin')}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-start text-sm text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/10"
+                      >
+                        <Shield className="w-4 h-4 shrink-0" />
+                        <span className="flex-1">{isRTL ? 'ניהול מערכת' : 'Admin'}</span>
+                      </button>
+                    </NavTooltip>
+                  )}
                 </div>
               </div>
             </>
