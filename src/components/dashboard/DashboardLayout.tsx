@@ -480,7 +480,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
                   ))}
 
                   {/* Admin link — only for admin emails */}
-                  {user?.email === 'r0544468883@gmail.com' && (
+                  {(user?.email === 'r0544468883@gmail.com' || user?.email === 'eranlips@gmail.com') && (
                     <NavTooltip content={isRTL ? 'דשבורד ניהולי' : 'Admin Dashboard'} side={isRTL ? 'left' : 'right'}>
                       <button
                         onClick={() => navigate('/admin')}

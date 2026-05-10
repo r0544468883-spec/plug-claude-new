@@ -19,7 +19,7 @@ import {
 // PLUG Admin Dashboard — restricted to authorized admins
 // ============================================================
 
-const ADMIN_EMAILS = ['r0544468883@gmail.com'];
+const ADMIN_EMAILS = ['r0544468883@gmail.com', 'eranlips@gmail.com'];
 
 interface UserRow {
   user_id: string;
