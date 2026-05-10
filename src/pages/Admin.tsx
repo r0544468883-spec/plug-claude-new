@@ -55,9 +55,8 @@ interface OverviewStats {
 }
 
 export default function Admin() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
 
   // Overview
@@ -75,18 +74,15 @@ export default function Admin() {
   // Extension & Jobs
   const [jobStats, setJobStats] = useState<any>(null);
 
-  // Auth check
+  // Auth check — wait for auth to finish loading before deciding
   useEffect(() => {
-    if (!user) {
+    if (authLoading) return; // still loading, wait
+    if (!user || !ADMIN_EMAILS.includes(user.email || '')) {
       navigate('/');
-      return;
     }
-    if (!ADMIN_EMAILS.includes(user.email || '')) {
-      navigate('/');
-      return;
-    }
-    setLoading(false);
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
+
+  const loading = authLoading || !user || !ADMIN_EMAILS.includes(user.email || '');
 
   // Load overview stats
   const loadOverview = useCallback(async () => {
