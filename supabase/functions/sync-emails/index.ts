@@ -729,33 +729,66 @@ serve(async (req) => {
         debugInfo.failed = failed;
         console.log(`[sync-emails] Results: saved=${saved}, skipped=${skipped}, skippedNonJob=${skippedNonJob}, failed=${failed}`);
 
-        // ─── Post-scan notification: count auto-updated applications ───
+        // ─── Post-scan: classification summary notification + email ───
         if (saved > 0) {
           try {
-            // Count how many applications were auto-updated in this scan window
             const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-            const { data: updatedEmails } = await supabase
+            const { data: recentEmails } = await supabase
               .from("application_emails")
-              .select("id")
+              .select("ai_classification, subject, from_email, application_id")
               .eq("user_id", token.user_id)
-              .eq("auto_updated", true)
+              .eq("direction", "received")
               .gte("created_at", fiveMinAgo);
 
-            const updatedCount = updatedEmails?.length || 0;
-            console.log(`[sync-emails] Post-scan: ${updatedCount} application(s) auto-updated for user ${token.user_id}`);
+            // Count by classification type
+            const counts: Record<string, number> = {};
+            const sampleSubjects: Record<string, string[]> = {};
+            for (const em of (recentEmails || [])) {
+              const cls = em.ai_classification || "unclassified";
+              counts[cls] = (counts[cls] || 0) + 1;
+              if (!sampleSubjects[cls]) sampleSubjects[cls] = [];
+              if (sampleSubjects[cls].length < 3) sampleSubjects[cls].push(em.subject || em.from_email || "");
+            }
 
-            if (updatedCount > 0) {
-              // Insert summary notification
+            const rejections = counts["rejection"] || 0;
+            const interviews = counts["interview_invitation"] || 0;
+            const offers = counts["offer"] || 0;
+            const acknowledgments = counts["acknowledgment"] || 0;
+            const autoUpdated = (recentEmails || []).filter(e => e.application_id).length;
+            const totalClassified = (recentEmails || []).length;
+
+            console.log(`[sync-emails] Post-scan: ${totalClassified} classified — rejections=${rejections}, interviews=${interviews}, offers=${offers}, ack=${acknowledgments}, autoUpdated=${autoUpdated}`);
+
+            // Send notification + email if we found anything meaningful
+            // (rejections, interviews, offers, or at least 3 acknowledgments)
+            const hasMeaningful = rejections > 0 || interviews > 0 || offers > 0 || acknowledgments >= 3;
+            if (hasMeaningful) {
+              // Build Hebrew summary lines
+              const lines: string[] = [];
+              if (rejections > 0) lines.push(`❌ ${rejections} דחיות`);
+              if (interviews > 0) lines.push(`📞 ${interviews} הזמנות לראיון`);
+              if (offers > 0) lines.push(`🎉 ${offers} הצעות עבודה`);
+              if (acknowledgments > 0) lines.push(`📩 ${acknowledgments} אישורי קבלה`);
+              const summaryText = lines.join(" · ");
+
+              // In-app notification
               await supabase.from("notifications").insert({
                 user_id: token.user_id,
                 type: "scan_summary",
-                title: `PLUG סרק את המייל שלך`,
-                message: `נמצאו ${updatedCount} עדכוני סטטוס אוטומטיים למועמדויות שלך. מומלץ להיכנס לפלטפורמה ��לבדוק.`,
+                title: `סריקת מיילים הושלמה`,
+                message: `סרקנו ${saved} מיילים חדשים: ${summaryText}`,
                 is_read: false,
-                metadata: { emails_scanned: saved, auto_updates: updatedCount },
+                metadata: {
+                  emails_scanned: saved,
+                  rejections,
+                  interviews,
+                  offers,
+                  acknowledgments,
+                  auto_updates: autoUpdated,
+                },
               });
 
-              // Send summary email from system sender (plug.hotjobs@gmail.com)
+              // Build detailed email HTML
               const SYSTEM_SENDER = "plug.hotjobs@gmail.com";
               const { data: senderToken } = await supabase.from("email_oauth_tokens")
                 .select("access_token, refresh_token, expires_at, user_id")
@@ -767,32 +800,74 @@ serve(async (req) => {
                   senderAccessToken = await getValidAccessToken(supabase, senderToken as any);
                 }
 
-                const userEmail = token.email || (await supabase.from("profiles").select("email").eq("user_id", token.user_id).single()).data?.email;
+                const userEmail = token.email_address || (await supabase.from("profiles").select("email").eq("user_id", token.user_id).single()).data?.email;
                 if (userEmail) {
-                  const emailSubject = `PLUG — ${updatedCount} עדכוני סטטוס נמצאו במיילים שלך`;
-                  const emailHtml = `
-<div dir="rtl" style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
-  <div style="text-align: center; margin-bottom: 24px;">
-    <h1 style="color: #1a1a2e; font-size: 22px; margin: 0;">PLUG</h1>
-    <p style="color: #666; font-size: 14px; margin-top: 4px;">סריקת מיילים הושלמה</p>
+                  // Build category rows for email
+                  const categoryRows: string[] = [];
+                  if (rejections > 0) {
+                    const samples = (sampleSubjects["rejection"] || []).map(s => `<li style="color:#94a3b8;font-size:13px;margin:2px 0;">${s}</li>`).join("");
+                    categoryRows.push(`
+                      <div style="background:#1a0a0a;border:1px solid #4a2020;border-radius:10px;padding:14px;margin-bottom:10px;">
+                        <div style="font-size:15px;font-weight:700;color:#ff6b6b;margin-bottom:6px;">❌ ${rejections} דחיות</div>
+                        ${samples ? `<ul style="margin:0;padding:0 16px;">${samples}</ul>` : ""}
+                      </div>`);
+                  }
+                  if (interviews > 0) {
+                    const samples = (sampleSubjects["interview_invitation"] || []).map(s => `<li style="color:#94a3b8;font-size:13px;margin:2px 0;">${s}</li>`).join("");
+                    categoryRows.push(`
+                      <div style="background:#0a1a0a;border:1px solid #204a20;border-radius:10px;padding:14px;margin-bottom:10px;">
+                        <div style="font-size:15px;font-weight:700;color:#00ff8c;margin-bottom:6px;">📞 ${interviews} הזמנות לראיון</div>
+                        ${samples ? `<ul style="margin:0;padding:0 16px;">${samples}</ul>` : ""}
+                      </div>`);
+                  }
+                  if (offers > 0) {
+                    const samples = (sampleSubjects["offer"] || []).map(s => `<li style="color:#94a3b8;font-size:13px;margin:2px 0;">${s}</li>`).join("");
+                    categoryRows.push(`
+                      <div style="background:#1a1a0a;border:1px solid #4a4a20;border-radius:10px;padding:14px;margin-bottom:10px;">
+                        <div style="font-size:15px;font-weight:700;color:#ffd700;margin-bottom:6px;">🎉 ${offers} הצעות עבודה</div>
+                        ${samples ? `<ul style="margin:0;padding:0 16px;">${samples}</ul>` : ""}
+                      </div>`);
+                  }
+                  if (acknowledgments > 0) {
+                    categoryRows.push(`
+                      <div style="background:#0a0f1a;border:1px solid #203050;border-radius:10px;padding:14px;margin-bottom:10px;">
+                        <div style="font-size:15px;font-weight:700;color:#60a5fa;margin-bottom:4px;">📩 ${acknowledgments} אישורי קבלת מועמדות</div>
+                      </div>`);
+                  }
+
+                  const emailSubject = rejections > 0
+                    ? `PLUG — סרקנו את המייל: ${rejections} דחיות${interviews > 0 ? `, ${interviews} ראיונות` : ""}`
+                    : interviews > 0
+                    ? `PLUG — סרקנו את המייל: ${interviews} הזמנות לראיון`
+                    : `PLUG — סריקת מיילים הושלמה (${saved} מיילים)`;
+
+                  const emailHtml = `<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+<body style="margin:0;padding:0;background:#0A1128;font-family:'Segoe UI',system-ui,sans-serif;color:#e2e8f0;">
+  <div style="max-width:520px;margin:32px auto;background:#0f1f3d;border-radius:16px;border:1px solid #1e3a5f;overflow:hidden;">
+    <div style="background:linear-gradient(135deg,#0a1840,#0d2855);padding:24px 28px;border-bottom:1px solid #1e3a5f;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <span style="background:#00FF9D;color:#0A1128;font-weight:900;font-size:16px;padding:3px 10px;border-radius:8px;">PLUG</span>
+        <span style="color:#8899aa;font-size:13px;">סריקת מיילים</span>
+      </div>
+      <h1 style="margin:0 0 4px;font-size:20px;color:#fff;">סרקנו ${saved} מיילים חדשים מהתיבה שלך</h1>
+      <p style="margin:0;color:#8899aa;font-size:13px;">הנה סיכום מה שמצאנו:</p>
+    </div>
+    <div style="padding:20px 28px;">
+      ${categoryRows.join("")}
+      ${autoUpdated > 0 ? `<p style="color:#00ff8c;font-size:13px;margin-top:12px;">✓ ${autoUpdated} מועמדויות עודכנו אוטומטית בפלטפורמה</p>` : ""}
+    </div>
+    <div style="padding:0 28px 24px;text-align:center;">
+      <a href="https://www.plug-hr.com" style="display:inline-block;background:#00FF9D;color:#0A1128;font-weight:700;padding:12px 32px;border-radius:50px;text-decoration:none;font-size:14px;">היכנס לפלטפורמה לפירוט מלא</a>
+    </div>
+    <div style="padding:14px 28px;border-top:1px solid #1e3a5f;text-align:center;">
+      <p style="color:#4a5568;font-size:11px;margin:0;">PLUG — הפלטפורמה החכמה לחיפוש עבודה</p>
+    </div>
   </div>
-  <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
-    <p style="font-size: 16px; color: #1a1a2e; margin: 0 0 8px 0; font-weight: bold;">
-      נמצאו ${updatedCount} עדכונים אוטומטיים
-    </p>
-    <p style="font-size: 14px; color: #555; margin: 0;">
-      סרקנו ${saved} מיילים חדשים ועדכנו אוטומטית ${updatedCount} מועמדויות בפלטפורמה.
-    </p>
-  </div>
-  <div style="text-align: center; margin-top: 20px;">
-    <a href="https://www.plug-hr.com" style="display: inline-block; background: #00ff8c; color: #1a1a2e; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px;">
-      כנס לפלטפורמה לצפות בעדכונים
-    </a>
-  </div>
-  <p style="text-align: center; color: #999; font-size: 11px; margin-top: 24px;">
-    PLUG — הפלטפורמה החכמה לחיפוש עבודה
-  </p>
-</div>`;
+</body>
+</html>`;
+
                   const subjectEncoded = `=?UTF-8?B?${btoa(unescape(encodeURIComponent(emailSubject)))}?=`;
                   const rawMessage = [
                     `From: PLUG <${SYSTEM_SENDER}>`,
@@ -810,6 +885,7 @@ serve(async (req) => {
                     headers: { "Authorization": `Bearer ${senderAccessToken}`, "Content-Type": "application/json" },
                     body: JSON.stringify({ raw: encoded }),
                   }).catch(err => console.error(`[sync-emails] Gmail send failed:`, err));
+                  console.log(`[sync-emails] Summary email sent to ${userEmail}`);
                 }
               }
             }
