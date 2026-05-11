@@ -689,6 +689,9 @@ serve(async (req) => {
             continue;
           }
           saved++;
+          const savedEmailIds: string[] = (debugInfo._savedEmailIds as string[]) || [];
+          savedEmailIds.push(savedEmail.id);
+          debugInfo._savedEmailIds = savedEmailIds;
 
           // Classify sequentially with delay to avoid rate limiting
           if (savedEmail) {
@@ -732,13 +735,17 @@ serve(async (req) => {
         // ─── Post-scan: classification summary notification + email ───
         if (saved > 0) {
           try {
-            const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-            const { data: recentEmails } = await supabase
-              .from("application_emails")
-              .select("ai_classification, subject, from_email, application_id")
-              .eq("user_id", token.user_id)
-              .eq("direction", "received")
-              .gte("created_at", fiveMinAgo);
+            const savedIds = (debugInfo._savedEmailIds as string[]) || [];
+            // Query in batches of 50 (Supabase .in() limit)
+            let recentEmails: { ai_classification: string | null; subject: string | null; from_email: string | null; application_id: string | null }[] = [];
+            for (let i = 0; i < savedIds.length; i += 50) {
+              const batch = savedIds.slice(i, i + 50);
+              const { data } = await supabase
+                .from("application_emails")
+                .select("ai_classification, subject, from_email, application_id")
+                .in("id", batch);
+              if (data) recentEmails = recentEmails.concat(data);
+            }
 
             // Count by classification type
             const counts: Record<string, number> = {};
@@ -757,11 +764,13 @@ serve(async (req) => {
             const autoUpdated = (recentEmails || []).filter(e => e.application_id).length;
             const totalClassified = (recentEmails || []).length;
 
+            debugInfo.postScan = { totalClassified, counts, rejections, interviews, offers, acknowledgments, autoUpdated };
             console.log(`[sync-emails] Post-scan: ${totalClassified} classified — rejections=${rejections}, interviews=${interviews}, offers=${offers}, ack=${acknowledgments}, autoUpdated=${autoUpdated}`);
 
             // Send notification + email if we found anything meaningful
             // (rejections, interviews, offers, or at least 3 acknowledgments)
             const hasMeaningful = rejections > 0 || interviews > 0 || offers > 0 || acknowledgments >= 3;
+            debugInfo.hasMeaningful = hasMeaningful;
             if (hasMeaningful) {
               // Build Hebrew summary lines
               const lines: string[] = [];
@@ -791,9 +800,10 @@ serve(async (req) => {
               // Build detailed email HTML
               const SYSTEM_SENDER = "plug.hotjobs@gmail.com";
               const { data: senderToken } = await supabase.from("email_oauth_tokens")
-                .select("access_token, refresh_token, expires_at, user_id")
+                .select("provider, access_token, refresh_token, expires_at, user_id")
                 .eq("provider", "gmail").eq("email_address", SYSTEM_SENDER).limit(1).maybeSingle();
 
+              debugInfo.senderTokenFound = !!senderToken;
               if (senderToken) {
                 let senderAccessToken = senderToken.access_token;
                 if (new Date(senderToken.expires_at).getTime() - Date.now() < 5 * 60 * 1000) {
@@ -801,6 +811,7 @@ serve(async (req) => {
                 }
 
                 const userEmail = token.email_address || (await supabase.from("profiles").select("email").eq("user_id", token.user_id).single()).data?.email;
+                debugInfo.userEmail = userEmail;
                 if (userEmail) {
                   // Build category rows for email
                   const categoryRows: string[] = [];
@@ -880,16 +891,27 @@ serve(async (req) => {
                   ].join('\r\n');
                   const { encode: b64url } = await import("https://deno.land/std@0.190.0/encoding/base64url.ts");
                   const encoded = b64url(new TextEncoder().encode(rawMessage));
-                  await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+                  const sendRes = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
                     method: "POST",
                     headers: { "Authorization": `Bearer ${senderAccessToken}`, "Content-Type": "application/json" },
                     body: JSON.stringify({ raw: encoded }),
-                  }).catch(err => console.error(`[sync-emails] Gmail send failed:`, err));
-                  console.log(`[sync-emails] Summary email sent to ${userEmail}`);
+                  });
+                  const sendResText = await sendRes.text();
+                  debugInfo.summaryEmailSent = sendRes.ok;
+                  debugInfo.summaryEmailStatus = sendRes.status;
+                  if (!sendRes.ok) debugInfo.summaryEmailError = sendResText.substring(0, 300);
+                  console.log(`[sync-emails] Summary email to ${userEmail}: status=${sendRes.status} body=${sendResText.substring(0, 200)}`);
+                } else {
+                  debugInfo.summaryEmailSkip = "no userEmail";
                 }
+              } else {
+                debugInfo.summaryEmailSkip = "no senderToken";
               }
+            } else {
+              debugInfo.summaryEmailSkip = "not meaningful";
             }
           } catch (notifErr) {
+            debugInfo.postScanError = (notifErr as Error).message;
             console.error(`[sync-emails] Post-scan notification error:`, notifErr);
           }
         }
