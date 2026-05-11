@@ -7,13 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Star, ThumbsUp, MessageSquare, BarChart3 } from 'lucide-react';
 
-const DEMO_SURVEYS = [
-  { id: 'd1', overall_rating: 5, communication_rating: 4, process_rating: 5, would_recommend: true, feedback_text: 'תהליך מאוד מקצועי ומהיר. הגייסת הייתה קשובה וזמינה לאורך כל הדרך.', trigger_event: 'after_interview' },
-  { id: 'd2', overall_rating: 4, communication_rating: 5, process_rating: 4, would_recommend: true, feedback_text: 'חוויה חיובית בסה"כ. אשמח לתהליך קצת יותר מהיר בעתיד.', trigger_event: 'after_offer' },
-  { id: 'd3', overall_rating: 3, communication_rating: 3, process_rating: 2, would_recommend: false, feedback_text: 'ציפיתי לתגובות מהירות יותר בין שלבי הראיון.', trigger_event: 'after_rejection' },
-  { id: 'd4', overall_rating: 5, communication_rating: 5, process_rating: 5, would_recommend: true, feedback_text: null, trigger_event: 'after_hire' },
-  { id: 'd5', overall_rating: 4, communication_rating: 4, process_rating: 3, would_recommend: true, feedback_text: 'תהליך טוב, השאלות בראיון היו רלוונטיות ומאתגרות.', trigger_event: 'after_interview' },
-];
 
 export function SurveyResults({ jobId }: { jobId?: string }) {
   const { user } = useAuth();
@@ -41,8 +34,8 @@ export function SurveyResults({ jobId }: { jobId?: string }) {
 
   if (isLoading) return <Skeleton className="h-64 rounded-xl" />;
 
-  const isDemo = surveys.length === 0;
-  const displaySurveys = isDemo ? DEMO_SURVEYS : surveys;
+  const isEmpty = surveys.length === 0;
+  const displaySurveys = surveys;
 
   const avg = (key: string) => {
     const vals = displaySurveys.filter((s: any) => s[key]).map((s: any) => s[key] as number);
@@ -58,9 +51,11 @@ export function SurveyResults({ jobId }: { jobId?: string }) {
 
   return (
     <div className="space-y-4" dir={isHebrew ? 'rtl' : 'ltr'}>
-      {isDemo && (
-        <div className="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm text-amber-600">
-          ✨ {isHebrew ? 'נתוני דוגמה — סקרים אמיתיים יופיעו לאחר תהליכי גיוס' : 'Demo data — real surveys appear after recruitment processes'}
+      {isEmpty && (
+        <div className="text-center py-8 text-muted-foreground">
+          <BarChart3 className="w-10 h-10 mx-auto mb-3 opacity-40" />
+          <p className="font-medium">{isHebrew ? 'אין סקרים עדיין' : 'No surveys yet'}</p>
+          <p className="text-sm mt-1">{isHebrew ? 'סקרים יופיעו לאחר תהליכי גיוס' : 'Surveys will appear after recruitment processes'}</p>
         </div>
       )}
 

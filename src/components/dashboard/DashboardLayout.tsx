@@ -18,7 +18,7 @@ import { NavTooltip } from '@/components/ui/nav-tooltip';
 import { VisibleToHRBanner } from '@/components/sidebar/VisibleToHRBanner';
 // PlugFloatingHint removed - notifications now in NotificationBell
 import {
-  LayoutDashboard, Users, Briefcase, FileText, MessageSquare, Settings, LogOut, Menu, X, User, Search, ArrowLeft, ArrowRight, Heart, FileEdit, Route, Sparkles, Mic, Newspaper, Video, Globe, DollarSign, Building2, Target, Calendar, LayoutGrid, Gem, ClipboardList, BarChart3, UserSearch, Monitor, Share2, History, Lightbulb, Eye, ChevronDown, ZoomIn, ZoomOut, Smartphone, Shield
+  LayoutDashboard, Users, Briefcase, FileText, MessageSquare, Settings, LogOut, Menu, X, User, Search, ArrowLeft, ArrowRight, Heart, FileEdit, Route, Sparkles, Mic, Newspaper, Video, Globe, DollarSign, Building2, Target, Calendar, LayoutGrid, Gem, ClipboardList, BarChart3, UserSearch, Monitor, Share2, History, Lightbulb, Eye, ChevronDown, ZoomIn, ZoomOut, Smartphone, Shield, Trophy, Bookmark
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -46,7 +46,7 @@ function useZoom() {
   return { zoom, cycleZoom };
 }
 
-export type DashboardSection = 'overview' | 'profile-docs' | 'profile-settings' | 'applications' | 'candidates' | 'jobs' | 'job-search' | 'chat' | 'settings' | 'messages' | 'post-job' | 'saved-jobs' | 'cv-builder' | 'interview-prep' | 'feed' | 'create-feed-post' | 'create-webinar' | 'communities' | 'create-community' | 'community-view' | 'content-dashboard' | 'negotiation-sandbox' | 'content-hub' | 'b2b-suite' | 'recruiter-profile' | 'clients' | 'client-profile' | 'missions' | 'create-mission' | 'my-missions' | 'schedule' | 'hr-tools' | 'credits' | 'referrals' | 'analyses' | 'favorite-companies' | 'assignments' | 'candidate-search' | 'analytics' | 'my-stats' | 'vouches' | 'network' | 'job-swipe' | 'my-matches' | 'my-secrets' | 'ideas' | 'my-company' | 'companies';
+export type DashboardSection = 'overview' | 'profile-docs' | 'profile-settings' | 'applications' | 'candidates' | 'jobs' | 'job-search' | 'chat' | 'settings' | 'messages' | 'post-job' | 'saved-jobs' | 'cv-builder' | 'interview-prep' | 'feed' | 'create-feed-post' | 'create-webinar' | 'communities' | 'create-community' | 'community-view' | 'content-dashboard' | 'negotiation-sandbox' | 'content-hub' | 'b2b-suite' | 'recruiter-profile' | 'clients' | 'client-profile' | 'missions' | 'create-mission' | 'my-missions' | 'schedule' | 'hr-tools' | 'credits' | 'referrals' | 'analyses' | 'favorite-companies' | 'assignments' | 'candidate-search' | 'analytics' | 'my-stats' | 'vouches' | 'network' | 'job-swipe' | 'my-matches' | 'my-secrets' | 'ideas' | 'my-company' | 'companies' | 'achievements';
 
 interface NavItemConfig {
   icon: typeof LayoutDashboard;
@@ -148,6 +148,11 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
     }
     if (section === 'ideas') {
       navigate('/ideas');
+      setSidebarOpen(false);
+      return;
+    }
+    if (section === 'saved-jobs') {
+      navigate('/saved-jobs');
       setSidebarOpen(false);
       return;
     }
@@ -460,8 +465,10 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
                 {/* ── Extras ── */}
                 <div className="border-t border-sidebar-border mt-3 pt-2 space-y-0.5">
                   {([
-                    { icon: Lightbulb, label: isRTL ? 'לוח רעיונות'   : 'Ideas Board', section: 'ideas'   as DashboardSection, tooltipHe: 'הציעו פיצ׳רים חדשים', tooltipEn: 'Suggest new features' },
-                    { icon: Gem,       label: isRTL ? 'הקרדיטים שלי'  : 'Credits',     section: 'credits' as DashboardSection, tooltipHe: 'יתרת קרדיטים והיסטוריה',  tooltipEn: 'Credits balance & history' },
+                    { icon: Trophy,    label: isRTL ? 'הישגים ומשימות' : 'Achievements', section: 'achievements' as DashboardSection, tooltipHe: 'הישגים, משימות שבועיות ודירוג', tooltipEn: 'Achievements, weekly quests & level' },
+                    { icon: Bookmark,  label: isRTL ? 'משרות שמורות'   : 'Saved Jobs',   section: 'saved-jobs'   as DashboardSection, tooltipHe: 'משרות ששמרת לצפייה מאוחרת',    tooltipEn: 'Jobs you saved for later' },
+                    { icon: Lightbulb, label: isRTL ? 'לוח רעיונות'   : 'Ideas Board',  section: 'ideas'        as DashboardSection, tooltipHe: 'הציעו פיצ׳רים חדשים',           tooltipEn: 'Suggest new features' },
+                    { icon: Gem,       label: isRTL ? 'הקרדיטים שלי'  : 'Credits',      section: 'credits'      as DashboardSection, tooltipHe: 'יתרת קרדיטים והיסטוריה',         tooltipEn: 'Credits balance & history' },
                   ] as NavItemConfig[]).map(item => (
                     <NavTooltip key={item.section} content={isRTL ? item.tooltipHe : item.tooltipEn} side={isRTL ? 'left' : 'right'}>
                       <button

@@ -216,7 +216,7 @@ serve(async (req) => {
                     </thead>
                     <tbody>${jobListHtml}</tbody>
                   </table>
-                  <a href="${Deno.env.get('APP_URL') || 'https://plug-claude-new-psi.vercel.app'}/?section=job-search"
+                  <a href="${Deno.env.get('APP_URL') || 'https://www.plug-hr.com'}/?section=job-search"
                      style="display:inline-block;background:#6366f1;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:8px;">
                     צפה בכל המשרות
                   </a>

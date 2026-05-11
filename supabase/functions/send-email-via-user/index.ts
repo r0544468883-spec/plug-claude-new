@@ -119,7 +119,7 @@ serve(async (req) => {
   <tr>
     <td style="vertical-align:middle;padding-right:12px;">
       <div style="width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#6ee7b7,#3b82f6);display:flex;align-items:center;justify-content:center;">
-        <img src="https://plug-claude-new-psi.vercel.app/plug-logo.png" alt="PLUG" width="24" height="24" style="display:block;" />
+        <img src="https://www.plug-hr.com/plug-logo.png" alt="PLUG" width="24" height="24" style="display:block;" />
       </div>
     </td>
     <td style="vertical-align:middle;">

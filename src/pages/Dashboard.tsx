@@ -334,9 +334,23 @@ export default function Dashboard() {
         openPositions = companyJobs?.length || 0;
       }
 
+      // Count hired referrals for bonus estimation
+      let hiredReferrals = 0;
+      if (referrals && referrals.length > 0 && profileData?.active_company_id) {
+        const referredIds = referrals.map((r: any) => r.referred_id || r.id);
+        // Check which referred users got hired at this company
+        const { data: hiredApps } = await supabase
+          .from('applications')
+          .select('id')
+          .eq('current_stage', 'hired')
+          .in('candidate_id', referredIds);
+        hiredReferrals = hiredApps?.length || 0;
+      }
+
       return {
         referrals: referrals?.length || 0,
         openPositions,
+        hiredReferrals,
       };
     },
     enabled: !!user?.id && role === 'company_employee',
@@ -362,7 +376,7 @@ export default function Dashboard() {
         return [
           { title: t('dashboard.referrals') || 'Referrals', value: String(employeeData?.referrals ?? 0), icon: Users, onClick: () => setCurrentSection('referrals') },
           { title: t('dashboard.openPositions') || 'Open Positions', value: String(employeeData?.openPositions ?? 0), icon: Briefcase },
-          { title: t('dashboard.bonus') || 'Bonus', value: '₪0', icon: TrendingUp },
+          { title: isRTL ? 'גיוסים מהפניות' : 'Hired Referrals', value: String(employeeData?.hiredReferrals ?? 0), icon: TrendingUp },
         ];
       default:
         return [];
@@ -654,6 +668,16 @@ export default function Dashboard() {
         return withBackButton(<ReferralPanel />);
       case 'my-stats':
         return withBackButton(<MyStatsPage />);
+      case 'achievements':
+        return withBackButton(
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+              <LevelBadge />
+            </div>
+            <WeeklyQuests />
+            <AchievementsPanel />
+          </div>
+        );
     }
   };
 

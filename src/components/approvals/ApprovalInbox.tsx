@@ -18,15 +18,6 @@ const TYPE_LABELS: Record<string, { en: string; he: string }> = {
   hire: { en: 'Hire Approval', he: 'אישור גיוס' },
 };
 
-const DEMO_INCOMING = [
-  { id: 'd1', request_type: 'new_job', requester: { full_name: 'ירדן כהן' }, notes: 'משרת DevOps Senior — דחוף', created_at: new Date(Date.now() - 2 * 3600000).toISOString() },
-  { id: 'd2', request_type: 'offer', requester: { full_name: 'מאיה לוי' }, notes: 'הצעת שכר ₪32,000 לדנה פרידמן', created_at: new Date(Date.now() - 18 * 3600000).toISOString() },
-  { id: 'd3', request_type: 'budget', requester: { full_name: 'עמית ברק' }, notes: 'תקציב לכנס HR 2026', created_at: new Date(Date.now() - 48 * 3600000).toISOString() },
-];
-const DEMO_OUTGOING = [
-  { id: 'o1', request_type: 'hire', status: 'approved', approver: { full_name: 'CEO' } },
-  { id: 'o2', request_type: 'new_job', status: 'pending', approver: { full_name: 'VP R&D' } },
-];
 
 export function ApprovalInbox() {
   const { user } = useAuth();
@@ -82,15 +73,17 @@ export function ApprovalInbox() {
     return <Badge variant="secondary"><Clock className="w-3 h-3 me-1 inline" />{isHebrew ? 'ממתין' : 'Pending'}</Badge>;
   };
 
-  const isDemo = incoming.length === 0 && outgoing.length === 0 && !loadingIncoming && !loadingOutgoing;
-  const displayIncoming = isDemo ? DEMO_INCOMING : incoming;
-  const displayOutgoing = isDemo ? DEMO_OUTGOING : outgoing;
+  const isEmpty = incoming.length === 0 && outgoing.length === 0 && !loadingIncoming && !loadingOutgoing;
+  const displayIncoming = incoming;
+  const displayOutgoing = outgoing;
 
   return (
     <div className="space-y-6" dir={isHebrew ? 'rtl' : 'ltr'}>
-      {isDemo && (
-        <div className="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm text-amber-600">
-          ✨ {isHebrew ? 'נתוני דוגמה — בקשות אמיתיות יופיעו כשישלחו בקשות אישור' : 'Demo data — real requests appear once approval flows are used'}
+      {isEmpty && (
+        <div className="text-center py-8 text-muted-foreground">
+          <Inbox className="w-10 h-10 mx-auto mb-3 opacity-40" />
+          <p className="font-medium">{isHebrew ? 'אין בקשות אישור' : 'No approval requests'}</p>
+          <p className="text-sm mt-1">{isHebrew ? 'בקשות אישור יופיעו כאן כשישלחו' : 'Approval requests will appear here when submitted'}</p>
         </div>
       )}
 
@@ -126,14 +119,14 @@ export function ApprovalInbox() {
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" className="flex-1 gap-1.5"
-                        onClick={() => !isDemo && decideMutation.mutate({ id: req.id, status: 'approved' })}
+                        onClick={() => decideMutation.mutate({ id: req.id, status: 'approved' })}
                         disabled={decideMutation.isPending}
                       >
                         <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
                         {isHebrew ? 'אשר' : 'Approve'}
                       </Button>
                       <Button size="sm" variant="outline" className="flex-1 gap-1.5"
-                        onClick={() => !isDemo && decideMutation.mutate({ id: req.id, status: 'rejected' })}
+                        onClick={() => decideMutation.mutate({ id: req.id, status: 'rejected' })}
                         disabled={decideMutation.isPending}
                       >
                         <XCircle className="w-3.5 h-3.5 text-destructive" />

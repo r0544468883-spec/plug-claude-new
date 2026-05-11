@@ -10,7 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Search, X, UserSearch, Lock, Star, BookmarkPlus, BookmarkCheck, ExternalLink } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Loader2, Search, X, UserSearch, Lock, Star, BookmarkPlus, BookmarkCheck, ExternalLink, Mail, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface CandidateResult {
@@ -132,23 +133,87 @@ export function CandidateSearch() {
   const getScoreColor = (score: number) =>
     score >= 70 ? 'bg-green-500 text-white' : score >= 40 ? 'bg-yellow-500 text-white' : 'bg-muted text-muted-foreground';
 
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+
   if (!isPremium) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-4 text-center px-4">
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-          <Lock className="w-8 h-8 text-primary" />
+      <>
+        <div className="flex flex-col items-center justify-center py-20 gap-4 text-center px-4">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <Lock className="w-8 h-8 text-primary" />
+          </div>
+          <h2 className="text-xl font-bold">{isHebrew ? 'חיפוש מועמדים — פרימיום' : 'Candidate Search — Premium'}</h2>
+          <p className="text-muted-foreground max-w-sm">
+            {isHebrew
+              ? 'חפש מועמדים מכל המאגר לפי כישורים, ניסיון ותחום. זמין לחשבונות פרימיום בלבד.'
+              : 'Search all candidates by skills, experience and field. Available for premium accounts only.'}
+          </p>
+          <div className="space-y-3 w-full max-w-xs">
+            <div className="text-sm text-muted-foreground space-y-2">
+              {[
+                isHebrew ? 'חיפוש לפי כישורים ורמת ניסיון' : 'Search by skills and experience level',
+                isHebrew ? 'ציון התאמה חכם למועמדים' : 'Smart candidate match scoring',
+                isHebrew ? 'שמירה למאגר מועמדים' : 'Save to talent pool',
+                isHebrew ? 'גישה ישירה לפרופיל מועמד' : 'Direct access to candidate profile',
+              ].map((feature, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Star className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span>{feature}</span>
+                </div>
+              ))}
+            </div>
+            <Button className="w-full gap-2" onClick={() => setShowUpgradeDialog(true)}>
+              <Star className="w-4 h-4" />
+              {isHebrew ? 'שדרג לפרימיום' : 'Upgrade to Premium'}
+            </Button>
+          </div>
         </div>
-        <h2 className="text-xl font-bold">{isHebrew ? 'חיפוש מועמדים — פרימיום' : 'Candidate Search — Premium'}</h2>
-        <p className="text-muted-foreground max-w-sm">
-          {isHebrew
-            ? 'חפש מועמדים מכל המאגר לפי כישורים, ניסיון ותחום. זמין לחשבונות פרימיום בלבד.'
-            : 'Search all candidates by skills, experience and field. Available for premium accounts only.'}
-        </p>
-        <Button className="gap-2" onClick={() => toast.info(isHebrew ? 'צור קשר לשדרוג' : 'Contact us to upgrade')}>
-          <Star className="w-4 h-4" />
-          {isHebrew ? 'שדרג לפרימיום' : 'Upgrade to Premium'}
-        </Button>
-      </div>
+
+        <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
+          <DialogContent className="sm:max-w-md" dir={isHebrew ? 'rtl' : 'ltr'}>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Star className="w-5 h-5 text-primary" />
+                {isHebrew ? 'שדרוג לפרימיום' : 'Upgrade to Premium'}
+              </DialogTitle>
+              <DialogDescription>
+                {isHebrew
+                  ? 'לגישה מלאה למאגר המועמדים, צור איתנו קשר ונחזור אלייך תוך 24 שעות.'
+                  : 'For full access to the candidate pool, contact us and we\'ll get back to you within 24 hours.'}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <a
+                href="mailto:support@plug-hr.com?subject=Premium%20Upgrade%20Request"
+                className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+              >
+                <Mail className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="text-sm font-medium">support@plug-hr.com</p>
+                  <p className="text-xs text-muted-foreground">{isHebrew ? 'שלח מייל' : 'Send email'}</p>
+                </div>
+              </a>
+              <a
+                href="https://wa.me/972544468883?text=Hi%2C%20I%27d%20like%20to%20upgrade%20to%20PLUG%20Premium"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+              >
+                <MessageSquare className="w-5 h-5 text-green-500" />
+                <div>
+                  <p className="text-sm font-medium">WhatsApp</p>
+                  <p className="text-xs text-muted-foreground">{isHebrew ? 'שלח הודעה' : 'Send message'}</p>
+                </div>
+              </a>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowUpgradeDialog(false)}>
+                {isHebrew ? 'סגור' : 'Close'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
 
