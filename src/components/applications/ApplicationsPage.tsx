@@ -27,9 +27,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Briefcase, Loader2, Sparkles, FileSpreadsheet, Bookmark, ExternalLink, Heart, Building2, Plus, BarChart3, History, LayoutGrid, List, Users } from 'lucide-react';
+import { Briefcase, Loader2, Sparkles, FileSpreadsheet, Bookmark, ExternalLink, Heart, Building2, Plus, BarChart3, History, LayoutGrid, List, Users, AlertTriangle } from 'lucide-react';
 import { KanbanView } from './KanbanView';
 import { RecruiterTracker } from './RecruiterTracker';
+import { StagnantApplicationsTab } from './StagnantApplicationsTab';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -331,6 +332,16 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
 
     return result;
   }, [applications, search, statusFilter, stageFilter, sortBy]);
+
+  const stagnantCount = useMemo(() => {
+    const now = new Date();
+    const TERMINAL = ['rejected', 'withdrawn', 'hired'];
+    return applications.filter((app) => {
+      if (TERMINAL.includes(app.current_stage) || TERMINAL.includes(app.status)) return false;
+      const last = new Date(app.last_interaction || app.created_at);
+      return (now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24) >= 30;
+    }).length;
+  }, [applications]);
 
   // Handlers
   const handleViewDetails = useCallback((application: Application) => {
@@ -675,6 +686,13 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
             <Users className="w-4 h-4 me-1.5" />
             {isRTL ? 'ריקרוטרים' : 'Recruiters'}
           </TabsTrigger>
+          <TabsTrigger value="stagnant" className="rounded-md">
+            <AlertTriangle className="w-4 h-4 me-1.5" />
+            {isRTL ? 'תקועות' : 'Stagnant'}
+            {stagnantCount > 0 && (
+              <Badge variant="secondary" className="ms-1.5 text-[10px] px-1.5 py-0 bg-yellow-500/20 text-yellow-600">{stagnantCount}</Badge>
+            )}
+          </TabsTrigger>
           {user && (
             <TabsTrigger value="extension" className="rounded-md">
               <Sparkles className="w-4 h-4 me-1.5" />
@@ -857,6 +875,15 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
         {/* ── Recruiter Tracker Tab ── */}
         <TabsContent value="recruiters" className="mt-4">
           <RecruiterTracker />
+        </TabsContent>
+
+        {/* ── Stagnant Applications Tab ── */}
+        <TabsContent value="stagnant" className="mt-4">
+          <StagnantApplicationsTab
+            applications={applications}
+            onStageChange={handleStageChange}
+            onWithdraw={handleWithdraw}
+          />
         </TabsContent>
 
         {/* ── Extension Activity Tab ── */}
