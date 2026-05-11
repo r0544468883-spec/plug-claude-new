@@ -214,12 +214,14 @@ async function syncGmailFull(accessToken: string, userId: string): Promise<{ ema
   let newHistoryId: string | null = null;
   const after = Math.floor((Date.now() - 30 * 24 * 60 * 60 * 1000) / 1000);
 
-  // Query 1: Latest 30 messages (general inbox scan)
+  // Query 1: Latest 20 messages (general inbox scan)
   const queries = [
     `after:${after}`,
-    // Query 2: Job-related emails specifically (rejections, interviews, offers)
-    `after:${after} {unfortunately regret "not moving forward" "decided to move" rejection interview "schedule a call" "invite you" offer "pleased to offer" "לצערנו" "לא נוכל" "ראיון" "הזמנה לראיון" "הצעת עבודה"}`,
-    // Query 3: ATS/recruiter emails
+    // Query 2: REJECTIONS specifically — separate query to ensure they're found
+    `after:${after} {unfortunately regret "not moving forward" "decided to move forward with" "not selected" "went with another" "position has been filled" "unable to move forward" "will not be advancing" "not the right fit" "לצערנו" "לא נוכל לקדם" "לא ממשיכים" "בחרנו במועמד אחר" "נסגרה המשרה"}`,
+    // Query 3: INTERVIEWS + OFFERS
+    `after:${after} {"schedule your interview" "schedule an interview" "next step" "we'd like to invite" "shortlisted" "pleased to offer" "offer letter" "הזמנה לראיון" "ראיון עבודה" "הצעת עבודה" "שמחים להזמינך"}`,
+    // Query 4: ATS/recruiter emails
     `after:${after} from:(greenhouse-mail.io OR lever.co OR workablemail.com OR bamboohr.com OR ashbyhq.com OR comeet-notifications.com OR linkedin.com)`,
   ];
 
