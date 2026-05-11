@@ -62,6 +62,7 @@ import { ReferralPanel } from '@/components/referrals/ReferralPanel';
 import { MyOffers } from '@/components/offers/MyOffers';
 import { MyVideoInterviews } from '@/components/video-interview/MyVideoInterviews';
 import { ReferralTracker } from '@/components/referrals/ReferralTracker';
+import { MyTasks } from '@/components/tasks/MyTasks';
 import { ProfileCompletionCard } from '@/components/dashboard/ProfileCompletionCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -677,6 +678,8 @@ export default function Dashboard() {
         return withBackButton(<MyVideoInterviews />);
       case 'referral-tracker' as DashboardSection:
         return withBackButton(<ReferralTracker />);
+      case 'my-tasks' as DashboardSection:
+        return withBackButton(<MyTasks />);
       case 'achievements':
         return withBackButton(
           <div className="space-y-6">

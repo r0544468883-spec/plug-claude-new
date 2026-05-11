@@ -22,8 +22,9 @@ import { TopTalentPing } from './TopTalentPing';
 import { ImportLinkedIn } from './ImportLinkedIn';
 import { SendMessageDialog } from '@/components/messaging/SendMessageDialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, Search, Filter, Sparkles, UserCheck, Globe, Heart, MessageSquare, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Users, Search, Filter, Sparkles, UserCheck, Globe, Heart, MessageSquare, ExternalLink, AlertTriangle, Layers, Briefcase } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { JOB_FIELDS } from '@/lib/job-taxonomy';
 
 interface Candidate {
   id: string;
@@ -46,6 +47,7 @@ interface Candidate {
     linkedin_url: string | null;
     github_url: string | null;
     allow_recruiter_contact: boolean;
+    preferred_fields?: string[] | null;
   } | null;
   vouch_count: number;
 }
@@ -60,6 +62,7 @@ export function CandidatesPage() {
   const [jobFilter, setJobFilter] = useState<string>('all');
   const [globalSearch, setGlobalSearch] = useState('');
   const [linkedInOpen, setLinkedInOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'individual' | 'by-field' | 'by-job'>('individual');
 
   // Listen for external event to open LinkedIn import dialog (from Tour Guide / System Guide)
   useEffect(() => {
@@ -88,7 +91,7 @@ export function CandidatesPage() {
       const candidateIds = [...new Set(applications.map(a => a.candidate_id))];
       const { data: profiles } = await supabase
         .from('profiles_secure')
-        .select('user_id, full_name, email, phone, avatar_url, portfolio_url, linkedin_url, github_url, allow_recruiter_contact')
+        .select('user_id, full_name, email, phone, avatar_url, portfolio_url, linkedin_url, github_url, allow_recruiter_contact, preferred_fields')
         .in('user_id', candidateIds);
       const vouchCounts = await Promise.all(
         candidateIds.map(async (id) => {
@@ -252,6 +255,26 @@ export function CandidatesPage() {
             </CardContent>
           </Card>
 
+          {/* View mode toggle */}
+          <div className="flex items-center gap-1.5 border border-border rounded-lg p-1 bg-muted/40 w-fit">
+            {([
+              { key: 'individual' as const, icon: Users, labelHe: 'מועמדים', labelEn: 'Individual' },
+              { key: 'by-field' as const, icon: Layers, labelHe: 'לפי תחום', labelEn: 'By Field' },
+              { key: 'by-job' as const, icon: Briefcase, labelHe: 'לפי משרה', labelEn: 'By Job' },
+            ]).map(({ key, icon: Icon, labelHe, labelEn }) => (
+              <button
+                key={key}
+                onClick={() => setViewMode(key)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  viewMode === key ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {isHebrew ? labelHe : labelEn}
+              </button>
+            ))}
+          </div>
+
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1,2,3,4,5,6].map((i) => (
@@ -278,10 +301,102 @@ export function CandidatesPage() {
                 )}
               </CardContent>
             </Card>
-          ) : (
+          ) : viewMode === 'individual' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredCandidates.map((candidate) => (<CandidateCard key={candidate.id} candidate={candidate} />))}
             </div>
+          ) : viewMode === 'by-field' ? (
+            /* Group candidates by their preferred field */
+            (() => {
+              const fieldGroups: Record<string, typeof filteredCandidates> = {};
+              const noField: typeof filteredCandidates = [];
+
+              filteredCandidates.forEach(c => {
+                const fields = (c.profile as any)?.preferred_fields as string[] | null;
+                if (fields && fields.length > 0) {
+                  fields.forEach(f => {
+                    if (!fieldGroups[f]) fieldGroups[f] = [];
+                    fieldGroups[f].push(c);
+                  });
+                } else {
+                  noField.push(c);
+                }
+              });
+
+              const sortedSlugs = Object.keys(fieldGroups).sort((a, b) =>
+                fieldGroups[b].length - fieldGroups[a].length
+              );
+
+              return (
+                <div className="space-y-6">
+                  {sortedSlugs.map(slug => {
+                    const field = JOB_FIELDS.find(f => f.slug === slug);
+                    const label = field ? (isHebrew ? field.name_he : field.name_en) : slug;
+                    return (
+                      <div key={slug}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <Badge variant="secondary" className="text-sm font-semibold px-3 py-1">
+                            {label}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">{fieldGroups[slug].length} {isHebrew ? 'מועמדים' : 'candidates'}</span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {fieldGroups[slug].map(c => <CandidateCard key={c.id} candidate={c} />)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {noField.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Badge variant="outline" className="text-sm font-semibold px-3 py-1">
+                          {isHebrew ? 'לא צוין תחום' : 'No Field Specified'}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">{noField.length}</span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {noField.map(c => <CandidateCard key={c.id} candidate={c} />)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()
+          ) : (
+            /* Group candidates by job they applied to */
+            (() => {
+              const jobGroups: Record<string, { job: { id: string; title: string }; candidates: typeof filteredCandidates }> = {};
+
+              filteredCandidates.forEach(c => {
+                const jobId = c.job?.id;
+                if (jobId) {
+                  if (!jobGroups[jobId]) jobGroups[jobId] = { job: c.job!, candidates: [] };
+                  jobGroups[jobId].candidates.push(c);
+                }
+              });
+
+              const sortedJobs = Object.values(jobGroups).sort((a, b) =>
+                b.candidates.length - a.candidates.length
+              );
+
+              return (
+                <div className="space-y-6">
+                  {sortedJobs.map(({ job, candidates: groupCandidates }) => (
+                    <div key={job.id}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Badge className="bg-primary/10 text-primary text-sm font-semibold px-3 py-1">
+                          {job.title}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">{groupCandidates.length} {isHebrew ? 'מועמדים' : 'candidates'}</span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {groupCandidates.map(c => <CandidateCard key={c.id} candidate={c} />)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()
           )}
         </TabsContent>
 

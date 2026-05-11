@@ -63,7 +63,8 @@ import { ComposeEmailDialog } from '@/components/email/ComposeEmailDialog';
 import { KnockoutAnswersView } from '@/components/candidates/KnockoutAnswersView';
 import { RejectCandidateDialog } from '@/components/candidates/RejectCandidateDialog';
 import { SendOfferDialog } from '@/components/offers/SendOfferDialog';
-import { Undo2, Heart, FileText } from 'lucide-react';
+import { AssignTaskDialog } from '@/components/candidates/AssignTaskDialog';
+import { Undo2, Heart, FileText, ClipboardCheck } from 'lucide-react';
 import { buildEmailWebLink } from '@/lib/email-utils';
 
 interface ApplicationDetails {
@@ -211,6 +212,8 @@ export function ApplicationDetailsSheet({
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   // Offer dialog state
   const [showOfferDialog, setShowOfferDialog] = useState(false);
+  // Task assignment dialog state
+  const [showTaskDialog, setShowTaskDialog] = useState(false);
 
   // Company Vouch modal state
   const [showVouchModal, setShowVouchModal] = useState(false);
@@ -874,15 +877,26 @@ export function ApplicationDetailsSheet({
               )}
             </Button>
             {isRecruiter && currentStage !== 'rejected' && currentStage !== 'withdrawn' && (
-              <Button
-                variant="outline"
-                onClick={() => setShowOfferDialog(true)}
-                disabled={isSaving}
-                className="gap-2 border-primary/30 text-primary hover:bg-primary/10"
-              >
-                <FileText className="h-4 w-4" />
-                {isRTL ? 'פרטי משרה' : 'Job Details'}
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowOfferDialog(true)}
+                  disabled={isSaving}
+                  className="gap-2 border-primary/30 text-primary hover:bg-primary/10"
+                >
+                  <FileText className="h-4 w-4" />
+                  {isRTL ? 'פרטי משרה' : 'Job Details'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowTaskDialog(true)}
+                  disabled={isSaving}
+                  className="gap-2"
+                >
+                  <ClipboardCheck className="h-4 w-4" />
+                  {isRTL ? 'מטלה' : 'Task'}
+                </Button>
+              </>
             )}
             {isRecruiter && currentStage !== 'rejected' && currentStage !== 'withdrawn' ? (
               <Button
@@ -940,6 +954,20 @@ export function ApplicationDetailsSheet({
         jobTitle={job.title || ''}
         companyName={company?.name}
         onOfferSent={onUpdate}
+      />
+    )}
+
+    {/* Assign Task Dialog (for recruiters) */}
+    {isRecruiter && application.candidate_id && (
+      <AssignTaskDialog
+        open={showTaskDialog}
+        onOpenChange={setShowTaskDialog}
+        candidateId={application.candidate_id}
+        candidateName={candidateProfile?.full_name || ''}
+        applicationId={application.id}
+        jobId={job?.id}
+        jobTitle={job?.title}
+        onTaskCreated={onUpdate}
       />
     )}
 

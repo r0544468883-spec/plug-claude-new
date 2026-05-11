@@ -50,7 +50,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
 
-    // Verify JWT → get user
+    // Verify JWT -> get user
     const anonClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -91,7 +91,9 @@ serve(async (req) => {
       }).eq("user_id", user.id);
     }
 
-    // Fetch upcoming events (next 14 days) from ALL calendars
+    // ══════════════════════════════════════════════════════════════════
+    // PHASE 1: Pull Google Calendar → PLUG (existing behavior)
+    // ══════════════════════════════════════════════════════════════════
     const now          = new Date().toISOString();
     const twoWeeks     = new Date(Date.now() + 14 * 86400 * 1000).toISOString();
 
@@ -124,8 +126,7 @@ serve(async (req) => {
       }
     }
 
-    let synced = 0;
-
+    let pulled = 0;
     for (const ev of allEvents) {
       if (!ev.start || !ev.summary) continue;
 
@@ -150,7 +151,70 @@ serve(async (req) => {
         { onConflict: "source,source_id" }
       );
 
-      if (!upsertErr) synced++;
+      if (!upsertErr) pulled++;
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // PHASE 2: Push PLUG tasks → Google Calendar (new 2-way sync)
+    // ══════════════════════════════════════════════════════════════════
+    let pushed = 0;
+
+    // Get PLUG-created tasks (not sourced from Google) that have a due_date in the next 14 days
+    const { data: plugTasks } = await serviceClient
+      .from("schedule_tasks")
+      .select("*")
+      .eq("user_id", user.id)
+      .is("source", null)                     // only PLUG-native tasks (not pulled from Google)
+      .gte("due_date", now.substring(0, 10))
+      .lte("due_date", twoWeeks.substring(0, 10))
+      .eq("is_completed", false);
+
+    if (plugTasks && plugTasks.length > 0) {
+      for (const task of plugTasks) {
+        // Skip tasks already pushed (have source_id starting with "plug_")
+        if (task.source_id) continue;
+
+        const startDateTime = task.due_time
+          ? `${task.due_date}T${task.due_time}:00`
+          : `${task.due_date}T09:00:00`;
+        const startDate = new Date(startDateTime);
+        const endDate   = new Date(startDate.getTime() + 60 * 60 * 1000); // 1 hour
+
+        const event: any = {
+          summary: task.title,
+          description: task.description || `PLUG task · ${task.task_type}`,
+          start: { dateTime: startDate.toISOString(), timeZone: "Asia/Jerusalem" },
+          end:   { dateTime: endDate.toISOString(),   timeZone: "Asia/Jerusalem" },
+        };
+
+        if (task.location) event.location = task.location;
+        if (task.meeting_link) {
+          event.description = (event.description || "") + `\n\nMeeting link: ${task.meeting_link}`;
+        }
+
+        try {
+          const createRes = await fetch(
+            "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+            {
+              method: "POST",
+              headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+              body: JSON.stringify(event),
+            }
+          );
+
+          if (createRes.ok) {
+            const created = await createRes.json();
+            // Mark the task as pushed by setting source + source_id
+            await serviceClient.from("schedule_tasks").update({
+              source:    "plug_to_google",
+              source_id: created.id,
+            }).eq("id", task.id);
+            pushed++;
+          }
+        } catch (e) {
+          console.error("Failed to push task to Google:", task.id, e);
+        }
+      }
     }
 
     // Update last_synced_at
@@ -159,7 +223,7 @@ serve(async (req) => {
     }).eq("user_id", user.id);
 
     return new Response(
-      JSON.stringify({ success: true, synced, total: allEvents.length }),
+      JSON.stringify({ success: true, pulled, pushed, total_google_events: allEvents.length }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (e: any) {

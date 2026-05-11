@@ -46,7 +46,7 @@ function useZoom() {
   return { zoom, cycleZoom };
 }
 
-export type DashboardSection = 'overview' | 'profile-docs' | 'profile-settings' | 'applications' | 'candidates' | 'jobs' | 'job-search' | 'chat' | 'settings' | 'messages' | 'post-job' | 'saved-jobs' | 'cv-builder' | 'interview-prep' | 'feed' | 'create-feed-post' | 'create-webinar' | 'communities' | 'create-community' | 'community-view' | 'content-dashboard' | 'negotiation-sandbox' | 'content-hub' | 'b2b-suite' | 'recruiter-profile' | 'clients' | 'client-profile' | 'missions' | 'create-mission' | 'my-missions' | 'schedule' | 'hr-tools' | 'credits' | 'referrals' | 'analyses' | 'favorite-companies' | 'assignments' | 'candidate-search' | 'analytics' | 'my-stats' | 'vouches' | 'network' | 'job-swipe' | 'my-matches' | 'my-secrets' | 'ideas' | 'my-company' | 'companies' | 'achievements';
+export type DashboardSection = 'overview' | 'profile-docs' | 'profile-settings' | 'applications' | 'candidates' | 'jobs' | 'job-search' | 'chat' | 'settings' | 'messages' | 'post-job' | 'saved-jobs' | 'cv-builder' | 'interview-prep' | 'feed' | 'create-feed-post' | 'create-webinar' | 'communities' | 'create-community' | 'community-view' | 'content-dashboard' | 'negotiation-sandbox' | 'content-hub' | 'b2b-suite' | 'recruiter-profile' | 'clients' | 'client-profile' | 'missions' | 'create-mission' | 'my-missions' | 'schedule' | 'hr-tools' | 'credits' | 'referrals' | 'analyses' | 'favorite-companies' | 'assignments' | 'candidate-search' | 'analytics' | 'my-stats' | 'vouches' | 'network' | 'job-swipe' | 'my-matches' | 'my-secrets' | 'ideas' | 'my-company' | 'companies' | 'achievements' | 'offers' | 'video-interviews' | 'referral-tracker' | 'my-tasks';
 
 interface NavItemConfig {
   icon: typeof LayoutDashboard;
@@ -399,6 +399,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
                       { icon: Briefcase, label: isRTL ? 'המשרות שהגשתי'    : 'My Applications', section: 'applications' as DashboardSection, tooltipHe: 'משרות שהגשתי דרך פלאג',        tooltipEn: 'Jobs applied via PLUG' },
                       { icon: FileText,  label: isRTL ? 'פרטי משרות'        : 'Job Details',     section: 'offers'       as DashboardSection, tooltipHe: 'פרטים ותנאים של משרות מהמגייסים', tooltipEn: 'Job details and terms from recruiters' },
                       { icon: Video,     label: isRTL ? 'ראיונות וידאו'     : 'Video Interviews', section: 'video-interviews' as DashboardSection, tooltipHe: 'ראיונות וידאו אסינכרוניים ממגייסים', tooltipEn: 'Async video interviews from recruiters' },
+                      { icon: ClipboardList, label: isRTL ? 'מטלות'           : 'My Tasks',        section: 'my-tasks'     as DashboardSection, tooltipHe: 'מטלות שקיבלת מהמגייסים',       tooltipEn: 'Tasks assigned by recruiters' },
                       { icon: Calendar,  label: isRTL ? 'יומן החיפוש'       : 'My Schedule',     section: 'schedule'     as DashboardSection, tooltipHe: 'יומן ראיונות ותזכורות',        tooltipEn: 'Interviews & reminders' },
                       { icon: BarChart3, label: isRTL ? 'נתוני החיפוש שלי'  : 'My Stats',        section: 'my-stats'     as DashboardSection, tooltipHe: 'סטטיסטיקות אישיות ושוק',       tooltipEn: 'Personal statistics & market data' },
                     ],
