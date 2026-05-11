@@ -21,17 +21,17 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
-  Gift,
+  FileText,
   CheckCircle2,
   XCircle,
   Clock,
   Building2,
-  Briefcase,
   DollarSign,
   Calendar,
+  MapPin,
   Loader2,
   Inbox,
-  AlertTriangle,
+  MessageSquare,
 } from 'lucide-react';
 
 const CURRENCY_SYMBOLS: Record<string, string> = { ILS: '₪', USD: '$', EUR: '€' };
@@ -48,12 +48,10 @@ const benefitLabels: Record<string, { he: string; en: string }> = {
 };
 
 const statusConfig: Record<string, { labelHe: string; labelEn: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  sent: { labelHe: 'ממתין לתגובה', labelEn: 'Pending', variant: 'secondary' },
+  sent: { labelHe: 'חדש', labelEn: 'New', variant: 'secondary' },
   viewed: { labelHe: 'נצפה', labelEn: 'Viewed', variant: 'outline' },
-  accepted: { labelHe: 'התקבל', labelEn: 'Accepted', variant: 'default' },
-  declined: { labelHe: 'נדחה', labelEn: 'Declined', variant: 'destructive' },
-  expired: { labelHe: 'פג תוקף', labelEn: 'Expired', variant: 'outline' },
-  countered: { labelHe: 'הצעה נגדית', labelEn: 'Countered', variant: 'secondary' },
+  accepted: { labelHe: 'אושר', labelEn: 'Acknowledged', variant: 'default' },
+  declined: { labelHe: 'לא רלוונטי', labelEn: 'Not Relevant', variant: 'destructive' },
 };
 
 export function MyOffers() {
@@ -115,8 +113,8 @@ export function MyOffers() {
 
       toast.success(
         responseType === 'accept'
-          ? isHebrew ? 'ההצעה התקבלה!' : 'Offer accepted!'
-          : isHebrew ? 'ההצעה נדחתה' : 'Offer declined'
+          ? isHebrew ? 'תודה! המגייס יקבל הודעה' : 'Thanks! The recruiter will be notified'
+          : isHebrew ? 'סומן כלא רלוונטי' : 'Marked as not relevant'
       );
 
       queryClient.invalidateQueries({ queryKey: ['my-offers'] });
@@ -147,26 +145,33 @@ export function MyOffers() {
       <div className="flex flex-col items-center justify-center py-16 text-center" dir={isHebrew ? 'rtl' : 'ltr'}>
         <Inbox className="w-12 h-12 text-muted-foreground/40 mb-4" />
         <h3 className="text-lg font-semibold mb-1">
-          {isHebrew ? 'אין הצעות עבודה' : 'No Job Offers'}
+          {isHebrew ? 'אין פרטי משרות' : 'No Job Details'}
         </h3>
         <p className="text-sm text-muted-foreground max-w-sm">
           {isHebrew
-            ? 'כשמגייס ישלח לך הצעת עבודה, היא תופיע כאן.'
-            : 'When a recruiter sends you a job offer, it will appear here.'}
+            ? 'כשמגייס ישלח לך פרטים על משרה, הם יופיעו כאן.'
+            : 'When a recruiter sends you job details, they will appear here.'}
         </p>
       </div>
     );
   }
 
+  // Parse additional_terms for structured display
+  const parseTerms = (terms: string | null) => {
+    if (!terms) return { lines: [], freeText: '' };
+    const lines = terms.split('\n').filter(Boolean);
+    return { lines };
+  };
+
   return (
     <div className="space-y-4" dir={isHebrew ? 'rtl' : 'ltr'}>
       <h2 className="text-lg font-semibold flex items-center gap-2">
-        <Gift className="w-5 h-5 text-primary" />
-        {isHebrew ? 'הצעות עבודה' : 'Job Offers'}
+        <FileText className="w-5 h-5 text-primary" />
+        {isHebrew ? 'פרטי משרות' : 'Job Details'}
         {offers.filter((o: any) => o.status === 'sent' || o.status === 'viewed').length > 0 && (
           <Badge className="bg-primary/10 text-primary">
             {offers.filter((o: any) => o.status === 'sent' || o.status === 'viewed').length}{' '}
-            {isHebrew ? 'פתוחות' : 'pending'}
+            {isHebrew ? 'חדשים' : 'new'}
           </Badge>
         )}
       </h2>
@@ -176,8 +181,8 @@ export function MyOffers() {
         const company = job?.company;
         const currSymbol = CURRENCY_SYMBOLS[offer.salary_currency] || offer.salary_currency;
         const status = statusConfig[offer.status] || statusConfig.sent;
-        const isExpired = offer.expiry_date && new Date(offer.expiry_date) < new Date() && offer.status !== 'accepted' && offer.status !== 'declined';
-        const canRespond = ['sent', 'viewed'].includes(offer.status) && !isExpired;
+        const canRespond = ['sent', 'viewed'].includes(offer.status);
+        const { lines } = parseTerms(offer.additional_terms);
 
         return (
           <Card
@@ -202,24 +207,24 @@ export function MyOffers() {
                     <p className="text-sm text-muted-foreground">{company?.name || ''}</p>
                   </div>
                 </div>
-                <Badge variant={isExpired ? 'outline' : status.variant}>
-                  {isExpired
-                    ? isHebrew ? 'פג תוקף' : 'Expired'
-                    : isHebrew ? status.labelHe : status.labelEn}
+                <Badge variant={status.variant}>
+                  {isHebrew ? status.labelHe : status.labelEn}
                 </Badge>
               </div>
 
-              {/* Salary */}
+              {/* Details Grid */}
               <div className="flex items-center gap-6 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-primary" />
-                  <span className="font-bold text-lg">
-                    {currSymbol}{offer.salary_gross?.toLocaleString()}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {isHebrew ? '/ חודש' : '/ month'}
-                  </span>
-                </div>
+                {offer.salary_gross > 0 && (
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-primary" />
+                    <span className="font-bold text-lg">
+                      {currSymbol}{offer.salary_gross?.toLocaleString()}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {isHebrew ? '/ חודש' : '/ month'}
+                    </span>
+                  </div>
+                )}
 
                 {offer.start_date && (
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -229,11 +234,10 @@ export function MyOffers() {
                   </div>
                 )}
 
-                {offer.expiry_date && (
+                {job?.location && (
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <Clock className="w-3.5 h-3.5" />
-                    {isHebrew ? 'תוקף: ' : 'Expires: '}
-                    {format(new Date(offer.expiry_date), 'PP', { locale: isHebrew ? he : enUS })}
+                    <MapPin className="w-3.5 h-3.5" />
+                    {job.location}
                   </div>
                 )}
               </div>
@@ -253,18 +257,15 @@ export function MyOffers() {
                 </div>
               )}
 
-              {/* Additional Terms */}
-              {offer.additional_terms && (
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {offer.additional_terms}
-                </p>
-              )}
-
-              {/* Expiry Warning */}
-              {isExpired && (
-                <div className="flex items-center gap-2 text-amber-600 text-sm">
-                  <AlertTriangle className="w-4 h-4" />
-                  {isHebrew ? 'ההצעה פגה תוקף' : 'This offer has expired'}
+              {/* Additional Terms (structured lines) */}
+              {lines.length > 0 && (
+                <div className="bg-muted/30 rounded-lg p-3 space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground mb-1.5">
+                    {isHebrew ? 'פרטים נוספים' : 'Additional Details'}
+                  </p>
+                  {lines.map((line: string, i: number) => (
+                    <p key={i} className="text-sm text-foreground">{line}</p>
+                  ))}
                 </div>
               )}
 
@@ -275,24 +276,25 @@ export function MyOffers() {
                   <div className="flex gap-2">
                     <Button
                       className="flex-1 gap-2"
+                      variant="outline"
                       onClick={() => {
                         setRespondingId(offer.id);
                         setResponseType('accept');
                       }}
                     >
                       <CheckCircle2 className="w-4 h-4" />
-                      {isHebrew ? 'קבל הצעה' : 'Accept Offer'}
+                      {isHebrew ? 'קראתי, תודה' : 'Got it, thanks'}
                     </Button>
                     <Button
-                      variant="outline"
-                      className="flex-1 gap-2"
+                      variant="ghost"
+                      className="gap-2 text-muted-foreground"
                       onClick={() => {
                         setRespondingId(offer.id);
                         setResponseType('decline');
                       }}
                     >
                       <XCircle className="w-4 h-4" />
-                      {isHebrew ? 'דחה הצעה' : 'Decline Offer'}
+                      {isHebrew ? 'לא רלוונטי' : 'Not relevant'}
                     </Button>
                   </div>
                 </>
@@ -301,7 +303,8 @@ export function MyOffers() {
               {/* Candidate response */}
               {offer.candidate_response && (
                 <div className="bg-muted/30 p-3 rounded-lg text-sm">
-                  <p className="font-medium text-xs text-muted-foreground mb-1">
+                  <p className="font-medium text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                    <MessageSquare className="w-3 h-3" />
                     {isHebrew ? 'התגובה שלך:' : 'Your response:'}
                   </p>
                   <p>{offer.candidate_response}</p>
@@ -320,7 +323,7 @@ export function MyOffers() {
         );
       })}
 
-      {/* Response Confirmation Dialog */}
+      {/* Response Dialog */}
       <Dialog
         open={!!respondingId && !!responseType}
         onOpenChange={(open) => {
@@ -337,20 +340,20 @@ export function MyOffers() {
               {responseType === 'accept' ? (
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
               ) : (
-                <XCircle className="w-5 h-5 text-destructive" />
+                <XCircle className="w-5 h-5 text-muted-foreground" />
               )}
               {responseType === 'accept'
-                ? isHebrew ? 'קבלת הצעה' : 'Accept Offer'
-                : isHebrew ? 'דחיית הצעה' : 'Decline Offer'}
+                ? isHebrew ? 'שלח תגובה למגייס' : 'Respond to Recruiter'
+                : isHebrew ? 'סמן כלא רלוונטי' : 'Mark as Not Relevant'}
             </DialogTitle>
             <DialogDescription>
               {responseType === 'accept'
                 ? isHebrew
-                  ? `האם את/ה בטוח/ה שברצונך לקבל את ההצעה ל-${activeOffer?.jobs?.title || 'משרה'}?`
-                  : `Are you sure you want to accept the offer for ${activeOffer?.jobs?.title || 'this position'}?`
+                  ? 'אפשר להוסיף הודעה קצרה למגייס (אופציונלי)'
+                  : 'You can add a short message to the recruiter (optional)'
                 : isHebrew
-                  ? 'אפשר להוסיף הערה למגייס (אופציונלי).'
-                  : 'You can add a note to the recruiter (optional).'}
+                  ? 'אפשר להוסיף הערה למה זה לא מתאים (אופציונלי)'
+                  : 'You can add a note about why it\'s not a fit (optional)'}
             </DialogDescription>
           </DialogHeader>
 
@@ -360,8 +363,8 @@ export function MyOffers() {
               onChange={(e) => setResponseNote(e.target.value)}
               placeholder={
                 responseType === 'accept'
-                  ? isHebrew ? 'הערות (אופציונלי)...' : 'Notes (optional)...'
-                  : isHebrew ? 'סיבת הדחייה (אופציונלי)...' : 'Reason for declining (optional)...'
+                  ? isHebrew ? 'תודה, אשמח לשמוע עוד...' : 'Thanks, would love to hear more...'
+                  : isHebrew ? 'למשל: מיקום רחוק, ציפיות שכר שונות...' : 'e.g. location too far, different salary expectations...'
               }
               rows={3}
               className="resize-none"
@@ -381,7 +384,7 @@ export function MyOffers() {
               {isHebrew ? 'ביטול' : 'Cancel'}
             </Button>
             <Button
-              variant={responseType === 'accept' ? 'default' : 'destructive'}
+              variant={responseType === 'accept' ? 'default' : 'secondary'}
               onClick={handleRespond}
               disabled={submitting}
               className="gap-2"
@@ -394,8 +397,8 @@ export function MyOffers() {
                 <XCircle className="w-4 h-4" />
               )}
               {responseType === 'accept'
-                ? isHebrew ? 'אשר קבלה' : 'Confirm Accept'
-                : isHebrew ? 'אשר דחייה' : 'Confirm Decline'}
+                ? isHebrew ? 'שלח' : 'Send'
+                : isHebrew ? 'אשר' : 'Confirm'}
             </Button>
           </DialogFooter>
         </DialogContent>

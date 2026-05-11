@@ -63,7 +63,7 @@ import { ComposeEmailDialog } from '@/components/email/ComposeEmailDialog';
 import { KnockoutAnswersView } from '@/components/candidates/KnockoutAnswersView';
 import { RejectCandidateDialog } from '@/components/candidates/RejectCandidateDialog';
 import { SendOfferDialog } from '@/components/offers/SendOfferDialog';
-import { Undo2, Heart, Gift } from 'lucide-react';
+import { Undo2, Heart, FileText } from 'lucide-react';
 import { buildEmailWebLink } from '@/lib/email-utils';
 
 interface ApplicationDetails {
@@ -880,8 +880,8 @@ export function ApplicationDetailsSheet({
                 disabled={isSaving}
                 className="gap-2 border-primary/30 text-primary hover:bg-primary/10"
               >
-                <Gift className="h-4 w-4" />
-                {isRTL ? 'שלח הצעה' : 'Offer'}
+                <FileText className="h-4 w-4" />
+                {isRTL ? 'פרטי משרה' : 'Job Details'}
               </Button>
             )}
             {isRecruiter && currentStage !== 'rejected' && currentStage !== 'withdrawn' ? (
@@ -928,7 +928,7 @@ export function ApplicationDetailsSheet({
       </SheetContent>
     </Sheet>
 
-    {/* Send Offer Dialog (for recruiters) */}
+    {/* Send Job Details Dialog (for recruiters) */}
     {isRecruiter && application.candidate_id && job?.id && (
       <SendOfferDialog
         open={showOfferDialog}

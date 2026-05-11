@@ -18,7 +18,7 @@ import { NavTooltip } from '@/components/ui/nav-tooltip';
 import { VisibleToHRBanner } from '@/components/sidebar/VisibleToHRBanner';
 // PlugFloatingHint removed - notifications now in NotificationBell
 import {
-  LayoutDashboard, Users, Briefcase, FileText, MessageSquare, Settings, LogOut, Menu, X, User, Search, ArrowLeft, ArrowRight, Heart, FileEdit, Route, Sparkles, Mic, Newspaper, Video, Globe, DollarSign, Building2, Target, Calendar, LayoutGrid, Gem, ClipboardList, BarChart3, UserSearch, Monitor, Share2, History, Lightbulb, Eye, ChevronDown, ZoomIn, ZoomOut, Smartphone, Shield, Trophy, Bookmark, Gift
+  LayoutDashboard, Users, Briefcase, FileText, MessageSquare, Settings, LogOut, Menu, X, User, Search, ArrowLeft, ArrowRight, Heart, FileEdit, Route, Sparkles, Mic, Newspaper, Video, Globe, DollarSign, Building2, Target, Calendar, LayoutGrid, Gem, ClipboardList, BarChart3, UserSearch, Monitor, Share2, History, Lightbulb, Eye, ChevronDown, ZoomIn, ZoomOut, Smartphone, Shield, Trophy, Bookmark
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -397,7 +397,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
                     labelHe: 'הגשות', labelEn: 'Applications',
                     items: [
                       { icon: Briefcase, label: isRTL ? 'המשרות שהגשתי'    : 'My Applications', section: 'applications' as DashboardSection, tooltipHe: 'משרות שהגשתי דרך פלאג',        tooltipEn: 'Jobs applied via PLUG' },
-                      { icon: Gift,      label: isRTL ? 'הצעות עבודה'       : 'Job Offers',      section: 'offers'       as DashboardSection, tooltipHe: 'הצעות עבודה שקיבלת ממגייסים',  tooltipEn: 'Job offers received from recruiters' },
+                      { icon: FileText,  label: isRTL ? 'פרטי משרות'        : 'Job Details',     section: 'offers'       as DashboardSection, tooltipHe: 'פרטים ותנאים של משרות מהמגייסים', tooltipEn: 'Job details and terms from recruiters' },
                       { icon: Video,     label: isRTL ? 'ראיונות וידאו'     : 'Video Interviews', section: 'video-interviews' as DashboardSection, tooltipHe: 'ראיונות וידאו אסינכרוניים ממגייסים', tooltipEn: 'Async video interviews from recruiters' },
                       { icon: Calendar,  label: isRTL ? 'יומן החיפוש'       : 'My Schedule',     section: 'schedule'     as DashboardSection, tooltipHe: 'יומן ראיונות ותזכורות',        tooltipEn: 'Interviews & reminders' },
                       { icon: BarChart3, label: isRTL ? 'נתוני החיפוש שלי'  : 'My Stats',        section: 'my-stats'     as DashboardSection, tooltipHe: 'סטטיסטיקות אישיות ושוק',       tooltipEn: 'Personal statistics & market data' },
