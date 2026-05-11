@@ -60,7 +60,10 @@ import { CompanyVouchModal } from '@/components/vouch/CompanyVouchModal';
 import { SendMessageDialog } from '@/components/messaging/SendMessageDialog';
 import { EmailThreadView } from '@/components/email/EmailThreadView';
 import { ComposeEmailDialog } from '@/components/email/ComposeEmailDialog';
-import { Undo2, Heart } from 'lucide-react';
+import { KnockoutAnswersView } from '@/components/candidates/KnockoutAnswersView';
+import { RejectCandidateDialog } from '@/components/candidates/RejectCandidateDialog';
+import { SendOfferDialog } from '@/components/offers/SendOfferDialog';
+import { Undo2, Heart, Gift } from 'lucide-react';
 import { buildEmailWebLink } from '@/lib/email-utils';
 
 interface ApplicationDetails {
@@ -204,6 +207,11 @@ export function ApplicationDetailsSheet({
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   
+  // Reject dialog state
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  // Offer dialog state
+  const [showOfferDialog, setShowOfferDialog] = useState(false);
+
   // Company Vouch modal state
   const [showVouchModal, setShowVouchModal] = useState(false);
   const [vouchTrigger, setVouchTrigger] = useState<{
@@ -516,10 +524,19 @@ export function ApplicationDetailsSheet({
           )}
 
           {/* Candidate Vouches Badge */}
-          <CandidateVouchBadge 
-            candidateId={application.candidate_id || ''} 
+          <CandidateVouchBadge
+            candidateId={application.candidate_id || ''}
             candidateName={candidateProfile?.full_name}
           />
+
+          {/* Knockout Question Answers (for recruiters) */}
+          {isRecruiter && application.candidate_id && job?.id && (
+            <KnockoutAnswersView
+              applicationId={application.id}
+              candidateId={application.candidate_id}
+              jobId={job.id}
+            />
+          )}
 
           {/* Candidate Profile Section (for recruiters) */}
           {isRecruiter && candidateProfile && (
@@ -590,6 +607,21 @@ export function ApplicationDetailsSheet({
                     </a>
                   )}
                 </div>
+
+                {/* Intro Video */}
+                {candidateProfile.intro_video_url && (
+                  <div className="rounded-lg overflow-hidden border border-border">
+                    <video
+                      src={candidateProfile.intro_video_url}
+                      controls
+                      className="w-full max-h-52 bg-black"
+                      preload="metadata"
+                    />
+                    <p className="text-xs text-muted-foreground p-2 text-center">
+                      {isRTL ? 'סרטון היכרות' : 'Intro Video'}
+                    </p>
+                  </div>
+                )}
 
                 {/* Resume Download */}
                 {candidateResume && (
@@ -841,14 +873,36 @@ export function ApplicationDetailsSheet({
                 </>
               )}
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleWithdraw}
-              disabled={isSaving || currentStage === 'withdrawn'}
-            >
-              <XCircle className="h-4 w-4 mr-2" />
-              {isRTL ? 'בטל מועמדות' : 'Withdraw'}
-            </Button>
+            {isRecruiter && currentStage !== 'rejected' && currentStage !== 'withdrawn' && (
+              <Button
+                variant="outline"
+                onClick={() => setShowOfferDialog(true)}
+                disabled={isSaving}
+                className="gap-2 border-primary/30 text-primary hover:bg-primary/10"
+              >
+                <Gift className="h-4 w-4" />
+                {isRTL ? 'שלח הצעה' : 'Offer'}
+              </Button>
+            )}
+            {isRecruiter && currentStage !== 'rejected' && currentStage !== 'withdrawn' ? (
+              <Button
+                variant="destructive"
+                onClick={() => setShowRejectDialog(true)}
+                disabled={isSaving}
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                {isRTL ? 'דחה מועמד' : 'Reject'}
+              </Button>
+            ) : (
+              <Button
+                variant="destructive"
+                onClick={handleWithdraw}
+                disabled={isSaving || currentStage === 'withdrawn'}
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                {isRTL ? 'בטל מועמדות' : 'Withdraw'}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -874,6 +928,37 @@ export function ApplicationDetailsSheet({
       </SheetContent>
     </Sheet>
 
+    {/* Send Offer Dialog (for recruiters) */}
+    {isRecruiter && application.candidate_id && job?.id && (
+      <SendOfferDialog
+        open={showOfferDialog}
+        onOpenChange={setShowOfferDialog}
+        applicationId={application.id}
+        candidateId={application.candidate_id}
+        candidateName={candidateProfile?.full_name || ''}
+        jobId={job.id}
+        jobTitle={job.title || ''}
+        companyName={company?.name}
+        onOfferSent={onUpdate}
+      />
+    )}
+
+    {/* Rejection Dialog (for recruiters) */}
+    {isRecruiter && (
+      <RejectCandidateDialog
+        open={showRejectDialog}
+        onOpenChange={setShowRejectDialog}
+        applicationId={application.id}
+        candidateName={candidateProfile?.full_name || ''}
+        candidateEmail={candidateProfile?.email}
+        jobTitle={job?.title}
+        companyName={company?.name}
+        onRejected={() => {
+          setCurrentStage('rejected');
+          onUpdate();
+        }}
+      />
+    )}
     </>
   );
 }

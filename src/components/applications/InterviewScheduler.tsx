@@ -179,8 +179,38 @@ export function InterviewScheduler({ applicationId, jobTitle, companyName, onInt
           : `${interviewTypes.find(t => t.value === type)?.label.en} scheduled for ${format(interviewDate, 'PPp', { locale: enUS })}`,
       });
 
+      // Sync: create a schedule_task for the candidate so it appears in their calendar
+      try {
+        // Get candidate_id from the application
+        const { data: appData } = await supabase
+          .from('applications')
+          .select('candidate_id, jobs!inner(title, company:companies(name))')
+          .eq('id', applicationId)
+          .single();
+
+        if (appData?.candidate_id) {
+          const jobTitle = (appData as any).jobs?.title || '';
+          const companyName = (appData as any).jobs?.company?.name || '';
+          const typeLabel = interviewTypes.find(t => t.value === type)?.label;
+
+          await (supabase as any).from('schedule_tasks').insert({
+            user_id: appData.candidate_id,
+            title: isRTL
+              ? `${typeLabel?.he || 'ראיון'} — ${jobTitle}${companyName ? ` ב-${companyName}` : ''}`
+              : `${typeLabel?.en || 'Interview'} — ${jobTitle}${companyName ? ` at ${companyName}` : ''}`,
+            task_type: 'interview',
+            due_date: interviewDate.toISOString(),
+            location: location || null,
+            source: 'application',
+            source_id: applicationId,
+          });
+        }
+      } catch (syncErr) {
+        console.error('Calendar sync error (non-blocking):', syncErr);
+      }
+
       toast.success(isRTL ? 'הראיון נקבע!' : 'Interview scheduled!');
-      
+
       // Reset form
       setDate(undefined);
       setTime('10:00');

@@ -59,6 +59,9 @@ import { CreateMissionForm } from '@/components/missions/CreateMissionForm';
 import { MyMissions } from '@/components/missions/MyMissions';
 import { HRToolsHub } from '@/components/hr-tools/HRToolsHub';
 import { ReferralPanel } from '@/components/referrals/ReferralPanel';
+import { MyOffers } from '@/components/offers/MyOffers';
+import { MyVideoInterviews } from '@/components/video-interview/MyVideoInterviews';
+import { ReferralTracker } from '@/components/referrals/ReferralTracker';
 import { ProfileCompletionCard } from '@/components/dashboard/ProfileCompletionCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -668,6 +671,12 @@ export default function Dashboard() {
         return withBackButton(<ReferralPanel />);
       case 'my-stats':
         return withBackButton(<MyStatsPage />);
+      case 'offers' as DashboardSection:
+        return withBackButton(<MyOffers />);
+      case 'video-interviews' as DashboardSection:
+        return withBackButton(<MyVideoInterviews />);
+      case 'referral-tracker' as DashboardSection:
+        return withBackButton(<ReferralTracker />);
       case 'achievements':
         return withBackButton(
           <div className="space-y-6">

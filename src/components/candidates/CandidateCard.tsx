@@ -6,11 +6,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SendMessageDialog } from '@/components/messaging/SendMessageDialog';
+import { CandidateVouchBadge } from '@/components/vouch/CandidateVouchBadge';
 import { StagnationAlert } from './StagnationAlert';
 import { RetentionRiskBadge } from './RetentionRiskBadge';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Heart, Globe, Linkedin, Github, Phone, Briefcase, MessageSquare, User, TrendingUp, Clock, Video, Sparkles, ChevronDown, ChevronUp
+import {
+  Heart, Globe, Linkedin, Github, Phone, Briefcase, MessageSquare, User, TrendingUp, Clock, Video, Sparkles, ChevronDown, ChevronUp, Download, Play, ArrowRight
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { he, enUS } from 'date-fns/locale';
@@ -80,6 +81,8 @@ const stageProgress: Record<string, number> = {
   applied: 20, screening: 40, interview: 60, offer: 80, hired: 100, rejected: 0, withdrawn: 0,
 };
 
+const STAGE_ORDER = ['applied', 'screening', 'interview', 'offer', 'hired'];
+
 export function CandidateCard({ candidate, onRefresh }: CandidateCardProps) {
   const { language } = useLanguage();
   const navigate = useNavigate();
@@ -88,6 +91,8 @@ export function CandidateCard({ candidate, onRefresh }: CandidateCardProps) {
   const [showSummary, setShowSummary] = useState(false);
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [summary, setSummary] = useState<any>(candidate.ai_candidate_summary || null);
+  const [showVideo, setShowVideo] = useState(false);
+  const [advancingStage, setAdvancingStage] = useState(false);
 
   const timeAgo = formatDistanceToNow(new Date(candidate.created_at), {
     addSuffix: true,
@@ -134,6 +139,64 @@ export function CandidateCard({ candidate, onRefresh }: CandidateCardProps) {
       toast.error(isHebrew ? 'שגיאה ביצירת סיכום' : 'Failed to generate summary');
     } finally {
       setLoadingSummary(false);
+    }
+  };
+
+  const nextStage = (() => {
+    const idx = STAGE_ORDER.indexOf(candidate.current_stage);
+    return idx >= 0 && idx < STAGE_ORDER.length - 1 ? STAGE_ORDER[idx + 1] : null;
+  })();
+
+  const advanceStage = async () => {
+    if (!nextStage) return;
+    setAdvancingStage(true);
+    try {
+      const updateData: any = {
+        current_stage: nextStage,
+        last_interaction: new Date().toISOString(),
+        last_stage_change_at: new Date().toISOString(),
+      };
+      if (nextStage === 'hired') updateData.status = 'hired';
+
+      const { error } = await supabase
+        .from('applications')
+        .update(updateData)
+        .eq('id', candidate.id);
+      if (error) throw error;
+
+      await supabase.from('application_timeline').insert({
+        application_id: candidate.id,
+        event_type: 'stage_change',
+        old_value: candidate.current_stage,
+        new_value: nextStage,
+      });
+
+      toast.success(isHebrew
+        ? `הועבר ל${stageLabels[nextStage]?.he || nextStage}`
+        : `Moved to ${stageLabels[nextStage]?.en || nextStage}`);
+      onRefresh?.();
+    } catch {
+      toast.error(isHebrew ? 'שגיאה בהעברת שלב' : 'Failed to advance stage');
+    } finally {
+      setAdvancingStage(false);
+    }
+  };
+
+  const downloadResume = async () => {
+    if (!candidate.candidate_id) return;
+    const { data: docs } = await supabase
+      .from('documents')
+      .select('file_path')
+      .eq('owner_id', candidate.candidate_id)
+      .eq('doc_type', 'resume')
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (docs?.[0]?.file_path) {
+      const { data } = await supabase.storage.from('resumes').createSignedUrl(docs[0].file_path, 60);
+      if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+      else toast.error(isHebrew ? 'לא ניתן לפתוח CV' : 'Could not open CV');
+    } else {
+      toast.info(isHebrew ? 'אין קורות חיים' : 'No resume uploaded');
     }
   };
 
@@ -223,13 +286,29 @@ export function CandidateCard({ candidate, onRefresh }: CandidateCardProps) {
           )}
 
           {profile?.intro_video_url && (
-            <Badge variant="outline" className="gap-1 border-primary/20 text-primary">
-              <Video className="w-3 h-3" />{isHebrew ? 'סרטון' : 'Video'}
+            <Badge
+              variant="outline"
+              className="gap-1 border-primary/20 text-primary cursor-pointer hover:bg-primary/10"
+              onClick={() => setShowVideo(!showVideo)}
+            >
+              <Play className="w-3 h-3" />{isHebrew ? 'סרטון היכרות' : 'Intro Video'}
             </Badge>
           )}
 
           <span className="text-xs text-muted-foreground">{timeAgo}</span>
         </div>
+
+        {/* Intro Video Player */}
+        {showVideo && profile?.intro_video_url && (
+          <div className="mb-3 rounded-lg overflow-hidden border border-border">
+            <video
+              src={profile.intro_video_url}
+              controls
+              className="w-full max-h-48 bg-black"
+              preload="metadata"
+            />
+          </div>
+        )}
 
         {/* AI Summary Toggle */}
         <div className="mb-3">
@@ -288,10 +367,23 @@ export function CandidateCard({ candidate, onRefresh }: CandidateCardProps) {
           </div>
         )}
 
+        {/* Vouches */}
+        {candidate.vouch_count > 0 && (
+          <div className="mb-3">
+            <CandidateVouchBadge
+              candidateId={candidate.candidate_id}
+              candidateName={profile?.full_name || undefined}
+            />
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex items-center gap-2 flex-wrap">
           <Button variant="outline" size="sm" className="gap-2" onClick={goToProfile}>
             <User className="w-4 h-4" />{isHebrew ? 'פרופיל' : 'Profile'}
+          </Button>
+          <Button variant="outline" size="sm" className="gap-2" onClick={downloadResume}>
+            <Download className="w-4 h-4" />CV
           </Button>
           {profile?.allow_recruiter_contact && (
             <>
@@ -312,6 +404,18 @@ export function CandidateCard({ candidate, onRefresh }: CandidateCardProps) {
                 </Button>
               )}
             </>
+          )}
+          {/* Quick Stage Advance */}
+          {nextStage && !isTerminal && (
+            <Button
+              size="sm"
+              className="gap-1.5 ms-auto"
+              onClick={advanceStage}
+              disabled={advancingStage}
+            >
+              <ArrowRight className="w-3.5 h-3.5" />
+              {isHebrew ? stageLabels[nextStage]?.he : stageLabels[nextStage]?.en}
+            </Button>
           )}
         </div>
       </CardContent>

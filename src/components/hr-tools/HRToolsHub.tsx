@@ -8,6 +8,7 @@ import { JobAlertSetup } from '@/components/alerts/JobAlertSetup';
 import { ReferralPanel } from '@/components/referrals/ReferralPanel';
 import { SurveyResults } from '@/components/surveys/SurveyResults';
 import { DocumentsPage } from '@/components/documents/DocumentsPage';
+import { VideoInterviewList } from '@/components/video-interview/VideoInterviewList';
 import { Button } from '@/components/ui/button';
 import {
   BarChart3,
@@ -20,6 +21,7 @@ import {
   ArrowRight,
   LayoutGrid,
   FileSignature,
+  Video,
 } from 'lucide-react';
 
 
@@ -31,7 +33,8 @@ type HRSubSection =
   | 'job-alerts'
   | 'referrals'
   | 'surveys'
-  | 'documents';
+  | 'documents'
+  | 'video-interviews';
 
 interface HRToolsHubProps {
   onBack?: () => void;
@@ -106,6 +109,16 @@ export function HRToolsHub({ onBack }: HRToolsHubProps) {
       iconColor: 'text-yellow-500',
     },
     {
+      id: 'video-interviews' as HRSubSection,
+      icon: Video,
+      labelHe: 'ראיונות וידאו',
+      labelEn: 'Video Interviews',
+      descHe: 'ראיונות וידאו אסינכרוניים — שלח שאלות וצפה בתשובות',
+      descEn: 'Async video interviews — send questions & review answers',
+      color: 'from-red-500/10 to-orange-500/10 border-red-500/20',
+      iconColor: 'text-red-500',
+    },
+    {
       id: 'documents' as HRSubSection,
       icon: FileSignature,
       labelHe: 'מסמכים לחתימה',
@@ -131,6 +144,8 @@ export function HRToolsHub({ onBack }: HRToolsHubProps) {
         return <ReferralPanel />;
       case 'surveys':
         return <SurveyResults />;
+      case 'video-interviews':
+        return <VideoInterviewList />;
       case 'documents':
         return <DocumentsPage onBack={() => setSubSection('hub')} />;
       default:
