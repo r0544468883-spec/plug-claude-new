@@ -20,6 +20,7 @@ interface Question {
   type: 'open' | 'situational' | 'technical' | 'behavioral';
   mediaUrl?: string;
   mediaType?: 'video' | 'image' | 'pdf' | 'link' | null;
+  answerTimeSeconds?: number; // per-question override
 }
 
 interface CreateVideoInterviewProps {
@@ -214,6 +215,7 @@ export function CreateVideoInterview({ onCreated }: CreateVideoInterviewProps) {
           question_type: q.type,
           media_url: q.mediaUrl || null,
           media_type: q.mediaType || null,
+          answer_time_seconds: q.answerTimeSeconds || null,
         }));
 
         const { error: qErr } = await (supabase as any)
@@ -392,6 +394,25 @@ export function CreateVideoInterview({ onCreated }: CreateVideoInterviewProps) {
                           {Object.entries(questionTypeLabels).map(([val, labels]) => (
                             <SelectItem key={val} value={val}>{isHebrew ? labels.he : labels.en}</SelectItem>
                           ))}
+                        </SelectContent>
+                      </Select>
+
+                      {/* Per-question answer time override */}
+                      <Select
+                        value={q.answerTimeSeconds ? String(q.answerTimeSeconds) : 'default'}
+                        onValueChange={v => updateQuestion(q.id, { answerTimeSeconds: v === 'default' ? undefined : parseInt(v) })}
+                      >
+                        <SelectTrigger className="w-32 h-8 text-xs">
+                          <SelectValue placeholder={isHebrew ? 'זמן' : 'Time'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="default">{isHebrew ? 'ברירת מחדל' : 'Default'}</SelectItem>
+                          <SelectItem value="30">30s</SelectItem>
+                          <SelectItem value="60">60s</SelectItem>
+                          <SelectItem value="90">90s</SelectItem>
+                          <SelectItem value="120">120s</SelectItem>
+                          <SelectItem value="180">180s</SelectItem>
+                          <SelectItem value="300">300s</SelectItem>
                         </SelectContent>
                       </Select>
 

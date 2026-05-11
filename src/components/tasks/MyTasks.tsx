@@ -84,12 +84,12 @@ export function MyTasks() {
       <div className="flex flex-col items-center justify-center py-16 text-center" dir={isHebrew ? 'rtl' : 'ltr'}>
         <Inbox className="w-12 h-12 text-muted-foreground/40 mb-4" />
         <h3 className="text-lg font-semibold mb-1">
-          {isHebrew ? 'אין מטלות' : 'No Tasks'}
+          {isHebrew ? 'אין בקשות' : 'No Requests'}
         </h3>
         <p className="text-sm text-muted-foreground max-w-sm">
           {isHebrew
-            ? 'כשמגייס ישלח לך מטלה, היא תופיע כאן.'
-            : 'When a recruiter assigns you a task, it will appear here.'}
+            ? 'כשמגייס ישלח לך בקשה, היא תופיע כאן.'
+            : 'When a recruiter sends you a request, it will appear here.'}
         </p>
       </div>
     );
@@ -102,7 +102,7 @@ export function MyTasks() {
     <div className="space-y-6" dir={isHebrew ? 'rtl' : 'ltr'}>
       <h2 className="text-lg font-semibold flex items-center gap-2">
         <ClipboardCheck className="w-5 h-5 text-primary" />
-        {isHebrew ? 'מטלות מהמגייסים' : 'Tasks from Recruiters'}
+        {isHebrew ? 'בקשות ממגייסים' : 'Recruiter Requests'}
         {pending.length > 0 && (
           <Badge className="bg-primary/10 text-primary">
             {pending.length} {isHebrew ? 'פתוחות' : 'pending'}

@@ -41,7 +41,7 @@ export function MyVideoInterviews() {
       // Get active video interviews for those jobs
       const { data: videoInterviews } = await (supabase as any)
         .from('video_interviews')
-        .select('*, video_interview_questions(id, question_text, question_order, question_type, media_url, media_type)')
+        .select('*, video_interview_questions(id, question_text, question_order, question_type, media_url, media_type, answer_time_seconds)')
         .in('job_id', jobIds)
         .eq('status', 'active')
         .order('created_at', { ascending: false });

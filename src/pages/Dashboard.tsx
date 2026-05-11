@@ -63,6 +63,7 @@ import { MyOffers } from '@/components/offers/MyOffers';
 import { MyVideoInterviews } from '@/components/video-interview/MyVideoInterviews';
 import { ReferralTracker } from '@/components/referrals/ReferralTracker';
 import { MyTasks } from '@/components/tasks/MyTasks';
+import { CandidateHierarchyWidget } from '@/components/dashboard/CandidateHierarchyWidget';
 import { ProfileCompletionCard } from '@/components/dashboard/ProfileCompletionCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -413,7 +414,8 @@ export default function Dashboard() {
       );
     }
 
-    // HR & Employee overview — keep existing layout for now
+    // HR & Employee overview
+    const isRecruiterRole = role === 'freelance_hr' || role === 'inhouse_hr';
     return (
       <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
         <div className="text-xl font-semibold text-foreground">
@@ -424,6 +426,12 @@ export default function Dashboard() {
             <StatCard key={index} {...stat} colorIndex={index} />
           ))}
         </div>
+
+        {/* Candidate Hierarchy Widget — recruiter only, spread horizontally */}
+        {isRecruiterRole && (
+          <CandidateHierarchyWidget onNavigateToCandidates={() => setCurrentSection('candidates')} />
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2" ref={chatRef}>
             <PlugChat

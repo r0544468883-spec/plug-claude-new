@@ -399,7 +399,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
                       { icon: Briefcase, label: isRTL ? 'המשרות שהגשתי'    : 'My Applications', section: 'applications' as DashboardSection, tooltipHe: 'משרות שהגשתי דרך פלאג',        tooltipEn: 'Jobs applied via PLUG' },
                       { icon: FileText,  label: isRTL ? 'פרטי משרות'        : 'Job Details',     section: 'offers'       as DashboardSection, tooltipHe: 'פרטים ותנאים של משרות מהמגייסים', tooltipEn: 'Job details and terms from recruiters' },
                       { icon: Video,     label: isRTL ? 'ראיונות וידאו'     : 'Video Interviews', section: 'video-interviews' as DashboardSection, tooltipHe: 'ראיונות וידאו אסינכרוניים ממגייסים', tooltipEn: 'Async video interviews from recruiters' },
-                      { icon: ClipboardList, label: isRTL ? 'מטלות'           : 'My Tasks',        section: 'my-tasks'     as DashboardSection, tooltipHe: 'מטלות שקיבלת מהמגייסים',       tooltipEn: 'Tasks assigned by recruiters' },
+                      { icon: ClipboardList, label: isRTL ? 'בקשות ממגייסים'   : 'Recruiter Requests', section: 'my-tasks'     as DashboardSection, tooltipHe: 'בקשות ומטלות שקיבלת מהמגייסים', tooltipEn: 'Requests and tasks from recruiters' },
                       { icon: Calendar,  label: isRTL ? 'יומן החיפוש'       : 'My Schedule',     section: 'schedule'     as DashboardSection, tooltipHe: 'יומן ראיונות ותזכורות',        tooltipEn: 'Interviews & reminders' },
                       { icon: BarChart3, label: isRTL ? 'נתוני החיפוש שלי'  : 'My Stats',        section: 'my-stats'     as DashboardSection, tooltipHe: 'סטטיסטיקות אישיות ושוק',       tooltipEn: 'Personal statistics & market data' },
                     ],

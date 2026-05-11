@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Building2, GraduationCap, Lightbulb, Video, Save, Loader2, Eye, Briefcase, X, Search } from 'lucide-react';
+import { User, Building2, GraduationCap, Lightbulb, Video, Save, Loader2, Eye, Briefcase, X, Search, Calendar, CheckCircle2, Unlink } from 'lucide-react';
 import { PhotoUpload } from '@/components/profile/PhotoUpload';
 import { getCompanyLogoUrl } from '@/lib/company-logo';
 
@@ -43,6 +43,51 @@ export function RecruiterProfileEditor() {
   const [saving, setSaving] = useState(false);
   const [previewMode, setPreviewMode] = useState<'edit' | 'companies' | 'candidates'>('edit');
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Google Calendar state
+  const [gcalConnected, setGcalConnected] = useState(false);
+  const [gcalLastSynced, setGcalLastSynced] = useState<string | null>(null);
+
+  // Check Google Calendar connection
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase
+      .from('google_calendar_tokens' as any)
+      .select('last_synced_at')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }: any) => {
+        if (data) {
+          setGcalConnected(true);
+          setGcalLastSynced(data.last_synced_at);
+        }
+      });
+  }, [user?.id]);
+
+  const handleGcalConnect = () => {
+    if (!user?.id) return;
+    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+    const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    const redirectUri = `${SUPABASE_URL}/functions/v1/google-calendar-callback`;
+    const params = new URLSearchParams({
+      client_id: CLIENT_ID,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events',
+      access_type: 'offline',
+      prompt: 'consent',
+      state: user.id,
+    });
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+  };
+
+  const handleGcalDisconnect = async () => {
+    if (!user?.id) return;
+    await supabase.from('google_calendar_tokens' as any).delete().eq('user_id', user.id);
+    setGcalConnected(false);
+    setGcalLastSynced(null);
+    toast.success(isRTL ? 'יומן Google נותק' : 'Google Calendar disconnected');
+  };
 
   useEffect(() => {
     if (!user?.id) return;
@@ -426,6 +471,53 @@ export function RecruiterProfileEditor() {
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {isRTL ? 'שמור פרופיל' : 'Save Profile'}
           </Button>
+        </CardContent>
+      </Card>
+
+      {/* Google Calendar Integration */}
+      <Card>
+        <CardContent className="p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-blue-500/10">
+              <Calendar className="w-5 h-5 text-blue-500" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold">{isRTL ? 'סנכרון יומן Google' : 'Google Calendar Sync'}</h3>
+              <p className="text-xs text-muted-foreground">
+                {isRTL
+                  ? 'סנכרן ראיונות ומשימות אוטומטית עם יומן Google שלך'
+                  : 'Sync interviews and tasks automatically with your Google Calendar'}
+              </p>
+            </div>
+          </div>
+
+          {gcalConnected ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-green-600">
+                    {isRTL ? 'יומן Google מחובר' : 'Google Calendar connected'}
+                  </p>
+                  {gcalLastSynced && (
+                    <p className="text-xs text-muted-foreground">
+                      {isRTL ? 'סונכרן לאחרונה: ' : 'Last synced: '}
+                      {new Date(gcalLastSynced).toLocaleDateString(isRTL ? 'he-IL' : 'en-US')}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive" onClick={handleGcalDisconnect}>
+                <Unlink className="w-3.5 h-3.5" />
+                {isRTL ? 'נתק יומן' : 'Disconnect'}
+              </Button>
+            </div>
+          ) : (
+            <Button size="sm" className="gap-2" onClick={handleGcalConnect}>
+              <Calendar className="w-4 h-4" />
+              {isRTL ? 'חבר יומן Google' : 'Connect Google Calendar'}
+            </Button>
+          )}
         </CardContent>
       </Card>
     </div>

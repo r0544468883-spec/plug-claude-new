@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   CheckCircle2, Video, StopCircle, RefreshCw, ChevronRight,
-  Play, FileText, Image, Link2, ExternalLink
+  Play, FileText, Image, Link2, ExternalLink, Pen
 } from 'lucide-react';
+import { Whiteboard } from './Whiteboard';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -18,6 +19,7 @@ interface Question {
   question_type: string;
   media_url?: string | null;
   media_type?: 'video' | 'image' | 'pdf' | 'link' | null;
+  answer_time_seconds?: number | null;
 }
 
 interface Interview {
@@ -116,6 +118,7 @@ export function CandidateVideoRecorder({ interview, questions, onComplete }: Can
   const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
   const [allDone, setAllDone] = useState(false);
   const [recordingElapsed, setRecordingElapsed] = useState(0);
+  const [showWhiteboard, setShowWhiteboard] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -150,6 +153,11 @@ export function CandidateVideoRecorder({ interview, questions, onComplete }: Can
     };
   }, [startStream]);
 
+  // Per-question answer time (falls back to global)
+  const currentAnswerTime = (!isFreeform && currentQuestion?.answer_time_seconds)
+    ? currentQuestion.answer_time_seconds
+    : interview.answer_time_seconds;
+
   // Countdown logic — only for structured mode
   useEffect(() => {
     if (isFreeform) return;
@@ -168,7 +176,7 @@ export function CandidateVideoRecorder({ interview, questions, onComplete }: Can
       }, 1000);
     }
     if (phase === 'recording') {
-      setCountdown(interview.answer_time_seconds);
+      setCountdown(currentAnswerTime);
       timerRef.current = setInterval(() => {
         setCountdown(prev => {
           if (prev <= 1) {
@@ -181,7 +189,7 @@ export function CandidateVideoRecorder({ interview, questions, onComplete }: Can
       }, 1000);
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [phase, isFreeform]);
+  }, [phase, isFreeform, currentAnswerTime]);
 
   const startRecording = () => {
     if (!streamRef.current) return;
@@ -253,7 +261,7 @@ export function CandidateVideoRecorder({ interview, questions, onComplete }: Can
           candidate_id: user.id,
           question_id: currentQuestion.id,
           video_url: publicUrl,
-          duration_seconds: interview.answer_time_seconds - countdown,
+          duration_seconds: currentAnswerTime - countdown,
           retake_number: interview.max_retakes - retakesLeft + 1,
         });
 
@@ -300,7 +308,7 @@ export function CandidateVideoRecorder({ interview, questions, onComplete }: Can
 
   const isRecording = phase === 'recording';
   const isAnswerTimeLow = !isFreeform && isRecording && countdown <= 10;
-  const maxDuration = interview.answer_time_seconds;
+  const maxDuration = currentAnswerTime;
 
   /* ── Freeform mode UI ── */
   if (isFreeform) {
@@ -364,8 +372,11 @@ export function CandidateVideoRecorder({ interview, questions, onComplete }: Can
             )}
           </div>
 
+          {/* Whiteboard overlay */}
+          <Whiteboard visible={showWhiteboard} isHebrew={isHebrew} />
+
           {/* Controls */}
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
             {phase === 'thinking' && (
               <Button onClick={startRecording} className="bg-primary text-primary-foreground gap-2 px-6">
                 <Video className="w-4 h-4" />
@@ -373,10 +384,20 @@ export function CandidateVideoRecorder({ interview, questions, onComplete }: Can
               </Button>
             )}
             {phase === 'recording' && (
-              <Button onClick={stopRecording} variant="destructive" className="gap-2 px-6">
-                <StopCircle className="w-4 h-4" />
-                {isHebrew ? 'סיים הקלטה' : 'Stop Recording'}
-              </Button>
+              <>
+                <Button onClick={stopRecording} variant="destructive" className="gap-2 px-6">
+                  <StopCircle className="w-4 h-4" />
+                  {isHebrew ? 'סיים הקלטה' : 'Stop Recording'}
+                </Button>
+                <Button
+                  variant={showWhiteboard ? 'default' : 'outline'}
+                  size="icon"
+                  onClick={() => setShowWhiteboard(v => !v)}
+                  title={isHebrew ? 'לוח ציור' : 'Whiteboard'}
+                >
+                  <Pen className="w-4 h-4" />
+                </Button>
+              </>
             )}
             {phase === 'review' && (
               <>
@@ -476,8 +497,11 @@ export function CandidateVideoRecorder({ interview, questions, onComplete }: Can
           )}
         </div>
 
+        {/* Whiteboard overlay */}
+        <Whiteboard visible={showWhiteboard} isHebrew={isHebrew} />
+
         {/* Controls */}
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
           {phase === 'thinking' && (
             <Button onClick={startRecording} className="bg-primary text-primary-foreground gap-2">
               <Video className="w-4 h-4" />
@@ -485,10 +509,20 @@ export function CandidateVideoRecorder({ interview, questions, onComplete }: Can
             </Button>
           )}
           {phase === 'recording' && (
-            <Button onClick={stopRecording} variant="destructive" className="gap-2">
-              <StopCircle className="w-4 h-4" />
-              {isHebrew ? 'סיים הקלטה' : 'Stop Recording'}
-            </Button>
+            <>
+              <Button onClick={stopRecording} variant="destructive" className="gap-2">
+                <StopCircle className="w-4 h-4" />
+                {isHebrew ? 'סיים הקלטה' : 'Stop Recording'}
+              </Button>
+              <Button
+                variant={showWhiteboard ? 'default' : 'outline'}
+                size="icon"
+                onClick={() => setShowWhiteboard(v => !v)}
+                title={isHebrew ? 'לוח ציור' : 'Whiteboard'}
+              >
+                <Pen className="w-4 h-4" />
+              </Button>
+            </>
           )}
           {phase === 'review' && (
             <>
