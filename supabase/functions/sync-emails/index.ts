@@ -212,17 +212,20 @@ async function syncGmailFull(accessToken: string, userId: string): Promise<{ ema
   const emails: ParsedEmail[] = [];
   const seenIds = new Set<string>();
   let newHistoryId: string | null = null;
-  const after = Math.floor((Date.now() - 30 * 24 * 60 * 60 * 1000) / 1000);
+  const after = Math.floor((Date.now() - 90 * 24 * 60 * 60 * 1000) / 1000);
 
-  // Query 1: Latest 20 messages (general inbox scan)
+  // 4 targeted queries — cast a wide net, let AI classify
   const queries = [
+    // Q1: General inbox — latest emails
     `after:${after}`,
-    // Query 2: REJECTIONS specifically — separate query to ensure they're found
-    `after:${after} {unfortunately regret "not moving forward" "decided to move forward with" "not selected" "went with another" "position has been filled" "unable to move forward" "will not be advancing" "not the right fit" "לצערנו" "לא נוכל לקדם" "לא ממשיכים" "בחרנו במועמד אחר" "נסגרה המשרה"}`,
-    // Query 3: INTERVIEWS + OFFERS
+    // Q2: REJECTIONS — real phrases from actual rejection emails
+    `after:${after} {unfortunately regret "not moving forward" "decided to move forward" "not selected" "went with another" "position has been filled" "position has been closed" "no longer open" "unable to move" "will not be advancing" "not the right fit" "after careful consideration" "after careful review" "do not fully align" "does not align" "different direction" "other candidates" "לצערנו" "לא נוכל להציע" "לא נוכל לקדם" "לא ממשיכים" "בחרנו במועמד" "נסגרה המשרה" "בשלב זה לא נוכל"}`,
+    // Q3: INTERVIEWS + OFFERS
     `after:${after} {"schedule your interview" "schedule an interview" "next step" "we'd like to invite" "shortlisted" "pleased to offer" "offer letter" "הזמנה לראיון" "ראיון עבודה" "הצעת עבודה" "שמחים להזמינך"}`,
-    // Query 4: ATS/recruiter emails
-    `after:${after} from:(greenhouse-mail.io OR lever.co OR workablemail.com OR bamboohr.com OR ashbyhq.com OR comeet-notifications.com OR linkedin.com)`,
+    // Q4: ATS platforms — these send rejections with generic subjects
+    `after:${after} from:(greenhouse-mail.io OR lever.co OR workablemail.com OR bamboohr.com OR ashbyhq.com OR comeet-notifications.com OR smartrecruiters.com OR icims.com OR jobvite.com OR breezy.hr OR recruitee.com OR workday.com)`,
+    // Q5: LinkedIn job emails — rejections, views, updates
+    `after:${after} from:linkedin.com {application viewed rejected "no longer" update status}`,
   ];
 
   for (const q of queries) {
@@ -625,6 +628,13 @@ serve(async (req) => {
           "apple.com", "microsoft.com", "skool.com", "substack.com",
           "wix.com", "squarespace.com", "mailchimp.com", "hubspot.com",
           "notion.so", "slack.com", "zoom.us", "calendly.com",
+          "udemy.com", "coursera.org", "medium.com",
+          "aiautomationsociety.ai", "arielgroup.co.il",
+        ];
+        // Skip newsletter/job-alert senders (not about YOUR applications)
+        const SKIP_SENDERS = [
+          "alljob.co.il", "alljobs.co.il", "jobnet.co.il",
+          "neto.work", "plug.hotjobs@gmail.com",
         ];
 
         // Process each email
@@ -648,7 +658,8 @@ serve(async (req) => {
 
           // Skip non-job domains — no point wasting AI credits on AliExpress/Amazon/etc.
           const emailDomain = (email.from_email || "").split("@")[1]?.toLowerCase() || "";
-          if (SKIP_DOMAINS.some(d => emailDomain.includes(d))) {
+          const emailAddr = (email.from_email || "").toLowerCase();
+          if (SKIP_DOMAINS.some(d => emailDomain.includes(d)) || SKIP_SENDERS.some(s => emailAddr.includes(s) || emailDomain.includes(s))) {
             skippedNonJob++;
             continue;
           }
@@ -656,8 +667,11 @@ serve(async (req) => {
           // Match to application
           const applicationId = await matchEmailToApplication(supabase, email, token.user_id);
           console.log(`[sync-emails] Saving email "${email.subject}" — matched app: ${applicationId || "none"}`);
+          // Only track first 10 match results to avoid memory bloat
           if (!debugInfo.matchResults) debugInfo.matchResults = [];
-          (debugInfo.matchResults as unknown[]).push({ subject: email.subject, from: email.from_email, matched: applicationId });
+          if ((debugInfo.matchResults as unknown[]).length < 10) {
+            (debugInfo.matchResults as unknown[]).push({ subject: email.subject, from: email.from_email, matched: applicationId });
+          }
 
           // Feature 1: flag unmatched emails that look job-related for manual review
           const emailHaystack = `${(email.subject || "").toLowerCase()} ${(email.body_text || "").toLowerCase().substring(0, 1000)}`;
@@ -691,14 +705,36 @@ serve(async (req) => {
             continue;
           }
           saved++;
-          const savedEmailIds: string[] = (debugInfo._savedEmailIds as string[]) || [];
-          savedEmailIds.push(savedEmail.id);
-          debugInfo._savedEmailIds = savedEmailIds;
+          if (!debugInfo._savedEmailIds) debugInfo._savedEmailIds = [];
+          (debugInfo._savedEmailIds as string[]).push(savedEmail.id);
 
           // Classify sequentially with delay to avoid rate limiting
-          if (savedEmail) {
+          // Skip AI for obvious non-application emails (newsletters, job alerts, promos)
+          const subjectL = (email.subject || "").toLowerCase();
+          const isNewsletter = /newsletter|הזמנה.*וובינר|webinar|tip|טיפ|כל המשרות שעלו|roles for|the best|top \d/i.test(subjectL) && !applicationId;
+          if (savedEmail && !isNewsletter) {
             try {
-              console.log(`[sync-emails] Classifying "${email.subject}" (app=${applicationId || "unmatched"})`);
+              // If body_text is empty (HTML-only email), extract text from HTML
+              let classifyBody = email.body_text || "";
+              if (!classifyBody.trim() && email.body_html) {
+                classifyBody = email.body_html
+                  .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+                  .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+                  .replace(/<br\s*\/?>/gi, "\n")
+                  .replace(/<\/p>/gi, "\n")
+                  .replace(/<\/div>/gi, "\n")
+                  .replace(/<\/tr>/gi, "\n")
+                  .replace(/<[^>]+>/g, " ")
+                  .replace(/&nbsp;/g, " ")
+                  .replace(/&amp;/g, "&")
+                  .replace(/&lt;/g, "<")
+                  .replace(/&gt;/g, ">")
+                  .replace(/&#\d+;/g, "")
+                  .replace(/\s+/g, " ")
+                  .trim()
+                  .substring(0, 2000);
+              }
+              console.log(`[sync-emails] Classifying "${email.subject}" (app=${applicationId || "unmatched"}, bodyLen=${classifyBody.length})`);
               const classifyRes = await fetch(CLASSIFY_URL, {
                 method: "POST",
                 headers: {
@@ -709,7 +745,7 @@ serve(async (req) => {
                 body: JSON.stringify({
                   email_id: savedEmail.id,
                   subject: email.subject,
-                  body_text: email.body_text,
+                  body_text: classifyBody,
                   from_email: email.from_email,
                   application_id: applicationId || null,
                   auto_update: true,
@@ -719,10 +755,13 @@ serve(async (req) => {
               const classifyResult = await classifyRes.text();
               console.log(`[sync-emails] Classification done for "${email.subject}": ${classifyResult.substring(0, 200)}`);
               // Small delay between classify calls to avoid Claude rate-limiting
-              await new Promise(r => setTimeout(r, 200));
+              await new Promise(r => setTimeout(r, 100));
             } catch (err) {
               console.error(`[sync-emails] Classification failed for "${email.subject}":`, err);
             }
+          } else if (savedEmail && isNewsletter) {
+            // Mark as general without calling AI — saves time and credits
+            await supabase.from("application_emails").update({ ai_classification: "general", ai_confidence: 0.9 }).eq("id", savedEmail.id);
           }
 
           totalSynced++;
@@ -960,7 +999,7 @@ serve(async (req) => {
 
     console.log(`[sync-emails] Done. synced=${totalSynced}, users=${tokens.length}, errors=${errors.length}`);
     return new Response(
-      JSON.stringify({ synced: totalSynced, users: tokens.length, errors, debug: debugInfo }),
+      JSON.stringify({ synced: totalSynced, users: tokens.length, errors, debug: { ...debugInfo, _savedEmailIds: `${(debugInfo._savedEmailIds as string[] || []).length} ids` } }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
