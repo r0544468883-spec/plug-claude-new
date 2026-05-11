@@ -209,33 +209,49 @@ async function syncGmail(
 }
 
 async function syncGmailFull(accessToken: string, userId: string): Promise<{ emails: ParsedEmail[]; newHistoryId: string | null }> {
-  // First sync: get last 30 days of messages
   const emails: ParsedEmail[] = [];
+  const seenIds = new Set<string>();
   const after = Math.floor((Date.now() - 30 * 24 * 60 * 60 * 1000) / 1000);
 
-  const listRes = await fetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50&q=after:${after}`,
-    { headers: { Authorization: `Bearer ${accessToken}` } }
-  );
+  // Query 1: Latest 30 messages (general inbox scan)
+  const queries = [
+    `after:${after}`,
+    // Query 2: Job-related emails specifically (rejections, interviews, offers)
+    `after:${after} {unfortunately regret "not moving forward" "decided to move" rejection interview "schedule a call" "invite you" offer "pleased to offer" "לצערנו" "לא נוכל" "ראיון" "הזמנה לראיון" "הצעת עבודה"}`,
+    // Query 3: ATS/recruiter emails
+    `after:${after} from:(greenhouse-mail.io OR lever.co OR workablemail.com OR bamboohr.com OR ashbyhq.com OR comeet-notifications.com OR linkedin.com)`,
+  ];
 
-  if (!listRes.ok) {
-    const errBody = await listRes.text();
-    console.error(`[sync-emails] Gmail list failed: ${listRes.status} ${errBody}`);
-    return { emails: [], newHistoryId: null };
+  for (const q of queries) {
+    try {
+      const listRes = await fetch(
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=30&q=${encodeURIComponent(q)}`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      if (!listRes.ok) {
+        console.error(`[sync-emails] Gmail list failed for query "${q.substring(0, 50)}": ${listRes.status}`);
+        continue;
+      }
+      const listData = await listRes.json();
+      const msgs = (listData.messages || []).slice(0, 30);
+      console.log(`[sync-emails] Query "${q.substring(0, 40)}..." returned ${msgs.length} messages`);
+
+      // Deduplicate across queries
+      const newMsgs = msgs.filter((m: { id: string }) => !seenIds.has(m.id));
+      newMsgs.forEach((m: { id: string }) => seenIds.add(m.id));
+
+      // Fetch in parallel
+      const fetches = newMsgs.map((msg: { id: string }) => fetchGmailMessage(accessToken, msg.id));
+      const results = await Promise.all(fetches);
+      for (const email of results) {
+        if (email) emails.push(email);
+      }
+    } catch (err) {
+      console.error(`[sync-emails] Query error:`, err);
+    }
   }
 
-  const listData = await listRes.json();
-  console.log(`[sync-emails] Full sync: Gmail returned ${listData.messages?.length || 0} message IDs, resultSizeEstimate=${listData.resultSizeEstimate}`);
-  let newHistoryId: string | null = null;
-
-  const msgs = (listData.messages || []).slice(0, 20);
-  // Fetch all messages in parallel (much faster than sequential)
-  const fetches = msgs.map(msg => fetchGmailMessage(accessToken, msg.id));
-  const results = await Promise.all(fetches);
-  for (const email of results) {
-    if (email) emails.push(email);
-  }
-  console.log(`[sync-emails] Fetched ${emails.length} emails in parallel`);
+  console.log(`[sync-emails] Total fetched: ${emails.length} unique emails from ${queries.length} queries`);
 
   // Get current historyId for next incremental sync
   const profileRes = await fetch(
@@ -383,8 +399,44 @@ async function matchEmailToApplication(
     "hire-match.ai": true,
   };
   const isATS = Object.keys(ATS_DOMAINS).some(d => senderDomain.includes(d));
+  const isLinkedIn = senderDomain.includes("linkedin.com");
 
   const haystack = `${subjectLower} ${bodySnippet}`;
+
+  // 1.5 LinkedIn fast-path — extract company name from subject patterns:
+  //   "your application was sent to TikTok"
+  //   "Your application was viewed by Shibolet & Co."
+  //   "Ron, you applied for Marketing Manager at Google"
+  //   "Ron, your application was sent to Join - Digital Talent Agency"
+  if (isLinkedIn) {
+    const linkedInPatterns = [
+      /application was (?:sent|submitted) to (.+?)(?:\s*$)/i,
+      /application was viewed by (.+?)(?:\s*$)/i,
+      /you applied (?:for .+ )?at (.+?)(?:\s*$)/i,
+      /invited you to apply (?:for .+ )?at (.+?)(?:\s*$)/i,
+      /interview (?:with|at) (.+?)(?:\s*$)/i,
+    ];
+    for (const pattern of linkedInPatterns) {
+      const match = (email.subject || "").match(pattern);
+      if (match) {
+        const companyFromSubject = match[1].trim().toLowerCase();
+        for (const app of apps) {
+          if (!app.job_company || app.job_company.length < 3) continue;
+          const appCompany = app.job_company.toLowerCase();
+          // Check both directions: "tiktok" in "TikTok Inc" or "TikTok" in "tiktok"
+          if (appCompany.includes(companyFromSubject) || companyFromSubject.includes(appCompany)) return app.id;
+          // Word-level match for multi-word companies
+          const companyWords = appCompany.split(/[\s,./\-_()&]+/).filter((w: string) => w.length >= 3);
+          if (companyWords.some((w: string) => companyFromSubject.includes(w))) return app.id;
+        }
+      }
+    }
+    // Fallback: scan company names in subject+body
+    for (const app of apps) {
+      if (!app.job_company || app.job_company.length < 3) continue;
+      if (haystack.includes(app.job_company.toLowerCase())) return app.id;
+    }
+  }
 
   // 2.5 ATS fast-path — sender is a known ATS (Greenhouse, Lever, Workable…).
   // Domain matching is useless here; go straight to company-name scan across all apps.
@@ -562,10 +614,20 @@ serve(async (req) => {
           emails = result.emails;
         }
 
+        // Skip non-job domains to avoid wasting AI credits on irrelevant emails
+        const SKIP_DOMAINS = [
+          "aliexpress.com", "amazon.com", "ebay.com", "paypal.com",
+          "facebook.com", "instagram.com", "twitter.com", "x.com",
+          "google.com", "youtube.com", "netflix.com", "spotify.com",
+          "apple.com", "microsoft.com", "skool.com", "substack.com",
+          "wix.com", "squarespace.com", "mailchimp.com", "hubspot.com",
+          "notion.so", "slack.com", "zoom.us", "calendly.com",
+        ];
+
         // Process each email
         debugInfo.processingStarted = true;
         debugInfo.emailsToProcess = emails.length;
-        let skipped = 0, saved = 0, failed = 0;
+        let skipped = 0, saved = 0, failed = 0, skippedNonJob = 0;
         const classifyPromises: Promise<void>[] = [];
         for (const email of emails) {
           // Check if already synced
@@ -578,6 +640,13 @@ serve(async (req) => {
 
           if (existing && existing.length > 0) {
             skipped++;
+            continue;
+          }
+
+          // Skip non-job domains — no point wasting AI credits on AliExpress/Amazon/etc.
+          const emailDomain = (email.from_email || "").split("@")[1]?.toLowerCase() || "";
+          if (SKIP_DOMAINS.some(d => emailDomain.includes(d))) {
+            skippedNonJob++;
             continue;
           }
 
@@ -620,44 +689,44 @@ serve(async (req) => {
           }
           saved++;
 
-          // Queue classification for ALL saved emails (awaited at end)
+          // Classify sequentially with delay to avoid rate limiting
           if (savedEmail) {
-            const classifyPromise = fetch(CLASSIFY_URL, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
-                "apikey": SUPABASE_SERVICE_KEY,
-              },
-              body: JSON.stringify({
-                email_id: savedEmail.id,
-                subject: email.subject,
-                body_text: email.body_text,
-                from_email: email.from_email,
-                application_id: applicationId || null,
-                auto_update: true,
-                user_id: token.user_id,
-              }),
-            }).then(() => {
-              console.log(`[sync-emails] Classification done for "${email.subject}"`);
-            }).catch(err => console.error(`[sync-emails] Classification failed for "${email.subject}":`, err));
-            classifyPromises.push(classifyPromise);
-            console.log(`[sync-emails] Classification queued for "${email.subject}" (app=${applicationId || "unmatched"})`);
+            try {
+              console.log(`[sync-emails] Classifying "${email.subject}" (app=${applicationId || "unmatched"})`);
+              const classifyRes = await fetch(CLASSIFY_URL, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
+                  "apikey": SUPABASE_SERVICE_KEY,
+                },
+                body: JSON.stringify({
+                  email_id: savedEmail.id,
+                  subject: email.subject,
+                  body_text: email.body_text,
+                  from_email: email.from_email,
+                  application_id: applicationId || null,
+                  auto_update: true,
+                  user_id: token.user_id,
+                }),
+              });
+              const classifyResult = await classifyRes.text();
+              console.log(`[sync-emails] Classification done for "${email.subject}": ${classifyResult.substring(0, 200)}`);
+              // Small delay between classify calls to avoid Claude rate-limiting
+              await new Promise(r => setTimeout(r, 500));
+            } catch (err) {
+              console.error(`[sync-emails] Classification failed for "${email.subject}":`, err);
+            }
           }
 
           totalSynced++;
         }
-        // Wait for all classifications to complete before returning
-        if (classifyPromises.length > 0) {
-          console.log(`[sync-emails] Waiting for ${classifyPromises.length} classifications...`);
-          await Promise.allSettled(classifyPromises);
-          console.log(`[sync-emails] All classifications finished`);
-        }
 
         debugInfo.skipped = skipped;
+        debugInfo.skippedNonJob = skippedNonJob;
         debugInfo.saved = saved;
         debugInfo.failed = failed;
-        console.log(`[sync-emails] Results: saved=${saved}, skipped=${skipped}, failed=${failed}`);
+        console.log(`[sync-emails] Results: saved=${saved}, skipped=${skipped}, skippedNonJob=${skippedNonJob}, failed=${failed}`);
 
         // ─── Post-scan notification: count auto-updated applications ───
         if (saved > 0) {

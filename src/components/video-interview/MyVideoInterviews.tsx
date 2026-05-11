@@ -41,7 +41,7 @@ export function MyVideoInterviews() {
       // Get active video interviews for those jobs
       const { data: videoInterviews } = await (supabase as any)
         .from('video_interviews')
-        .select('*, video_interview_questions(id, question_text, question_order, question_type)')
+        .select('*, video_interview_questions(id, question_text, question_order, question_type, media_url, media_type)')
         .in('job_id', jobIds)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
@@ -142,7 +142,9 @@ export function MyVideoInterviews() {
                   </div>
                   <Badge variant="secondary" className="gap-1">
                     <Video className="w-3 h-3" />
-                    {vi.questions?.length || 0} {isHebrew ? 'שאלות' : 'questions'}
+                    {vi.mode === 'freeform'
+                      ? (isHebrew ? 'ראיון חופשי' : 'Free-form')
+                      : `${vi.questions?.length || 0} ${isHebrew ? 'שאלות' : 'questions'}`}
                   </Badge>
                 </div>
 

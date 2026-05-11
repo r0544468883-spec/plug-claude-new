@@ -107,11 +107,19 @@ serve(async (req) => {
 
     if (returnType === "json") {
       try {
-        // Strip markdown code fences if Claude wraps the JSON
-        const cleaned = textContent
-          .replace(/^```(?:json)?\s*/m, "")
-          .replace(/\s*```\s*$/m, "")
-          .trim();
+        // Extract JSON from Claude's response — handles markdown fences, extra text, etc.
+        let cleaned = textContent.trim();
+        // Try extracting JSON from ```json ... ``` block first
+        const fenceMatch = cleaned.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/);
+        if (fenceMatch) {
+          cleaned = fenceMatch[1].trim();
+        } else {
+          // Try extracting first { ... } or [ ... ] block
+          const jsonMatch = cleaned.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+          if (jsonMatch) {
+            cleaned = jsonMatch[1].trim();
+          }
+        }
         result = JSON.parse(cleaned);
       } catch {
         // If JSON parsing fails, return raw text so caller can handle gracefully
