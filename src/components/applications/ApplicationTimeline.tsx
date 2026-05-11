@@ -13,7 +13,9 @@ import {
   Loader2,
   Mail,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  User,
+  Gift,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,6 +43,7 @@ const eventIcons: Record<string, React.ReactNode> = {
   note_added: <MessageSquare className="h-4 w-4" />,
   interview_scheduled: <Calendar className="h-4 w-4" />,
   email_sent: <Mail className="h-4 w-4" />,
+  offer_sent: <Gift className="h-4 w-4" />,
   hired: <CheckCircle2 className="h-4 w-4" />,
   rejected: <XCircle className="h-4 w-4" />,
 };
@@ -54,6 +57,7 @@ const eventColors: Record<string, string> = {
   note_added: 'bg-secondary text-secondary-foreground',
   interview_scheduled: 'bg-green-500/20 text-green-400',
   email_sent: 'bg-blue-500/20 text-blue-400',
+  offer_sent: 'bg-primary/20 text-primary',
   hired: 'bg-green-500/20 text-green-400',
   rejected: 'bg-destructive/20 text-destructive',
 };
@@ -107,6 +111,7 @@ export function ApplicationTimeline({ applicationId }: ApplicationTimelineProps)
   const getEventDescription = (event: TimelineEvent) => {
     // Try parsing JSON description for enriched events
     const jsonData = parseJsonDescription(event.description);
+    const isCandidateSource = jsonData?.source === 'candidate';
 
     switch (event.event_type) {
       case 'created':
@@ -114,18 +119,30 @@ export function ApplicationTimeline({ applicationId }: ApplicationTimelineProps)
       case 'stage_change': {
         const oldStage = stageLabels[event.old_value || ''] || { en: event.old_value, he: event.old_value };
         const newStage = stageLabels[event.new_value || ''] || { en: event.new_value, he: event.new_value };
+        const prefix = isCandidateSource ? (isRTL ? '👤 המועמד עדכן: ' : '👤 Candidate updated: ') : '';
         return isRTL
-          ? `שלב שונה מ-${oldStage.he} ל-${newStage.he}`
-          : `Stage changed from ${oldStage.en} to ${newStage.en}`;
+          ? `${prefix}שלב שונה מ-${oldStage.he} ל-${newStage.he}`
+          : `${prefix}Stage changed from ${oldStage.en} to ${newStage.en}`;
       }
-      case 'rejection_detected':
+      case 'rejection_detected': {
+        if (isCandidateSource) {
+          const reason = jsonData?.reason || '';
+          const notes = jsonData?.notes || '';
+          const base = isRTL ? '👤 המועמד דיווח על דחייה' : '👤 Candidate reported rejection';
+          return `${base}${reason ? ` — ${reason}` : ''}${notes ? ` (${notes})` : ''}`;
+        }
+        if (jsonData) {
+          const conf = jsonData.confidence ? ` (${Math.round(jsonData.confidence * 100)}%)` : '';
+          const subj = jsonData.subject ? ` — ${jsonData.subject}` : '';
+          return `${isRTL ? 'זוהה מייל דחייה' : 'Rejection email detected'}${subj}${conf}`;
+        }
+        return event.description || event.event_type;
+      }
       case 'stage_change_auto':
         if (jsonData) {
           const conf = jsonData.confidence ? ` (${Math.round(jsonData.confidence * 100)}%)` : '';
           const subj = jsonData.subject ? ` — ${jsonData.subject}` : '';
-          return event.description ? `${event.event_type === 'rejection_detected'
-            ? (isRTL ? 'זוהה מייל דחייה' : 'Rejection email detected')
-            : (isRTL ? 'עדכון אוטומטי' : 'Auto-update')}${subj}${conf}` : event.event_type;
+          return `${isRTL ? 'עדכון אוטומטי' : 'Auto-update'}${subj}${conf}`;
         }
         return event.description || event.event_type;
       case 'status_change':
@@ -138,6 +155,10 @@ export function ApplicationTimeline({ applicationId }: ApplicationTimelineProps)
         return isRTL ? 'ראיון נקבע' : 'Interview scheduled';
       case 'email_sent':
         return event.description || (isRTL ? 'מייל נשלח' : 'Email sent');
+      case 'offer_sent':
+        return isRTL
+          ? `פרטי משרה נשלחו — ${event.new_value || ''}`
+          : `Job details sent — ${event.new_value || ''}`;
       default:
         return event.description || event.event_type;
     }
@@ -177,6 +198,19 @@ export function ApplicationTimeline({ applicationId }: ApplicationTimelineProps)
             <p className="text-sm text-foreground">
               {getEventDescription(event)}
             </p>
+            {/* Candidate source indicator */}
+            {(() => {
+              const j = parseJsonDescription(event.description);
+              if (j?.source === 'candidate') {
+                return (
+                  <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded-full mt-0.5">
+                    <User className="w-2.5 h-2.5" />
+                    {isRTL ? 'עדכון מהמועמד' : 'Candidate update'}
+                  </span>
+                );
+              }
+              return null;
+            })()}
             {/* Email link for rejection/auto events */}
             {(event.event_type === 'rejection_detected' || event.event_type === 'stage_change_auto') && (() => {
               const jsonData = parseJsonDescription(event.description);

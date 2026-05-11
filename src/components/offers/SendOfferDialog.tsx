@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Trash2, Send, Loader2, Gift } from 'lucide-react';
+import { Plus, Trash2, Send, Loader2, FileText } from 'lucide-react';
 
 interface Benefit {
   id: string;
@@ -69,10 +69,12 @@ export function SendOfferDialog({
   const { language } = useLanguage();
   const isHebrew = language === 'he';
 
-  const [salary, setSalary] = useState('');
+  const [salaryRange, setSalaryRange] = useState('');
   const [currency, setCurrency] = useState('ILS');
+  const [workHours, setWorkHours] = useState('');
+  const [wfhDays, setWfhDays] = useState('');
+  const [location, setLocation] = useState('');
   const [startDate, setStartDate] = useState('');
-  const [expiryDate, setExpiryDate] = useState('');
   const [additionalTerms, setAdditionalTerms] = useState('');
   const [benefits, setBenefits] = useState<Benefit[]>([]);
   const [saving, setSaving] = useState(false);
@@ -83,9 +85,12 @@ export function SendOfferDialog({
   const updateBenefit = (id: string, field: keyof Benefit, val: string) =>
     setBenefits((prev) => prev.map((b) => (b.id === id ? { ...b, [field]: val } : b)));
 
-  const handleSend = async (status: 'draft' | 'sent') => {
-    if (!user || !salary) {
-      toast.error(isHebrew ? 'יש להזין שכר' : 'Please enter salary');
+  const handleSend = async () => {
+    if (!user) return;
+
+    // At least one field should be filled
+    if (!salaryRange && !workHours && !wfhDays && !location && !additionalTerms && benefits.length === 0) {
+      toast.error(isHebrew ? 'יש למלא לפחות שדה אחד' : 'Please fill at least one field');
       return;
     }
 
@@ -95,14 +100,19 @@ export function SendOfferDialog({
         created_by: user.id,
         candidate_id: candidateId,
         job_id: jobId,
-        salary_gross: parseInt(salary),
+        salary_gross: salaryRange ? parseInt(salaryRange) : 0,
         salary_currency: currency,
         start_date: startDate || null,
-        expiry_date: expiryDate || null,
-        additional_terms: additionalTerms || null,
+        expiry_date: null,
+        additional_terms: [
+          workHours && `${isHebrew ? 'שעות עבודה' : 'Work hours'}: ${workHours}`,
+          wfhDays && `${isHebrew ? 'ימי עבודה מהבית' : 'WFH days'}: ${wfhDays}`,
+          location && `${isHebrew ? 'מיקום' : 'Location'}: ${location}`,
+          additionalTerms,
+        ].filter(Boolean).join('\n') || null,
         benefits: benefits.map(({ id, ...b }) => b),
-        status,
-        sent_at: status === 'sent' ? new Date().toISOString() : null,
+        status: 'sent',
+        sent_at: new Date().toISOString(),
       });
 
       if (error) throw error;
@@ -111,29 +121,24 @@ export function SendOfferDialog({
       await supabase.from('application_timeline').insert({
         application_id: applicationId,
         event_type: 'offer_sent',
-        new_value: `${currency} ${parseInt(salary).toLocaleString()}`,
-        description: isHebrew
-          ? `הצעת עבודה ${status === 'sent' ? 'נשלחה' : 'נשמרה כטיוטה'}`
-          : `Job offer ${status === 'sent' ? 'sent' : 'saved as draft'}`,
+        new_value: salaryRange ? `${currency} ${parseInt(salaryRange).toLocaleString()}` : (isHebrew ? 'פרטי משרה' : 'Job details'),
+        description: isHebrew ? 'פרטי המשרה נשלחו למועמד' : 'Job details sent to candidate',
       });
 
-      toast.success(
-        status === 'draft'
-          ? isHebrew ? 'נשמר כטיוטה' : 'Saved as draft'
-          : isHebrew ? 'ההצעה נשלחה!' : 'Offer sent!'
-      );
-
+      toast.success(isHebrew ? 'הפרטים נשלחו למועמד!' : 'Details sent to candidate!');
       onOfferSent?.();
       onOpenChange(false);
 
       // Reset form
-      setSalary('');
+      setSalaryRange('');
+      setWorkHours('');
+      setWfhDays('');
+      setLocation('');
       setStartDate('');
-      setExpiryDate('');
       setAdditionalTerms('');
       setBenefits([]);
     } catch (e: any) {
-      console.error('Error sending offer:', e);
+      console.error('Error sending job details:', e);
       toast.error(e.message || (isHebrew ? 'שגיאה' : 'Error'));
     } finally {
       setSaving(false);
@@ -145,26 +150,26 @@ export function SendOfferDialog({
       <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto" dir={isHebrew ? 'rtl' : 'ltr'}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Gift className="w-5 h-5 text-primary" />
-            {isHebrew ? 'שליחת הצעת עבודה' : 'Send Job Offer'}
+            <FileText className="w-5 h-5 text-primary" />
+            {isHebrew ? 'שליחת פרטי המשרה' : 'Send Job Details'}
           </DialogTitle>
           <DialogDescription>
             {isHebrew
-              ? `הצעת עבודה ל-${candidateName} למשרת ${jobTitle}${companyName ? ` ב-${companyName}` : ''}`
-              : `Job offer for ${candidateName} — ${jobTitle}${companyName ? ` at ${companyName}` : ''}`}
+              ? `שלח ל-${candidateName} את האותיות הקטנות של משרת ${jobTitle}${companyName ? ` ב-${companyName}` : ''}`
+              : `Send ${candidateName} the fine print for ${jobTitle}${companyName ? ` at ${companyName}` : ''}`}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          {/* Salary */}
+          {/* Salary Range */}
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2 space-y-1">
-              <Label>{isHebrew ? 'שכר ברוטו חודשי *' : 'Monthly Gross Salary *'}</Label>
+              <Label>{isHebrew ? 'טווח שכר (ברוטו חודשי)' : 'Salary Range (Monthly Gross)'}</Label>
               <Input
                 type="number"
-                value={salary}
-                onChange={(e) => setSalary(e.target.value)}
-                placeholder="25000"
+                value={salaryRange}
+                onChange={(e) => setSalaryRange(e.target.value)}
+                placeholder={isHebrew ? 'למשל 18,000' : 'e.g. 18000'}
               />
             </div>
             <div className="space-y-1">
@@ -180,15 +185,39 @@ export function SendOfferDialog({
             </div>
           </div>
 
-          {/* Dates */}
+          {/* Work Hours & WFH */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label>{isHebrew ? 'תאריך התחלה' : 'Start Date'}</Label>
-              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              <Label>{isHebrew ? 'שעות עבודה' : 'Work Hours'}</Label>
+              <Input
+                value={workHours}
+                onChange={(e) => setWorkHours(e.target.value)}
+                placeholder={isHebrew ? 'למשל 9:00-18:00' : 'e.g. 9:00-18:00'}
+              />
             </div>
             <div className="space-y-1">
-              <Label>{isHebrew ? 'תוקף ההצעה' : 'Offer Expiry'}</Label>
-              <Input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
+              <Label>{isHebrew ? 'ימי WFH בשבוע' : 'WFH Days/Week'}</Label>
+              <Input
+                value={wfhDays}
+                onChange={(e) => setWfhDays(e.target.value)}
+                placeholder={isHebrew ? 'למשל 2' : 'e.g. 2'}
+              />
+            </div>
+          </div>
+
+          {/* Location & Start Date */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>{isHebrew ? 'מיקום העבודה' : 'Office Location'}</Label>
+              <Input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder={isHebrew ? 'למשל תל אביב, רוטשילד 45' : 'e.g. Tel Aviv, Rothschild 45'}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>{isHebrew ? 'תאריך התחלה משוער' : 'Estimated Start Date'}</Label>
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             </div>
           </div>
 
@@ -238,30 +267,27 @@ export function SendOfferDialog({
             )}
           </div>
 
-          {/* Additional Terms */}
+          {/* Additional Notes */}
           <div className="space-y-1">
-            <Label>{isHebrew ? 'תנאים נוספים' : 'Additional Terms'}</Label>
+            <Label>{isHebrew ? 'פרטים נוספים' : 'Additional Details'}</Label>
             <Textarea
               value={additionalTerms}
               onChange={(e) => setAdditionalTerms(e.target.value)}
-              placeholder={isHebrew ? 'שעות עבודה, ימי WFH, ועוד...' : 'Working hours, WFH days, etc.'}
+              placeholder={isHebrew ? 'דרישות ביגוד, חניה, ארוחות, ועוד...' : 'Dress code, parking, meals, etc.'}
               rows={3}
               className="resize-none"
             />
           </div>
         </div>
 
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => handleSend('draft')} disabled={saving}>
-            {isHebrew ? 'שמור כטיוטה' : 'Save Draft'}
-          </Button>
-          <Button onClick={() => handleSend('sent')} disabled={saving || !salary} className="gap-2">
+        <DialogFooter>
+          <Button onClick={handleSend} disabled={saving} className="gap-2">
             {saving ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Send className="w-4 h-4" />
             )}
-            {isHebrew ? 'שלח הצעה' : 'Send Offer'}
+            {isHebrew ? 'שלח למועמד' : 'Send to Candidate'}
           </Button>
         </DialogFooter>
       </DialogContent>

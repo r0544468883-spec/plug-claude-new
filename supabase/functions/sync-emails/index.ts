@@ -211,6 +211,7 @@ async function syncGmail(
 async function syncGmailFull(accessToken: string, userId: string): Promise<{ emails: ParsedEmail[]; newHistoryId: string | null }> {
   const emails: ParsedEmail[] = [];
   const seenIds = new Set<string>();
+  let newHistoryId: string | null = null;
   const after = Math.floor((Date.now() - 30 * 24 * 60 * 60 * 1000) / 1000);
 
   // Query 1: Latest 30 messages (general inbox scan)
@@ -225,7 +226,7 @@ async function syncGmailFull(accessToken: string, userId: string): Promise<{ ema
   for (const q of queries) {
     try {
       const listRes = await fetch(
-        `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=30&q=${encodeURIComponent(q)}`,
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=20&q=${encodeURIComponent(q)}`,
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
       if (!listRes.ok) {
@@ -233,7 +234,7 @@ async function syncGmailFull(accessToken: string, userId: string): Promise<{ ema
         continue;
       }
       const listData = await listRes.json();
-      const msgs = (listData.messages || []).slice(0, 30);
+      const msgs = (listData.messages || []).slice(0, 20);
       console.log(`[sync-emails] Query "${q.substring(0, 40)}..." returned ${msgs.length} messages`);
 
       // Deduplicate across queries
@@ -713,7 +714,7 @@ serve(async (req) => {
               const classifyResult = await classifyRes.text();
               console.log(`[sync-emails] Classification done for "${email.subject}": ${classifyResult.substring(0, 200)}`);
               // Small delay between classify calls to avoid Claude rate-limiting
-              await new Promise(r => setTimeout(r, 500));
+              await new Promise(r => setTimeout(r, 200));
             } catch (err) {
               console.error(`[sync-emails] Classification failed for "${email.subject}":`, err);
             }

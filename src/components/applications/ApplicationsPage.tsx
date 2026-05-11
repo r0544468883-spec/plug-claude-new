@@ -348,6 +348,18 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
 
       if (error) throw error;
 
+      // Create timeline event so recruiter sees it
+      await supabase.from('application_timeline').insert({
+        application_id: id,
+        event_type: 'stage_change',
+        old_value: applications.find(a => a.id === id)?.current_stage || 'applied',
+        new_value: 'withdrawn',
+        description: JSON.stringify({
+          source: 'candidate',
+          reason: isRTL ? 'המועמד ביטל את המועמדות' : 'Candidate withdrew application',
+        }),
+      });
+
       setApplications((prev) =>
         prev.map((app) =>
           app.id === id ? { ...app, status: 'withdrawn', current_stage: 'withdrawn' } : app
@@ -359,7 +371,7 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
       console.error('Error withdrawing application:', error);
       toast.error(t('common.error') || 'Failed to withdraw application');
     }
-  }, [user?.id, isRTL, t]);
+  }, [user?.id, isRTL, t, applications]);
 
   const handleStageChange = useCallback(async (id: string, newStage: string) => {
     // Stages that trigger the interview flow dialog
@@ -391,14 +403,23 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
 
       if (error) throw error;
 
+      // Find the application to get company info
+      const app = applications.find(a => a.id === id);
+
+      // Create timeline event so recruiter sees candidate-side updates
+      await supabase.from('application_timeline').insert({
+        application_id: id,
+        event_type: 'stage_change',
+        old_value: app?.current_stage || 'applied',
+        new_value: newStage,
+        description: JSON.stringify({ source: 'candidate' }),
+      });
+
       // Log activity
       logActivity(newStage === 'rejected' ? 'rejection_noted' : 'stage_change', {
         applicationId: id,
         metadata: { stage: newStage },
       });
-
-      // Find the application to get company info
-      const app = applications.find(a => a.id === id);
 
       // Update local state
       setApplications((prev) =>

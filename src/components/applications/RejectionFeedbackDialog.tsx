@@ -71,6 +71,21 @@ export function RejectionFeedbackDialog({ applicationId, open, onClose }: Reject
       .update({ rejection_reason: selected, notes: notes || undefined } as any)
       .eq('id', applicationId);
 
+    if (!error) {
+      // Create timeline event so recruiter sees the candidate's rejection reason
+      const reasonLabel = REASONS.find(r => r.value === selected);
+      await supabase.from('application_timeline').insert({
+        application_id: applicationId,
+        event_type: 'rejection_detected',
+        new_value: selected,
+        description: JSON.stringify({
+          source: 'candidate',
+          reason: reasonLabel ? (isHebrew ? reasonLabel.he : reasonLabel.en) : selected,
+          notes: notes || null,
+        }),
+      });
+    }
+
     setSaving(false);
     if (!error) {
       setSaved(true);
