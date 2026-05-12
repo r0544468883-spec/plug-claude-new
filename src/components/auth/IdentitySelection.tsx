@@ -51,7 +51,7 @@ export function IdentitySelection({ onSelect }: IdentitySelectionProps) {
                 icon={icon}
                 isSelected={false}
                 onClick={() => onSelect(key)}
-                disabled={key !== 'job_seeker'}
+                disabled={false}
               />
             ))}
           </div>

@@ -170,6 +170,8 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
         { key: 'job', label: isRTL ? 'פרסום משרה ראשונה' : 'Post first job', done: false, section: 'post-job' },
         { key: 'pool', label: isRTL ? 'שמירת מועמד לבנק מועמדים' : 'Save candidate to Talent Pool', done: false, section: 'hr-tools' as DashboardSection },
         { key: 'analytics', label: isRTL ? 'צפייה ב-Pipeline Analytics' : 'View Pipeline Analytics', done: false, section: 'hr-tools' as DashboardSection },
+        { key: 'autoscreen', label: isRTL ? 'הגדרת כלל סינון AI ראשון' : 'Set up first AI screening rule', done: false, section: 'hr-tools' as DashboardSection },
+        { key: 'multiboard', label: isRTL ? 'פרסום משרה ללוח חיצוני' : 'Publish job to external board', done: false, section: 'hr-tools' as DashboardSection },
       ];
     }
     // company
@@ -320,8 +322,27 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
           title: isRTL ? 'אנליטיקס ודוחות' : 'Analytics & Reports',
           tools: [
             { icon: '📈', label: isRTL ? '8 דוחות HR' : '8 HR Reports', desc: isRTL ? 'גיוס, הכנסות, CRM, מקורות' : 'Hiring, revenue, CRM, sources', section: 'settings' as DashboardSection, isNew: true },
+            { icon: '🔮', label: isRTL ? 'אנליטיקס חזויה' : 'Predictive Analytics', desc: isRTL ? 'חיזוי Time-to-Hire + זיהוי צווארי בקבוק' : 'Forecast Time-to-Hire + spot bottlenecks', section: 'hr-tools' as DashboardSection, isNew: true },
+            { icon: '🧩', label: isRTL ? 'דשבורד מותאם' : 'Custom Dashboard', desc: isRTL ? '12 ווידג\'טים — בנה תצוגה אישית' : '12 widgets — build your own view', section: 'hr-tools' as DashboardSection, isNew: true },
             { icon: '🔗', label: 'Webhooks', desc: isRTL ? 'חיבורים לכלים חיצוניים' : 'Connect to external tools', section: 'settings' as DashboardSection, isNew: true },
             { icon: '💬', label: 'Plug Chat AI', desc: isRTL ? 'עוזר AI לכל שאלת גיוס' : 'AI assistant for all recruiting', section: 'chat' as DashboardSection },
+          ],
+        },
+        {
+          title: isRTL ? 'סורסינג וטיפוח' : 'Sourcing & Engagement',
+          tools: [
+            { icon: '🌐', label: isRTL ? 'סורסינג חיצוני' : 'External Sourcing', desc: isRTL ? 'חפש ב-LinkedIn, GitHub, StackOverflow' : 'Search LinkedIn, GitHub, StackOverflow', section: 'hr-tools' as DashboardSection, isNew: true },
+            { icon: '📩', label: isRTL ? 'קמפיינים (Nurture)' : 'Nurture Campaigns', desc: isRTL ? 'רצפי Drip לטיפוח מועמדים' : 'Drip sequences to nurture candidates', section: 'hr-tools' as DashboardSection, isNew: true },
+            { icon: '📱', label: isRTL ? 'SMS / WhatsApp' : 'SMS / WhatsApp', desc: isRTL ? 'תיבת דואר מאוחדת — SMS, WhatsApp, אימייל' : 'Unified inbox — SMS, WhatsApp, email', section: 'hr-tools' as DashboardSection, isNew: true },
+          ],
+        },
+        {
+          title: isRTL ? 'תבניות ותאימות' : 'Templates & Compliance',
+          tools: [
+            { icon: '📄', label: isRTL ? 'תבניות הצעות' : 'Offer Templates', desc: isRTL ? 'הצעות עבודה, NDA, חוזי קבלן' : 'Offers, NDAs, contractor agreements', section: 'hr-tools' as DashboardSection, isNew: true },
+            { icon: '🛡️', label: isRTL ? 'תאימות EEO' : 'EEO Compliance', desc: isRTL ? 'מעקב גיוון + דוח 4/5 + ייצוא CSV' : 'Diversity tracking + 4/5ths rule + CSV export', section: 'hr-tools' as DashboardSection, isNew: true },
+            { icon: '🤖', label: isRTL ? 'סינון AI אוטומטי' : 'AI Auto-Screen', desc: isRTL ? 'כללי סינון חכמים לדירוג אוטומטי' : 'Smart screening rules for auto-ranking', section: 'hr-tools' as DashboardSection, isNew: true },
+            { icon: '📢', label: isRTL ? 'פרסום רב-ערוצי' : 'Multi-board Publishing', desc: isRTL ? 'פרסם ל-10+ לוחות בלחיצה' : 'Publish to 10+ boards in one click', section: 'hr-tools' as DashboardSection, isNew: true },
           ],
         },
         {
@@ -421,6 +442,12 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
             'CRM מעודכן = לקוחות מרוצים = יותר עסקאות',
             'Pipeline Analytics מזהה bottlenecks בתהליך',
             'ייבוא LinkedIn = חסוך שעות הקלדה ידנית',
+            'AI Auto-Screen מדרג מועמדים אוטומטית — חוסך שעות סינון',
+            'פרסום רב-ערוצי — 10+ לוחות בלחיצה אחת',
+            'Nurture Campaigns שומר מועמדים חמים בין משרות',
+            'סורסינג חיצוני מ-LinkedIn ו-GitHub ישירות ל-PLUG',
+            'דשבורד מותאם — בנה תצוגה אישית עם 12 ווידג\'טים',
+            'תמלול AI לראיונות וידאו — סיכום + ייצוא בלחיצה',
           ]
         : [
             'Knockout Questions auto-filters unfit candidates',
@@ -430,6 +457,12 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
             'Updated CRM = happy clients = more deals',
             'Pipeline Analytics spots bottlenecks fast',
             'LinkedIn Import = save hours of manual entry',
+            'AI Auto-Screen ranks candidates automatically — saves hours',
+            'Multi-board Publishing — 10+ job boards in one click',
+            'Nurture Campaigns keep candidates warm between roles',
+            'External Sourcing from LinkedIn & GitHub directly into PLUG',
+            'Custom Dashboard — build your own view with 12 widget types',
+            'AI Transcription for video interviews — summary + export in one click',
           ];
     }
     return isRTL
