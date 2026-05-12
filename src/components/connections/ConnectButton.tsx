@@ -39,7 +39,8 @@ export function ConnectButton({
           ? (isHebrew ? 'התחברת בהצלחה!' : 'Connected!')
           : (isHebrew ? 'בקשת חיבור נשלחה' : 'Connection request sent')
       );
-    } catch {
+    } catch (err) {
+      console.error('Connect error:', err);
       toast.error(isHebrew ? 'שגיאה בשליחת הבקשה' : 'Error sending request');
     }
   };
@@ -49,7 +50,8 @@ export function ConnectButton({
     try {
       await acceptRequest.mutateAsync(conn.id);
       toast.success(isHebrew ? 'החיבור אושר!' : 'Connection accepted!');
-    } catch {
+    } catch (err) {
+      console.error('Accept error:', err);
       toast.error(isHebrew ? 'שגיאה באישור' : 'Error accepting');
     }
   };
@@ -59,7 +61,8 @@ export function ConnectButton({
     try {
       await removeConnection.mutateAsync(conn.id);
       toast.success(isHebrew ? 'החיבור הוסר' : 'Connection removed');
-    } catch {
+    } catch (err) {
+      console.error('Remove error:', err);
       toast.error(isHebrew ? 'שגיאה בהסרה' : 'Error removing');
     }
   };

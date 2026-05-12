@@ -14,6 +14,9 @@ import { Heart, User, Shield, FileText, Download, Eye, Building2, ExternalLink, 
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ConnectButton } from '@/components/connections/ConnectButton';
+import { FollowButton } from '@/components/feed/FollowButton';
+import { GiveVouchDialog } from '@/components/vouch/GiveVouchDialog';
+import { RequestVouchDialog } from '@/components/vouch/RequestVouchDialog';
 import { useConnections } from '@/hooks/useConnections';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -452,6 +455,17 @@ export default function PublicProfile() {
         {!isOwnProfile && (
           <div className="flex items-center gap-3 flex-wrap">
             {user && userId && <ConnectButton targetUserId={userId} />}
+            {user && userId && <FollowButton targetUserId={userId} size="default" />}
+            {user && userId && (
+              <GiveVouchDialog
+                trigger={
+                  <Button variant="outline" className="gap-2">
+                    <Heart className="w-4 h-4" />
+                    {isHebrew ? 'תן המלצה' : 'Vouch'}
+                  </Button>
+                }
+              />
+            )}
             {/* WhatsApp — only if visible and has phone */}
             {isVisible && profilePhone && (
               <Button

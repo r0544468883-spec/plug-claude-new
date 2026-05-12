@@ -373,6 +373,7 @@ function ConnectionCard({
             </Badge>
           </div>
           <div className="flex gap-1.5 shrink-0">
+            <FollowButton targetUserId={profile?.user_id} size="sm" />
             <Button
               variant="ghost"
               size="sm"

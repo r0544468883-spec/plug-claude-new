@@ -28,34 +28,48 @@ export function FollowButton({ targetUserId, targetCompanyId, size = 'sm', class
 
   const checkFollowStatus = async () => {
     if (!user?.id) return;
-    let query = supabase.from('follows').select('id').eq('follower_id', user.id);
-    if (targetUserId) query = query.eq('followed_user_id', targetUserId);
-    if (targetCompanyId) query = query.eq('followed_company_id', targetCompanyId);
-    const { data } = await query.maybeSingle();
-    setIsFollowing(!!data);
+    try {
+      let query = supabase.from('follows').select('id').eq('follower_id', user.id);
+      if (targetUserId) query = query.eq('followed_user_id', targetUserId);
+      if (targetCompanyId) query = query.eq('followed_company_id', targetCompanyId);
+      const { data, error } = await query.maybeSingle();
+      if (error) {
+        console.error('Check follow status error:', error);
+        return;
+      }
+      setIsFollowing(!!data);
+    } catch (err) {
+      console.error('Check follow status error:', err);
+    }
   };
 
   const handleToggle = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      toast.error(isRTL ? 'יש להתחבר כדי לעקוב' : 'Please sign in to follow');
+      return;
+    }
     setLoading(true);
     try {
       if (isFollowing) {
         let query = supabase.from('follows').delete().eq('follower_id', user.id);
         if (targetUserId) query = query.eq('followed_user_id', targetUserId);
         if (targetCompanyId) query = query.eq('followed_company_id', targetCompanyId);
-        await query;
+        const { error } = await query;
+        if (error) throw error;
         setIsFollowing(false);
         toast.success(isRTL ? 'הפסקת לעקוב' : 'Unfollowed');
       } else {
         const row: any = { follower_id: user.id };
         if (targetUserId) row.followed_user_id = targetUserId;
         if (targetCompanyId) row.followed_company_id = targetCompanyId;
-        await supabase.from('follows').insert(row);
+        const { error } = await supabase.from('follows').insert(row);
+        if (error) throw error;
         setIsFollowing(true);
-        toast.success(isRTL ? 'עוקב/ת! 🔔' : 'Following! 🔔');
+        toast.success(isRTL ? 'עוקב/ת!' : 'Following!');
       }
-    } catch {
-      toast.error(isRTL ? 'שגיאה' : 'Error');
+    } catch (err) {
+      console.error('Follow toggle error:', err);
+      toast.error(isRTL ? 'שגיאה בעדכון עקיבה' : 'Failed to update follow');
     } finally {
       setLoading(false);
     }

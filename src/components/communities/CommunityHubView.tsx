@@ -16,10 +16,13 @@ import { LurkerWidget } from './LurkerWidget';
 import { EngagementHeatmap } from './EngagementHeatmap';
 import { AICourseGenerator } from './AICourseGenerator';
 import { AnalyticsDashboard } from './AnalyticsDashboard';
+import { MentorshipTab } from './MentorshipTab';
+import { SpeedNetworkingTab } from './SpeedNetworkingTab';
+import { IntegrationsPanel } from './IntegrationsPanel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Hash, MessageSquare, GraduationCap, Calendar, HelpCircle, Award, Video, Trophy, BarChart3, Sparkles } from 'lucide-react';
+import { Hash, MessageSquare, GraduationCap, Calendar, HelpCircle, Award, Video, Trophy, BarChart3, Sparkles, Handshake, Zap, Plug } from 'lucide-react';
 
 interface CommunityHubViewProps {
   hubId: string;
@@ -123,6 +126,9 @@ export function CommunityHubView({ hubId, onBack }: CommunityHubViewProps) {
     allow_events: (hub as any).allow_events ?? true,
     allow_qa: (hub as any).allow_qa ?? true,
     allow_badges: (hub as any).allow_badges ?? true,
+    allow_mentorship: (hub as any).allow_mentorship ?? true,
+    allow_speed_networking: (hub as any).allow_speed_networking ?? true,
+    allow_integrations: (hub as any).allow_integrations ?? true,
   } : undefined;
 
   const showCourses = hubSettings?.allow_courses !== false;
@@ -174,6 +180,20 @@ export function CommunityHubView({ hubId, onBack }: CommunityHubViewProps) {
             <TabsTrigger value="analytics" className="gap-1.5">
               <BarChart3 className="w-4 h-4" />
               {isHebrew ? 'אנליטיקס' : 'Analytics'}
+            </TabsTrigger>
+          )}
+          <TabsTrigger value="mentorship" className="gap-1.5">
+            <Handshake className="w-4 h-4" />
+            {isHebrew ? 'מנטורינג' : 'Mentorship'}
+          </TabsTrigger>
+          <TabsTrigger value="speed-networking" className="gap-1.5">
+            <Zap className="w-4 h-4" />
+            {isHebrew ? 'נטוורקינג מהיר' : 'Speed Net'}
+          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="integrations" className="gap-1.5">
+              <Plug className="w-4 h-4" />
+              {isHebrew ? 'אינטגרציות' : 'Integrations'}
             </TabsTrigger>
           )}
           {isAdmin && (
@@ -259,6 +279,20 @@ export function CommunityHubView({ hubId, onBack }: CommunityHubViewProps) {
             </div>
           </div>
         </TabsContent>
+
+        <TabsContent value="mentorship">
+          <MentorshipTab hubId={hubId} isAdmin={isAdmin} />
+        </TabsContent>
+
+        <TabsContent value="speed-networking">
+          <SpeedNetworkingTab hubId={hubId} isAdmin={isAdmin} />
+        </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="integrations">
+            <IntegrationsPanel hubId={hubId} isAdmin={isAdmin} />
+          </TabsContent>
+        )}
 
         {isAdmin && (
           <TabsContent value="analytics">
