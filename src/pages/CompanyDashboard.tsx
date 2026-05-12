@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate, useBlocker } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,9 +15,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getCompanyLogoUrl } from '@/lib/company-logo';
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Tooltip, TooltipContent, TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   ArrowLeft, ArrowRight, Building2, Briefcase, Users, BarChart3,
   Globe, Linkedin, Save, Loader2, ExternalLink, Newspaper,
-  PenLine, Eye, Flame, Calendar,
+  PenLine, Eye, Flame, Calendar, AlertTriangle, Plus, HelpCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -47,6 +53,30 @@ export default function CompanyDashboard() {
   const getField = (key: string) =>
     key in form ? form[key] : (company?.[key] ?? '');
   const setField = (key: string, val: string) => setForm(prev => ({ ...prev, [key]: val }));
+
+  const hasUnsavedChanges = Object.keys(form).length > 0;
+
+  // Warn before leaving with unsaved changes
+  const blocker = useBlocker(hasUnsavedChanges);
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [hasUnsavedChanges]);
+
+  // Keyboard shortcut: Ctrl+S to save
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (hasUnsavedChanges && !saving) handleSave();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [hasUnsavedChanges, saving]);
 
   // Fetch company jobs
   const { data: jobs = [] } = useQuery({
@@ -106,8 +136,31 @@ export default function CompanyDashboard() {
     enabled: jobs.length > 0,
   });
 
-  const handleSave = async () => {
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  const handleSave = useCallback(async () => {
     if (!company) return;
+
+    // Validate required fields
+    const errors: Record<string, string> = {};
+    const nameVal = getField('name').trim();
+    if (!nameVal) errors.name = isHe ? 'שם חברה הוא שדה חובה' : 'Company name is required';
+    const foundedVal = getField('founded_year').trim();
+    if (foundedVal && (!/^\d{4}$/.test(foundedVal) || +foundedVal < 1800 || +foundedVal > new Date().getFullYear())) {
+      errors.founded_year = isHe ? 'שנה לא תקינה' : 'Invalid year';
+    }
+    const websiteVal = getField('website').trim();
+    if (websiteVal && !/^https?:\/\/.+/.test(websiteVal)) {
+      errors.website = isHe ? 'כתובת חייבת להתחיל ב-https://' : 'URL must start with https://';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      toast.error(isHe ? 'יש שגיאות בטופס' : 'Please fix form errors');
+      return;
+    }
+    setValidationErrors({});
+
     setSaving(true);
     try {
       const updates: Record<string, any> = {};
@@ -118,13 +171,16 @@ export default function CompanyDashboard() {
       const { error } = await supabase.from('companies').update(updates as any).eq('id', company.id);
       if (error) throw error;
       toast.success(isHe ? 'נשמר בהצלחה!' : 'Saved successfully!');
+      setForm({}); // Clear dirty state
       queryClient.invalidateQueries({ queryKey: ['company-dashboard', companyId] });
       queryClient.invalidateQueries({ queryKey: ['company', companyId] });
-    } catch {
-      toast.error(isHe ? 'שגיאה בשמירה' : 'Save error');
+    } catch (err: any) {
+      toast.error(isHe ? 'שגיאה בשמירה' : 'Save error', {
+        description: err?.message || (isHe ? 'נסה שוב' : 'Please try again'),
+      });
     }
     setSaving(false);
-  };
+  }, [company, form, isHe, companyId, queryClient]);
 
   const activeJobs = jobs.filter((j: any) => j.status === 'active');
 
@@ -162,10 +218,23 @@ export default function CompanyDashboard() {
               {isHe ? 'חזרה לדף הציבורי' : 'Back to public page'}
             </Button>
           </div>
-          <Button size="sm" className="gap-1.5" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {isHe ? 'שמור שינויים' : 'Save Changes'}
-          </Button>
+          <div className="flex items-center gap-2">
+            {hasUnsavedChanges && (
+              <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 bg-amber-50 gap-1">
+                <AlertTriangle className="w-3 h-3" />
+                {isHe ? 'שינויים לא שמורים' : 'Unsaved changes'}
+              </Badge>
+            )}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" className="gap-1.5" onClick={handleSave} disabled={saving || !hasUnsavedChanges}>
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  {isHe ? 'שמור' : 'Save'}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{isHe ? 'Ctrl+S לשמירה מהירה' : 'Ctrl+S to save'}</TooltipContent>
+            </Tooltip>
+          </div>
         </div>
 
         {/* Company avatar + name preview */}
@@ -188,7 +257,7 @@ export default function CompanyDashboard() {
         </div>
 
         {/* Stats row */}
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { icon: Users, value: followersCount, label: isHe ? 'עוקבים' : 'Followers', color: 'text-primary' },
             { icon: Briefcase, value: activeJobs.length, label: isHe ? 'משרות פתוחות' : 'Open Jobs', color: 'text-orange-500' },
@@ -199,7 +268,7 @@ export default function CompanyDashboard() {
               <CardContent className="p-3 text-center">
                 <s.icon className={`w-4 h-4 mx-auto mb-1 ${s.color}`} />
                 <p className="text-lg font-bold">{s.value}</p>
-                <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                <p className="text-xs text-muted-foreground">{s.label}</p>
               </CardContent>
             </Card>
           ))}
@@ -234,7 +303,8 @@ export default function CompanyDashboard() {
                 ].map(({ key, label, placeholder }) => (
                   <div key={key}>
                     <label className="text-xs font-medium text-muted-foreground mb-1 block">{label}</label>
-                    <Input value={getField(key)} onChange={e => setField(key, e.target.value)} placeholder={placeholder} />
+                    <Input value={getField(key)} onChange={e => setField(key, e.target.value)} placeholder={placeholder} className={validationErrors[key] ? 'border-destructive' : ''} />
+                    {validationErrors[key] && <p className="text-xs text-destructive mt-1">{validationErrors[key]}</p>}
                   </div>
                 ))}
                 <div>
@@ -245,12 +315,13 @@ export default function CompanyDashboard() {
                   {[
                     { key: 'industry', label: isHe ? 'תעשייה' : 'Industry', placeholder: 'SaaS, FinTech...' },
                     { key: 'size', label: isHe ? 'גודל' : 'Size', placeholder: '50-200' },
-                    { key: 'founded_year', label: isHe ? 'שנת הקמה' : 'Founded', placeholder: '2015' },
+                    { key: 'founded_year', label: isHe ? 'שנת הקמה' : 'Founded', placeholder: '2015', type: 'text', inputMode: 'numeric' as const },
                     { key: 'employee_count', label: isHe ? 'עובדים' : 'Employees', placeholder: '200-500' },
                   ].map(({ key, label, placeholder }) => (
                     <div key={key}>
                       <label className="text-xs font-medium text-muted-foreground mb-1 block">{label}</label>
-                      <Input value={getField(key)} onChange={e => setField(key, e.target.value)} placeholder={placeholder} />
+                      <Input value={getField(key)} onChange={e => setField(key, e.target.value)} placeholder={placeholder} className={validationErrors[key] ? 'border-destructive' : ''} />
+                      {validationErrors[key] && <p className="text-xs text-destructive mt-1">{validationErrors[key]}</p>}
                     </div>
                   ))}
                 </div>
@@ -266,10 +337,14 @@ export default function CompanyDashboard() {
                   <label className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1 block">
                     <Globe className="w-3 h-3" /> {isHe ? 'אתר אינטרנט' : 'Website'}
                   </label>
-                  <Input value={getField('website')} onChange={e => setField('website', e.target.value)} placeholder="https://walkme.com" type="url" />
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    {isHe ? 'הלוגו יישלף אוטומטית מהכתובת הזו' : 'Logo will be auto-fetched from this URL'}
-                  </p>
+                  <Input value={getField('website')} onChange={e => setField('website', e.target.value)} placeholder="https://walkme.com" type="url" className={validationErrors.website ? 'border-destructive' : ''} />
+                  {validationErrors.website ? (
+                    <p className="text-xs text-destructive mt-1">{validationErrors.website}</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {isHe ? 'הלוגו יישלף אוטומטית מהכתובת הזו' : 'Logo will be auto-fetched from this URL'}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1 block">
@@ -288,6 +363,11 @@ export default function CompanyDashboard() {
                 <CardContent className="py-10 text-center">
                   <Briefcase className="w-10 h-10 mx-auto text-muted-foreground/30 mb-2" />
                   <p className="text-sm text-muted-foreground">{isHe ? 'אין משרות עדיין' : 'No jobs yet'}</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">{isHe ? 'פרסם את המשרה הראשונה שלך' : 'Post your first job listing'}</p>
+                  <Button variant="outline" size="sm" className="mt-3 gap-1.5" onClick={() => navigate('/')}>
+                    <Plus className="w-3.5 h-3.5" />
+                    {isHe ? 'פרסם משרה' : 'Post a Job'}
+                  </Button>
                 </CardContent>
               </Card>
             ) : jobs.map((job: any) => (
@@ -362,6 +442,29 @@ export default function CompanyDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Unsaved changes blocker dialog */}
+      <Dialog open={blocker.state === 'blocked'} onOpenChange={() => blocker.reset?.()}>
+        <DialogContent className="max-w-sm" dir={isHe ? 'rtl' : 'ltr'}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              {isHe ? 'שינויים לא שמורים' : 'Unsaved Changes'}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {isHe ? 'יש לך שינויים שלא נשמרו. אם תעזוב, השינויים יאבדו.' : 'You have unsaved changes. Leaving will discard them.'}
+          </p>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => blocker.reset?.()}>
+              {isHe ? 'הישאר' : 'Stay'}
+            </Button>
+            <Button variant="destructive" onClick={() => blocker.proceed?.()}>
+              {isHe ? 'עזוב בלי לשמור' : 'Leave without saving'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

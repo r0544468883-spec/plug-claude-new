@@ -117,6 +117,10 @@ export default function CompanyProfile() {
           <div className="text-center py-16">
             <Building2 className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
             <p className="text-sm text-muted-foreground">{isHe ? 'חברה לא נמצאה' : 'Company not found'}</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">{isHe ? 'ייתכן שהדף הוסר או שהכתובת שגויה' : 'The page may have been removed or the URL is incorrect'}</p>
+            <Button variant="outline" size="sm" className="mt-3 gap-1.5" onClick={() => navigate('/companies')}>
+              {isHe ? 'חזרה לרשימת החברות' : 'Back to Companies'}
+            </Button>
           </div>
         ) : (
           <>
@@ -212,7 +216,7 @@ export default function CompanyProfile() {
             </Card>
 
             {/* ── Stats Row ── */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {[
                 {
                   icon: Briefcase,
@@ -237,7 +241,7 @@ export default function CompanyProfile() {
                   <CardContent className="p-3 text-center">
                     <s.icon className={`w-4 h-4 mx-auto mb-1 ${s.color}`} />
                     <p className="text-lg font-bold">{s.value}</p>
-                    <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                    <p className="text-xs text-muted-foreground">{s.label}</p>
                   </CardContent>
                 </Card>
               ))}

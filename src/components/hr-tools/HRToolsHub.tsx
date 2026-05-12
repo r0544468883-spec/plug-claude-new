@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { PipelineAnalytics } from '@/components/analytics/PipelineAnalytics';
@@ -22,6 +22,8 @@ import {
   LayoutGrid,
   FileSignature,
   Video,
+  X,
+  Lightbulb,
 } from 'lucide-react';
 
 
@@ -44,6 +46,7 @@ export function HRToolsHub({ onBack }: HRToolsHubProps) {
   const { language } = useLanguage();
   const isHebrew = language === 'he';
   const [subSection, setSubSection] = useState<HRSubSection>('hub');
+  const [showTip, setShowTip] = useState(() => !localStorage.getItem('hr-tools-tip-dismissed'));
 
   const BackIcon = isHebrew ? ArrowRight : ArrowLeft;
 
@@ -53,7 +56,7 @@ export function HRToolsHub({ onBack }: HRToolsHubProps) {
       icon: BarChart3,
       labelHe: 'אנליטיקות גיוס',
       labelEn: 'Pipeline Analytics',
-      descHe: 'Funnel, conversion rates, מקורות ומדדי זמן',
+      descHe: 'משפך גיוס, שיעורי המרה, מקורות ומדדי זמן',
       descEn: 'Funnel, conversion rates, sources & time metrics',
       color: 'from-blue-500/10 to-cyan-500/10 border-blue-500/20',
       iconColor: 'text-blue-500',
@@ -103,7 +106,7 @@ export function HRToolsHub({ onBack }: HRToolsHubProps) {
       icon: Star,
       labelHe: 'סקרי מועמדים',
       labelEn: 'Candidate Surveys',
-      descHe: 'NPS, דירוגים ומשוב אנונימי מהתהליך',
+      descHe: 'ציוני שביעות רצון, דירוגים ומשוב אנונימי מהתהליך',
       descEn: 'NPS, ratings & anonymous process feedback',
       color: 'from-yellow-500/10 to-amber-500/10 border-yellow-500/20',
       iconColor: 'text-yellow-500',
@@ -196,6 +199,27 @@ export function HRToolsHub({ onBack }: HRToolsHubProps) {
           </p>
         </div>
       </div>
+
+      {/* First-use tip */}
+      {showTip && (
+        <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 flex items-start gap-3">
+          <Lightbulb className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium">{isHebrew ? 'טיפ: התחל מאנליטיקות הגיוס' : 'Tip: Start with Pipeline Analytics'}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {isHebrew
+                ? 'לחץ על כרטיס כדי לפתוח כלי. אנליטיקות הגיוס נותנות תמונה כוללת של תהליך הגיוס שלך.'
+                : 'Click a card to open a tool. Pipeline Analytics gives an overview of your entire recruitment process.'}
+            </p>
+          </div>
+          <button
+            onClick={() => { setShowTip(false); localStorage.setItem('hr-tools-tip-dismissed', 'true'); }}
+            className="shrink-0 text-muted-foreground hover:text-foreground"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Tools Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

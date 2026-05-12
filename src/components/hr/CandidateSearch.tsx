@@ -11,7 +11,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Loader2, Search, X, UserSearch, Lock, Star, BookmarkPlus, BookmarkCheck, ExternalLink, Mail, MessageSquare } from 'lucide-react';
+import { Loader2, Search, X, UserSearch, Lock, Star, BookmarkPlus, BookmarkCheck, ExternalLink, Mail, MessageSquare, AlertCircle } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 
 interface CandidateResult {
@@ -40,6 +41,8 @@ export function CandidateSearch() {
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<CandidateResult[] | null>(null);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [visibleCount, setVisibleCount] = useState(20);
+  const [searchError, setSearchError] = useState(false);
 
   const addSkill = (skill: string) => {
     const s = skill.trim();
@@ -97,16 +100,18 @@ export function CandidateSearch() {
         return { ...p, matchScore: score, matchingSkills };
       })
       .filter(p => p.matchScore > 0)
-      .sort((a, b) => b.matchScore - a.matchScore)
-      .slice(0, 20);
+      .sort((a, b) => b.matchScore - a.matchScore);
 
       setResults(scored);
+      setVisibleCount(20);
+      setSearchError(false);
 
       if (scored.length === 0) {
         toast.info(isHebrew ? 'לא נמצאו מועמדים מתאימים' : 'No matching candidates found');
       }
     } catch (err) {
       console.error(err);
+      setSearchError(true);
       toast.error(isHebrew ? 'שגיאה בחיפוש' : 'Search failed');
     } finally {
       setIsSearching(false);
@@ -259,7 +264,14 @@ export function CandidateSearch() {
           </div>
 
           <div className="space-y-2">
-            <Label>{isHebrew ? 'כישורים נדרשים *' : 'Required Skills *'}</Label>
+            <div className="flex items-center gap-2">
+              <Label>{isHebrew ? 'כישורים נדרשים *' : 'Required Skills *'}</Label>
+              {requiredSkills.length >= 2 && (
+                <Button variant="ghost" size="sm" className="h-6 text-xs text-muted-foreground" onClick={() => setRequiredSkills([])}>
+                  {isHebrew ? 'נקה הכל' : 'Clear all'}
+                </Button>
+              )}
+            </div>
             {requiredSkills.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {requiredSkills.map(s => (
@@ -292,16 +304,44 @@ export function CandidateSearch() {
         </CardContent>
       </Card>
 
-      {/* Results */}
-      {results !== null && (
+      {/* Search loading skeleton */}
+      {isSearching && (
         <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            {isHebrew ? `נמצאו ${results.length} מועמדים` : `Found ${results.length} candidates`}
-          </p>
-          {results.map(candidate => (
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
+        </div>
+      )}
+
+      {/* Search error state */}
+      {searchError && !isSearching && (
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardContent className="p-5 flex flex-col items-center gap-3 text-center">
+            <AlertCircle className="w-8 h-8 text-destructive" />
+            <p className="text-sm font-medium">
+              {isHebrew ? 'החיפוש נכשל. אנא נסה שוב.' : 'Search failed. Please try again.'}
+            </p>
+            <Button variant="outline" size="sm" onClick={handleSearch} className="gap-2">
+              <Search className="w-4 h-4" />
+              {isHebrew ? 'נסה שוב' : 'Retry'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Results */}
+      {results !== null && !isSearching && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              {isHebrew ? `נמצאו ${results.length} מועמדים` : `Found ${results.length} candidates`}
+            </p>
+            <Button variant="ghost" size="sm" className="text-xs" onClick={() => { setResults(null); setVisibleCount(20); }}>
+              {isHebrew ? 'חיפוש חדש' : 'New search'}
+            </Button>
+          </div>
+          {results.slice(0, visibleCount).map(candidate => (
             <Card key={candidate.id} className="plug-card-hover">
               <CardContent className="p-4">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 flex-wrap">
                   <Avatar className="w-12 h-12 flex-shrink-0">
                     <AvatarImage src={candidate.avatar_url || undefined} />
                     <AvatarFallback className="bg-primary/10 text-primary font-semibold">
@@ -335,7 +375,7 @@ export function CandidateSearch() {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-2 flex-shrink-0 mt-2 sm:mt-0">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -362,6 +402,11 @@ export function CandidateSearch() {
               </CardContent>
             </Card>
           ))}
+          {results.length > visibleCount && (
+            <Button variant="outline" className="w-full" onClick={() => setVisibleCount(prev => prev + 20)}>
+              {isHebrew ? `הצג עוד (${results.length - visibleCount} נוספים)` : `Show more (${results.length - visibleCount} remaining)`}
+            </Button>
+          )}
         </div>
       )}
     </div>

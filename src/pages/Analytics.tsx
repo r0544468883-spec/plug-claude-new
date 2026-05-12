@@ -6,7 +6,8 @@ import { Header } from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, BarChart3, ArrowLeft, ArrowRight, Briefcase, ClipboardList, Users, Eye, Star, Clock, TrendingUp, AlertCircle } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Loader2, BarChart3, ArrowLeft, ArrowRight, Briefcase, ClipboardList, Users, Eye, Star, Clock, TrendingUp, AlertCircle, RotateCcw } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -50,6 +51,7 @@ export default function Analytics() {
   const [accessRequests, setAccessRequests] = useState<any[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -93,6 +95,8 @@ export default function Analytics() {
           setSubmissions((subsRes.data as any[]) ?? []);
           setAccessRequests((reqsRes.data as any[]) ?? []);
         }
+      } catch {
+        setError(true);
       } finally {
         setIsLoading(false);
       }
@@ -205,6 +209,35 @@ export default function Analytics() {
     return { totalViews, totalSubs, avgRating, pendingRequests, perAssignmentData, diffData, trendData, reqStatusData };
   }, [assignmentTemplates, submissions, accessRequests, isHebrew]);
 
+  if (error) return (
+    <div className="min-h-screen bg-background" dir={isHebrew ? 'rtl' : 'ltr'}>
+      <Header />
+      <main className="max-w-4xl mx-auto px-4 py-16 text-center">
+        <AlertCircle className="w-12 h-12 mx-auto text-destructive/50 mb-3" />
+        <p className="text-sm font-medium">{isHebrew ? 'שגיאה בטעינת הנתונים' : 'Failed to load analytics data'}</p>
+        <p className="text-xs text-muted-foreground mt-1">{isHebrew ? 'נסה לרענן את הדף' : 'Try refreshing the page'}</p>
+        <Button variant="outline" size="sm" className="mt-4 gap-1.5" onClick={() => { setError(false); setIsLoading(true); }}>
+          <RotateCcw className="w-3.5 h-3.5" />
+          {isHebrew ? 'נסה שוב' : 'Try Again'}
+        </Button>
+      </main>
+    </div>
+  );
+
+  if (isLoading) return (
+    <div className="min-h-screen bg-background" dir={isHebrew ? 'rtl' : 'ltr'}>
+      <Header />
+      <main className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {[1,2,3,4].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
+        </div>
+        <Skeleton className="h-64 rounded-xl" />
+        <Skeleton className="h-64 rounded-xl" />
+      </main>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background" dir={isHebrew ? 'rtl' : 'ltr'}>
       <Header />
@@ -246,11 +279,7 @@ export default function Analytics() {
           ))}
         </div>
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : activeTab === 'jobs' ? (
+        {activeTab === 'jobs' ? (
           <JobsAnalytics stats={jobsStats} jobs={jobs} applications={applications} isHebrew={isHebrew} />
         ) : (
           <AssignmentsAnalytics
@@ -517,7 +546,7 @@ function AssignmentsAnalytics({ stats, templates, submissions, accessRequests, i
                           <span className="flex items-center justify-center gap-1">
                             {tmplReqs.length}
                             {tmplReqs.some((r: any) => r.status === 'pending') && (
-                              <Badge variant="outline" className="text-[10px] h-4 px-1 text-amber-600 border-amber-500/30">
+                              <Badge variant="outline" className="text-xs h-4 px-1 text-amber-600 border-amber-500/30">
                                 {isHebrew ? 'ממתין' : 'pending'}
                               </Badge>
                             )}
