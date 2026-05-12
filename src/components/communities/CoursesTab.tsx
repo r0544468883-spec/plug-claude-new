@@ -18,9 +18,12 @@ import {
 import { toast } from 'sonner';
 import {
   Plus, BookOpen, Users, Star, Clock, GraduationCap, Loader2,
-  ChevronRight, ChevronLeft, Play, CheckCircle2,
+  ChevronRight, ChevronLeft, Play, CheckCircle2, HelpCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { CertificateView } from './CertificateView';
+import { CourseRatings } from './CourseRatings';
+import { QuizPlayer } from './QuizPlayer';
 
 interface CoursesTabProps {
   hubId: string;
@@ -328,6 +331,7 @@ function CourseDetail({ courseId, isAdmin, onBack }: { courseId: string; isAdmin
   const isHebrew = language === 'he';
   const queryClient = useQueryClient();
   const [showAddLesson, setShowAddLesson] = useState(false);
+  const [quizLessonId, setQuizLessonId] = useState<string | null>(null);
 
   const { data: course } = useQuery({
     queryKey: ['community-course', courseId],
@@ -461,8 +465,8 @@ function CourseDetail({ courseId, isAdmin, onBack }: { courseId: string; isAdmin
             const lessonTitle = isHebrew ? (lesson.title_he || lesson.title) : lesson.title;
 
             return (
+              <div key={lesson.id} className="space-y-1">
               <Card
-                key={lesson.id}
                 className={cn(
                   'transition-colors hover:bg-muted/30 cursor-pointer',
                   completed && 'bg-green-50/50 border-green-200'
@@ -499,23 +503,52 @@ function CourseDetail({ courseId, isAdmin, onBack }: { courseId: string; isAdmin
                     </div>
                   </div>
 
-                  {!completed && !isAdmin && (
+                  <div className="flex items-center gap-1 shrink-0">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="shrink-0 text-xs gap-1"
-                      onClick={(e) => { e.stopPropagation(); completeLessonMutation.mutate(lesson.id); }}
+                      className="text-xs gap-1"
+                      onClick={(e) => { e.stopPropagation(); setQuizLessonId(quizLessonId === lesson.id ? null : lesson.id); }}
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      {isHebrew ? 'סיימתי' : 'Done'}
+                      <HelpCircle className="w-3.5 h-3.5" />
+                      {isHebrew ? 'בוחן' : 'Quiz'}
                     </Button>
-                  )}
+                    {!completed && !isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs gap-1"
+                        onClick={(e) => { e.stopPropagation(); completeLessonMutation.mutate(lesson.id); }}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        {isHebrew ? 'סיימתי' : 'Done'}
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
+              {quizLessonId === lesson.id && (
+                <div className="ms-11">
+                  <QuizPlayer lessonId={lesson.id} isAdmin={isAdmin} />
+                </div>
+              )}
+              </div>
             );
           })}
         </div>
       )}
+
+      {/* Certificate */}
+      <CertificateView
+        courseId={courseId}
+        courseTitle={course?.title || ''}
+        courseTitleHe={course?.title_he}
+        progressPct={progressPct}
+        isAdmin={isAdmin}
+      />
+
+      {/* Ratings */}
+      <CourseRatings courseId={courseId} isEnrolled={!isAdmin} />
 
       {/* Add Lesson Dialog */}
       <Dialog open={showAddLesson} onOpenChange={setShowAddLesson}>

@@ -114,7 +114,16 @@ export function CommunityHubView({ hubId, onBack }: CommunityHubViewProps) {
     allow_video: (hub as any).allow_video ?? true,
     allow_images: (hub as any).allow_images ?? true,
     allow_member_invite: (hub as any).allow_member_invite ?? true,
+    allow_courses: (hub as any).allow_courses ?? true,
+    allow_events: (hub as any).allow_events ?? true,
+    allow_qa: (hub as any).allow_qa ?? true,
+    allow_badges: (hub as any).allow_badges ?? true,
   } : undefined;
+
+  const showCourses = hubSettings?.allow_courses !== false;
+  const showEvents = hubSettings?.allow_events !== false;
+  const showQA = hubSettings?.allow_qa !== false;
+  const showBadges = hubSettings?.allow_badges !== false;
 
   return (
     <div dir={isHebrew ? 'rtl' : 'ltr'}>
@@ -124,22 +133,30 @@ export function CommunityHubView({ hubId, onBack }: CommunityHubViewProps) {
             <MessageSquare className="w-4 h-4" />
             {isHebrew ? 'צ\'אט' : 'Chat'}
           </TabsTrigger>
-          <TabsTrigger value="courses" className="gap-1.5">
-            <GraduationCap className="w-4 h-4" />
-            {isHebrew ? 'קורסים' : 'Courses'}
-          </TabsTrigger>
-          <TabsTrigger value="events" className="gap-1.5">
-            <Calendar className="w-4 h-4" />
-            {isHebrew ? 'אירועים' : 'Events'}
-          </TabsTrigger>
-          <TabsTrigger value="qa" className="gap-1.5">
-            <HelpCircle className="w-4 h-4" />
-            {isHebrew ? 'שאלות ותשובות' : 'Q&A'}
-          </TabsTrigger>
-          <TabsTrigger value="badges" className="gap-1.5">
-            <Award className="w-4 h-4" />
-            {isHebrew ? 'תגים' : 'Badges'}
-          </TabsTrigger>
+          {showCourses && (
+            <TabsTrigger value="courses" className="gap-1.5">
+              <GraduationCap className="w-4 h-4" />
+              {isHebrew ? 'קורסים' : 'Courses'}
+            </TabsTrigger>
+          )}
+          {showEvents && (
+            <TabsTrigger value="events" className="gap-1.5">
+              <Calendar className="w-4 h-4" />
+              {isHebrew ? 'אירועים' : 'Events'}
+            </TabsTrigger>
+          )}
+          {showQA && (
+            <TabsTrigger value="qa" className="gap-1.5">
+              <HelpCircle className="w-4 h-4" />
+              {isHebrew ? 'שאלות ותשובות' : 'Q&A'}
+            </TabsTrigger>
+          )}
+          {showBadges && (
+            <TabsTrigger value="badges" className="gap-1.5">
+              <Award className="w-4 h-4" />
+              {isHebrew ? 'תגים' : 'Badges'}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="chat">
