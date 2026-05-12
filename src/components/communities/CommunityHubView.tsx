@@ -14,10 +14,12 @@ import { NotificationsPanel } from './NotificationsPanel';
 import { LiveRoomButton } from './LiveRoomButton';
 import { LurkerWidget } from './LurkerWidget';
 import { EngagementHeatmap } from './EngagementHeatmap';
+import { AICourseGenerator } from './AICourseGenerator';
+import { AnalyticsDashboard } from './AnalyticsDashboard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Hash, MessageSquare, GraduationCap, Calendar, HelpCircle, Award, Video, Trophy } from 'lucide-react';
+import { Hash, MessageSquare, GraduationCap, Calendar, HelpCircle, Award, Video, Trophy, BarChart3, Sparkles } from 'lucide-react';
 
 interface CommunityHubViewProps {
   hubId: string;
@@ -168,6 +170,18 @@ export function CommunityHubView({ hubId, onBack }: CommunityHubViewProps) {
             <Trophy className="w-4 h-4" />
             {isHebrew ? 'דירוג' : 'Leaderboard'}
           </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="analytics" className="gap-1.5">
+              <BarChart3 className="w-4 h-4" />
+              {isHebrew ? 'אנליטיקס' : 'Analytics'}
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger value="ai-generator" className="gap-1.5">
+              <Sparkles className="w-4 h-4" />
+              {isHebrew ? 'יצירת קורס AI' : 'AI Generator'}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="chat">
@@ -245,6 +259,18 @@ export function CommunityHubView({ hubId, onBack }: CommunityHubViewProps) {
             </div>
           </div>
         </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="analytics">
+            <AnalyticsDashboard hubId={hubId} isAdmin={isAdmin} />
+          </TabsContent>
+        )}
+
+        {isAdmin && (
+          <TabsContent value="ai-generator">
+            <AICourseGenerator hubId={hubId} isAdmin={isAdmin} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
