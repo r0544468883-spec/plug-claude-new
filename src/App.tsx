@@ -74,6 +74,7 @@ import Companies from "./pages/Companies";
 import ResetPassword from "./pages/ResetPassword";
 import Extension from "./pages/Extension";
 import Admin from "./pages/Admin";
+import RecordingStudio from "./pages/RecordingStudio";
 
 const queryClient = new QueryClient();
 
@@ -127,6 +128,7 @@ const App = () => (
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/extension" element={<Extension />} />
                   <Route path="/admin" element={<Admin />} />
+                  <Route path="/recording-studio" element={<RecordingStudio />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
