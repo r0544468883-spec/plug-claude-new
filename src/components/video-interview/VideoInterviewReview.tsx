@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Star, Users, ChevronLeft, CheckCircle2, XCircle } from 'lucide-react';
+import { Star, Users, ChevronLeft, CheckCircle2, XCircle, Mic } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { InterviewTranscription } from './InterviewTranscription';
 
 interface VideoInterviewReviewProps {
   interviewId: string;
@@ -210,9 +211,29 @@ export function VideoInterviewReview({ interviewId }: VideoInterviewReviewProps)
                     }))}
                     className="text-sm"
                   />
-                  <Button size="sm" variant="outline" onClick={() => submitRating(resp.id)}>
-                    שמור דירוג
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => submitRating(resp.id)}>
+                      שמור דירוג
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="gap-1.5 text-muted-foreground"
+                      onClick={() => {
+                        const el = document.getElementById(`transcription-${resp.id}`);
+                        if (el) el.classList.toggle('hidden');
+                      }}
+                    >
+                      <Mic className="w-3.5 h-3.5" />
+                      AI תמלול
+                    </Button>
+                  </div>
+                </div>
+                <div id={`transcription-${resp.id}`} className="hidden mt-2">
+                  <InterviewTranscription
+                    videoResponseId={resp.id}
+                    audioUrl={resp.video_url}
+                  />
                 </div>
               </CardContent>
             </Card>

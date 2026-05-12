@@ -3,10 +3,13 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Users, TrendingUp, Clock, BarChart3 } from 'lucide-react';
+import { Loader2, Users, TrendingUp, Clock, BarChart3, Bot, Megaphone } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
+import { AutoScreenPanel } from '@/components/screening/AutoScreenPanel';
+import { MultiboardPublisher } from './MultiboardPublisher';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell
@@ -182,6 +185,32 @@ export function JobAnalyticsSheet({ jobId, jobTitle, open, onOpenChange }: JobAn
                 <Users className="w-10 h-10 mx-auto mb-2 opacity-20" />
                 <p className="text-sm">{isHebrew ? 'אין מועמדים עדיין' : 'No applicants yet'}</p>
               </div>
+            )}
+
+            {/* AI Auto-Screen */}
+            {jobId && (
+              <details className="group">
+                <summary className="flex items-center gap-2 cursor-pointer text-sm font-medium py-2 hover:text-primary transition-colors">
+                  <Bot className="w-4 h-4" />
+                  {isHebrew ? 'סינון אוטומטי (AI)' : 'AI Auto-Screen'}
+                </summary>
+                <div className="mt-2">
+                  <AutoScreenPanel jobId={jobId} />
+                </div>
+              </details>
+            )}
+
+            {/* Multi-board Publishing */}
+            {jobId && (
+              <details className="group">
+                <summary className="flex items-center gap-2 cursor-pointer text-sm font-medium py-2 hover:text-primary transition-colors">
+                  <Megaphone className="w-4 h-4" />
+                  {isHebrew ? 'פרסום רב-ערוצי' : 'Multi-board Publishing'}
+                </summary>
+                <div className="mt-2">
+                  <MultiboardPublisher jobId={jobId} jobTitle={jobTitle} />
+                </div>
+              </details>
             )}
           </div>
         )}
