@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
 import {
   Monitor,
   Camera,
@@ -21,6 +22,10 @@ import {
   Upload,
   Loader2,
   Radio,
+  Pencil,
+  Type,
+  Eraser,
+  Palette,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -102,6 +107,100 @@ export default function RecordingStudio() {
   const screenVideoRef = useRef<HTMLVideoElement>(null);
   const cameraVideoRef = useRef<HTMLVideoElement>(null);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
+
+  // ── Live drawing / text annotation state ──────────────────────────────────
+  type LiveTool = 'none' | 'draw' | 'text';
+  const [liveTool, setLiveTool] = useState<LiveTool>('none');
+  const [drawColor, setDrawColor] = useState('#ef4444'); // red
+  const [drawSize, setDrawSize] = useState(3);
+  const drawCanvasRef = useRef<HTMLCanvasElement>(null);
+  const isDrawing = useRef(false);
+
+  // Text annotations placed during live recording
+  interface LiveAnnotation {
+    id: string;
+    text: string;
+    x: number; // percentage
+    y: number; // percentage
+  }
+  const [liveAnnotations, setLiveAnnotations] = useState<LiveAnnotation[]>([]);
+  const [pendingText, setPendingText] = useState<{ x: number; y: number } | null>(null);
+  const [pendingTextValue, setPendingTextValue] = useState('');
+
+  const DRAW_COLORS = ['#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#a855f7', '#ffffff', '#000000'];
+
+  // Resize canvas to match container
+  useEffect(() => {
+    if (!containerRef.current || !drawCanvasRef.current) return;
+    const ro = new ResizeObserver(([entry]) => {
+      if (drawCanvasRef.current) {
+        drawCanvasRef.current.width = entry.contentRect.width;
+        drawCanvasRef.current.height = entry.contentRect.height;
+      }
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, [state]);
+
+  // ── Drawing handlers ──────────────────────────────────────────────────────
+  const startDraw = (e: React.MouseEvent | React.TouchEvent) => {
+    if (liveTool !== 'draw' || !drawCanvasRef.current) return;
+    isDrawing.current = true;
+    const ctx = drawCanvasRef.current.getContext('2d');
+    if (!ctx) return;
+    const rect = drawCanvasRef.current.getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    ctx.beginPath();
+    ctx.moveTo(clientX - rect.left, clientY - rect.top);
+    ctx.strokeStyle = drawColor;
+    ctx.lineWidth = drawSize;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+  };
+
+  const moveDraw = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDrawing.current || liveTool !== 'draw' || !drawCanvasRef.current) return;
+    const ctx = drawCanvasRef.current.getContext('2d');
+    if (!ctx) return;
+    const rect = drawCanvasRef.current.getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    ctx.lineTo(clientX - rect.left, clientY - rect.top);
+    ctx.stroke();
+  };
+
+  const endDraw = () => { isDrawing.current = false; };
+
+  const clearCanvas = () => {
+    if (!drawCanvasRef.current) return;
+    const ctx = drawCanvasRef.current.getContext('2d');
+    ctx?.clearRect(0, 0, drawCanvasRef.current.width, drawCanvasRef.current.height);
+    setLiveAnnotations([]);
+  };
+
+  // ── Text placement handler ────────────────────────────────────────────────
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    if (liveTool !== 'text' || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setPendingText({ x, y });
+    setPendingTextValue('');
+  };
+
+  const confirmText = () => {
+    if (!pendingText || !pendingTextValue.trim()) {
+      setPendingText(null);
+      return;
+    }
+    setLiveAnnotations(prev => [
+      ...prev,
+      { id: Date.now().toString(), text: pendingTextValue.trim(), x: pendingText.x, y: pendingText.y },
+    ]);
+    setPendingText(null);
+    setPendingTextValue('');
+  };
 
   const {
     state,
@@ -451,6 +550,54 @@ export default function RecordingStudio() {
               `}</style>
             </div>
           )}
+
+          {/* Live drawing canvas overlay */}
+          <canvas
+            ref={drawCanvasRef}
+            className={cn(
+              'absolute inset-0 z-25',
+              liveTool === 'draw' ? 'cursor-crosshair pointer-events-auto' :
+              liveTool === 'text' ? 'cursor-text pointer-events-auto' : 'pointer-events-none',
+            )}
+            onMouseDown={startDraw}
+            onMouseMove={moveDraw}
+            onMouseUp={endDraw}
+            onMouseLeave={endDraw}
+            onTouchStart={startDraw}
+            onTouchMove={moveDraw}
+            onTouchEnd={endDraw}
+            onClick={handleCanvasClick}
+          />
+
+          {/* Live text annotations */}
+          {liveAnnotations.map(ann => (
+            <div
+              key={ann.id}
+              className="absolute z-25 pointer-events-none px-2 py-1 rounded bg-black/60 text-white text-sm font-medium shadow-lg"
+              style={{ left: `${ann.x}%`, top: `${ann.y}%`, transform: 'translate(-50%, -50%)' }}
+            >
+              {ann.text}
+            </div>
+          ))}
+
+          {/* Pending text input */}
+          {pendingText && (
+            <div
+              className="absolute z-30"
+              style={{ left: `${pendingText.x}%`, top: `${pendingText.y}%`, transform: 'translate(-50%, -50%)' }}
+            >
+              <Input
+                value={pendingTextValue}
+                onChange={e => setPendingTextValue(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') confirmText(); if (e.key === 'Escape') setPendingText(null); }}
+                onBlur={confirmText}
+                autoFocus
+                className="w-48 h-8 text-sm bg-black/80 text-white border-white/30 placeholder:text-white/50"
+                placeholder={isRTL ? 'הקלד טקסט...' : 'Type text...'}
+                dir={isRTL ? 'rtl' : 'ltr'}
+              />
+            </div>
+          )}
         </div>
 
         {/* Floating control bar */}
@@ -470,6 +617,61 @@ export default function RecordingStudio() {
                   {formatDuration(duration)}
                 </span>
               </span>
+
+              <div className="h-5 w-px bg-white/20" />
+
+              {/* Draw tool */}
+              <Button
+                size="sm"
+                variant="ghost"
+                className={cn('h-9 w-9 p-0 text-white hover:bg-white/10', liveTool === 'draw' && 'bg-white/20 ring-1 ring-white/40')}
+                onClick={() => setLiveTool(liveTool === 'draw' ? 'none' : 'draw')}
+                aria-label={isRTL ? 'ציור' : 'Draw'}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+
+              {/* Text tool */}
+              <Button
+                size="sm"
+                variant="ghost"
+                className={cn('h-9 w-9 p-0 text-white hover:bg-white/10', liveTool === 'text' && 'bg-white/20 ring-1 ring-white/40')}
+                onClick={() => setLiveTool(liveTool === 'text' ? 'none' : 'text')}
+                aria-label={isRTL ? 'טקסט' : 'Text'}
+              >
+                <Type className="h-4 w-4" />
+              </Button>
+
+              {/* Clear drawings */}
+              {(liveTool === 'draw' || liveAnnotations.length > 0) && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-9 w-9 p-0 text-white hover:bg-white/10"
+                  onClick={clearCanvas}
+                  aria-label={isRTL ? 'נקה ציורים' : 'Clear drawings'}
+                >
+                  <Eraser className="h-4 w-4" />
+                </Button>
+              )}
+
+              {/* Color picker (visible when draw tool active) */}
+              {liveTool === 'draw' && (
+                <div className="flex items-center gap-1">
+                  {DRAW_COLORS.map(c => (
+                    <button
+                      key={c}
+                      onClick={() => setDrawColor(c)}
+                      className={cn(
+                        'h-5 w-5 rounded-full border-2 transition-transform',
+                        drawColor === c ? 'border-white scale-125' : 'border-white/30 hover:scale-110'
+                      )}
+                      style={{ backgroundColor: c }}
+                      aria-label={c}
+                    />
+                  ))}
+                </div>
+              )}
 
               <div className="h-5 w-px bg-white/20" />
 
