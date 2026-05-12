@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useScreenRecorder, RecordingMode, CameraShape } from '@/hooks/useScreenRecorder';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -322,6 +322,144 @@ export default function RecordingStudio() {
     a.download = `recording-${Date.now()}.webm`;
     a.click();
   };
+
+  // ── Picture-in-Picture floating controls ─────────────────────────────────
+  const pipWindowRef = useRef<any>(null);
+  const [pipActive, setPipActive] = useState(false);
+
+  const isPipSupported = typeof window !== 'undefined' && 'documentPictureInPicture' in window;
+
+  const openPipControls = useCallback(async () => {
+    if (!isPipSupported) {
+      toast.error(isRTL ? 'הדפדפן לא תומך בחלון צף' : 'Browser does not support PiP window');
+      return;
+    }
+    try {
+      // @ts-ignore — documentPictureInPicture is new API
+      const pipWindow = await window.documentPictureInPicture.requestWindow({
+        width: 340,
+        height: 220,
+      });
+      pipWindowRef.current = pipWindow;
+      setPipActive(true);
+
+      // Build the PiP control UI
+      const doc = pipWindow.document;
+      doc.body.innerHTML = '';
+      doc.body.style.cssText = 'margin:0;background:#0a0a0a;font-family:system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:16px;';
+
+      const title = doc.createElement('div');
+      title.textContent = isRTL ? 'בקרת הקלטה — PLUG' : 'PLUG — Recording Controls';
+      title.style.cssText = 'color:#fff;font-size:13px;font-weight:600;opacity:0.7;';
+      doc.body.appendChild(title);
+
+      // Duration display
+      const durationEl = doc.createElement('div');
+      durationEl.id = 'pip-duration';
+      durationEl.textContent = formatDuration(duration);
+      durationEl.style.cssText = 'color:#fff;font-size:32px;font-weight:700;font-family:monospace;letter-spacing:2px;';
+      doc.body.appendChild(durationEl);
+
+      // Status indicator
+      const statusEl = doc.createElement('div');
+      statusEl.id = 'pip-status';
+      statusEl.style.cssText = 'display:flex;align-items:center;gap:6px;';
+      statusEl.innerHTML = `<span style="width:8px;height:8px;border-radius:50%;background:#ef4444;animation:pulse 1.5s infinite;"></span><span style="color:#fca5a5;font-size:12px;font-weight:500;">${isRTL ? 'מקליט' : 'Recording'}</span>`;
+      doc.body.appendChild(statusEl);
+
+      // Buttons container
+      const btnRow = doc.createElement('div');
+      btnRow.style.cssText = 'display:flex;gap:12px;margin-top:4px;';
+
+      const makeBtn = (label: string, bg: string, hoverBg: string) => {
+        const btn = doc.createElement('button');
+        btn.textContent = label;
+        btn.style.cssText = `padding:10px 20px;border-radius:10px;border:none;background:${bg};color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:background 0.15s;min-width:80px;`;
+        btn.onmouseenter = () => { btn.style.background = hoverBg; };
+        btn.onmouseleave = () => { btn.style.background = bg; };
+        return btn;
+      };
+
+      let isPaused = false;
+      const pauseBtn = makeBtn(isRTL ? 'השהה' : 'Pause', '#374151', '#4b5563');
+      pauseBtn.onclick = () => {
+        if (isPaused) {
+          resumeRecording();
+          isPaused = false;
+          pauseBtn.textContent = isRTL ? 'השהה' : 'Pause';
+          statusEl.innerHTML = `<span style="width:8px;height:8px;border-radius:50%;background:#ef4444;animation:pulse 1.5s infinite;"></span><span style="color:#fca5a5;font-size:12px;font-weight:500;">${isRTL ? 'מקליט' : 'Recording'}</span>`;
+        } else {
+          pauseRecording();
+          isPaused = true;
+          pauseBtn.textContent = isRTL ? 'המשך' : 'Resume';
+          statusEl.innerHTML = `<span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;"></span><span style="color:#fcd34d;font-size:12px;font-weight:500;">${isRTL ? 'מושהה' : 'Paused'}</span>`;
+        }
+      };
+
+      const stopBtn = makeBtn(isRTL ? 'עצור' : 'Stop', '#dc2626', '#b91c1c');
+      stopBtn.onclick = () => {
+        stopRecording();
+        pipWindow.close();
+      };
+
+      btnRow.appendChild(pauseBtn);
+      btnRow.appendChild(stopBtn);
+      doc.body.appendChild(btnRow);
+
+      // Keyboard shortcuts hint
+      const hint = doc.createElement('div');
+      hint.textContent = 'Alt+Shift+S: Stop  |  Alt+Shift+P: Pause';
+      hint.style.cssText = 'color:#fff;font-size:10px;opacity:0.35;margin-top:4px;';
+      doc.body.appendChild(hint);
+
+      // Add pulse animation
+      const style = doc.createElement('style');
+      style.textContent = '@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}';
+      doc.head.appendChild(style);
+
+      // Listen for PiP window close
+      pipWindow.addEventListener('pagehide', () => {
+        setPipActive(false);
+        pipWindowRef.current = null;
+      });
+    } catch {
+      toast.error(isRTL ? 'שגיאה בפתיחת חלון צף' : 'Failed to open PiP window');
+    }
+  }, [isRTL, isPipSupported, duration, pauseRecording, resumeRecording, stopRecording]);
+
+  // Update PiP duration in real-time
+  useEffect(() => {
+    if (!pipWindowRef.current) return;
+    const el = pipWindowRef.current.document.getElementById('pip-duration');
+    if (el) el.textContent = formatDuration(duration);
+  }, [duration]);
+
+  // Close PiP when recording stops
+  useEffect(() => {
+    if (state === 'stopped' && pipWindowRef.current) {
+      pipWindowRef.current.close();
+      pipWindowRef.current = null;
+      setPipActive(false);
+    }
+  }, [state]);
+
+  // ── Keyboard shortcuts (work globally, even from other tabs) ────────────
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (state !== 'recording' && state !== 'paused') return;
+      if (e.altKey && e.shiftKey && e.key === 'S') { e.preventDefault(); stopRecording(); }
+      if (e.altKey && e.shiftKey && e.key === 'P') {
+        e.preventDefault();
+        state === 'paused' ? resumeRecording() : pauseRecording();
+      }
+      if (e.altKey && e.shiftKey && e.key === 'D') {
+        e.preventDefault();
+        setLiveTool(prev => prev === 'draw' ? 'none' : 'draw');
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [state, stopRecording, pauseRecording, resumeRecording]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // RENDER: Mode Selection
@@ -698,6 +836,28 @@ export default function RecordingStudio() {
               </Button>
 
               <div className="h-5 w-px bg-white/20" />
+
+              {/* PiP floating window button */}
+              {isPipSupported && !pipActive && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-9 px-3 text-xs text-white hover:bg-white/10 gap-1.5"
+                  onClick={openPipControls}
+                  aria-label={isRTL ? 'פתח חלון צף' : 'Float controls'}
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" />
+                    <rect x="12" y="9" width="8" height="6" rx="1" fill="currentColor" opacity="0.3" />
+                  </svg>
+                  {isRTL ? 'חלון צף' : 'Float'}
+                </Button>
+              )}
+              {pipActive && (
+                <Badge variant="outline" className="border-0 text-xs font-medium bg-green-500/20 text-green-300">
+                  {isRTL ? 'חלון צף פעיל' : 'PiP Active'}
+                </Badge>
+              )}
 
               {/* Status badge */}
               <Badge
