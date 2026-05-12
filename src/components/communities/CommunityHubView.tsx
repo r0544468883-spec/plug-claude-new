@@ -9,12 +9,15 @@ import { CoursesTab } from './CoursesTab';
 import { EventsTab } from './EventsTab';
 import { QATab } from './QATab';
 import { BadgesSection } from './BadgesSection';
+import { GamificationPanel } from './GamificationPanel';
+import { NotificationsPanel } from './NotificationsPanel';
+import { LiveRoomButton } from './LiveRoomButton';
 import { LurkerWidget } from './LurkerWidget';
 import { EngagementHeatmap } from './EngagementHeatmap';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Hash, MessageSquare, GraduationCap, Calendar, HelpCircle, Award } from 'lucide-react';
+import { Hash, MessageSquare, GraduationCap, Calendar, HelpCircle, Award, Video, Trophy } from 'lucide-react';
 
 interface CommunityHubViewProps {
   hubId: string;
@@ -157,6 +160,14 @@ export function CommunityHubView({ hubId, onBack }: CommunityHubViewProps) {
               {isHebrew ? 'תגים' : 'Badges'}
             </TabsTrigger>
           )}
+          <TabsTrigger value="live" className="gap-1.5">
+            <Video className="w-4 h-4" />
+            {isHebrew ? 'שידור חי' : 'Live'}
+          </TabsTrigger>
+          <TabsTrigger value="leaderboard" className="gap-1.5">
+            <Trophy className="w-4 h-4" />
+            {isHebrew ? 'דירוג' : 'Leaderboard'}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="chat">
@@ -218,6 +229,21 @@ export function CommunityHubView({ hubId, onBack }: CommunityHubViewProps) {
 
         <TabsContent value="badges">
           <BadgesSection hubId={hubId} isAdmin={isAdmin} />
+        </TabsContent>
+
+        <TabsContent value="live">
+          <LiveRoomButton hubId={hubId} isAdmin={isAdmin} />
+        </TabsContent>
+
+        <TabsContent value="leaderboard">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2">
+              <GamificationPanel hubId={hubId} />
+            </div>
+            <div>
+              <NotificationsPanel hubId={hubId} />
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
