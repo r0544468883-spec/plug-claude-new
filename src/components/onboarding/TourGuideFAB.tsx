@@ -346,7 +346,15 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
           ],
         },
         {
-          title: isRTL ? 'קהילה ותוכן' : 'Community & Content',
+          title: isRTL ? 'תוכן ומדיה' : 'Content & Media',
+          tools: [
+            { icon: '🎥', label: isRTL ? 'וובינרים' : 'Webinars', desc: isRTL ? 'שדר ידע, בנה מותג אישי' : 'Broadcast knowledge, build personal brand', section: 'content-hub' as DashboardSection, isNew: true },
+            { icon: '🖥️', label: isRTL ? 'סטודיו הקלטה' : 'Recording Studio', desc: isRTL ? 'הקלט מסך + מצלמה + כתיבה על המסך' : 'Record screen + camera + draw on screen', section: 'content-hub' as DashboardSection, isNew: true },
+            { icon: '✏️', label: isRTL ? 'לוח ציור (Whiteboard)' : 'Whiteboard', desc: isRTL ? 'כתוב וצייר על המסך בזמן הקלטה' : 'Write & draw on screen during recording', section: 'content-hub' as DashboardSection, isNew: true },
+          ],
+        },
+        {
+          title: isRTL ? 'קהילה ותקשורת' : 'Community & Communication',
           tools: [
             { icon: '🎯', label: 'Missions', desc: isRTL ? 'לוח פרויקטי גיוס' : 'Recruitment project board', section: 'missions' as DashboardSection },
             { icon: '👥', label: isRTL ? 'קהילות' : 'Communities', desc: isRTL ? 'בניית רשת מועמדים' : 'Build candidate network', section: 'communities' as DashboardSection },
@@ -448,6 +456,8 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
             'סורסינג חיצוני מ-LinkedIn ו-GitHub ישירות ל-PLUG',
             'דשבורד מותאם — בנה תצוגה אישית עם 12 ווידג\'טים',
             'תמלול AI לראיונות וידאו — סיכום + ייצוא בלחיצה',
+            'וובינרים בונים מותג אישי — מועמדים רואים את המומחיות שלך',
+            'סטודיו הקלטה + כתיבה על המסך = סרטוני הדרכה מקצועיים',
           ]
         : [
             'Knockout Questions auto-filters unfit candidates',
@@ -463,6 +473,8 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
             'External Sourcing from LinkedIn & GitHub directly into PLUG',
             'Custom Dashboard — build your own view with 12 widget types',
             'AI Transcription for video interviews — summary + export in one click',
+            'Webinars build your personal brand — candidates see your expertise',
+            'Recording Studio + on-screen drawing = professional tutorial videos',
           ];
     }
     return isRTL

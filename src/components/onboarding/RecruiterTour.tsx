@@ -9,6 +9,7 @@ import {
   Sparkles, Users, Briefcase, Building2, Target, MessageSquare,
   Heart, Newspaper, Globe, User, Settings, BarChart3, Zap, FileEdit, LayoutGrid,
   Bell, ClipboardList, FileText, Shield, Send, Search, Blocks, Mic, TrendingUp, Megaphone,
+  Video, MonitorPlay, PenTool,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -140,6 +141,24 @@ const FREELANCE_HR_STEPS: TourStep[] = [
     descriptionHe: 'צור תוכן, נהל וובינרים, ובנה קהילות מקצועיות. שתף ידע ובנה מוניטין.',
     descriptionEn: 'Create content, manage webinars, and build professional communities. Share knowledge and build reputation.',
     icon: Newspaper,
+  },
+  {
+    section: 'content-hub',
+    targetSelector: '[data-tour="content-hub"]',
+    titleHe: 'וובינרים — שדר ידע לקהילה',
+    titleEn: 'Webinars — Broadcast Knowledge',
+    descriptionHe: 'צור וובינרים, הגדר תאריך ושעה, והזמן מועמדים ולקוחות. הצג מומחיות ובנה מותג אישי בתחום הגיוס.',
+    descriptionEn: 'Create webinars, set date & time, and invite candidates & clients. Showcase expertise and build your recruiting brand.',
+    icon: Video,
+  },
+  {
+    section: 'content-hub',
+    targetSelector: '[data-tour="content-hub"]',
+    titleHe: 'סטודיו הקלטה + לוח ציור',
+    titleEn: 'Recording Studio + Whiteboard',
+    descriptionHe: 'הקלט מסך, מצלמה או שניהם יחד. השתמש בלוח הציור לכתיבה על המסך בזמן ההקלטה — מושלם לסרטוני הדרכה ו-Walkthroughs.',
+    descriptionEn: 'Record screen, camera, or both. Use the whiteboard to draw on screen during recording — perfect for tutorials and walkthroughs.',
+    icon: MonitorPlay,
   },
   {
     section: 'messages',
@@ -318,6 +337,24 @@ const INHOUSE_HR_STEPS: TourStep[] = [
     descriptionHe: 'בנה נוכחות מקצועית! צור פוסטים, נהל קהילות, ושתף תובנות מעולם הגיוס.',
     descriptionEn: 'Build professional presence! Create posts, manage communities, and share recruiting insights.',
     icon: Newspaper,
+  },
+  {
+    section: 'content-hub',
+    targetSelector: '[data-tour="content-hub"]',
+    titleHe: 'וובינרים — שדר ידע לקהילה',
+    titleEn: 'Webinars — Broadcast Knowledge',
+    descriptionHe: 'צור וובינרים, הגדר תאריך ושעה, והזמן מועמדים ולקוחות. הצג מומחיות ובנה מותג אישי בתחום הגיוס.',
+    descriptionEn: 'Create webinars, set date & time, and invite candidates & clients. Showcase expertise and build your recruiting brand.',
+    icon: Video,
+  },
+  {
+    section: 'content-hub',
+    targetSelector: '[data-tour="content-hub"]',
+    titleHe: 'סטודיו הקלטה + לוח ציור',
+    titleEn: 'Recording Studio + Whiteboard',
+    descriptionHe: 'הקלט מסך, מצלמה או שניהם יחד. השתמש בלוח הציור לכתיבה על המסך בזמן ההקלטה — מושלם לסרטוני הדרכה ו-Walkthroughs.',
+    descriptionEn: 'Record screen, camera, or both. Use the whiteboard to draw on screen during recording — perfect for tutorials and walkthroughs.',
+    icon: MonitorPlay,
   },
   {
     section: 'messages',
