@@ -113,7 +113,7 @@ export function MyStatsPage() {
       const { data: apps } = await supabase
         .from('applications')
         .select('id, status, match_score, created_at, interview_date')
-        .eq('user_id', profile.id) as any;
+        .eq('candidate_id', profile.id) as any;
 
       const allApps = apps || [];
       const total = allApps.length;
