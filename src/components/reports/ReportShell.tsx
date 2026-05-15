@@ -71,35 +71,36 @@ export function ReportShell({ title, description, children, data, columns, isLoa
   return (
     <div className="space-y-4 print:space-y-2">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 no-print">
-        <div className="min-w-0">
-          <h1 className="text-lg sm:text-2xl font-bold text-foreground truncate">{title}</h1>
-          <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">{description}</p>
+      <div className="flex items-start justify-between gap-2 no-print">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-base sm:text-2xl font-bold text-foreground truncate">{title}</h1>
+          <p className="text-muted-foreground text-[11px] sm:text-sm mt-0.5 line-clamp-1">{description}</p>
         </div>
-        <div className="flex flex-wrap gap-1.5 sm:gap-2">
-          <Button variant="outline" size="sm" onClick={exportCSV} className="gap-1 h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3">
-            <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+        <div className="hidden sm:flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={exportCSV} className="gap-1.5">
+            <Download className="w-3.5 h-3.5" />
             CSV
           </Button>
-          <Button variant="outline" size="sm" onClick={exportPDF} className="gap-1 h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3">
-            <FileText className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+          <Button variant="outline" size="sm" onClick={exportPDF} className="gap-1.5">
+            <FileText className="w-3.5 h-3.5" />
             PDF
           </Button>
-          <Button variant="outline" size="sm" onClick={sendEmail} className="gap-1 h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3">
-            <Mail className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+          <Button variant="outline" size="sm" onClick={sendEmail} className="gap-1.5">
+            <Mail className="w-3.5 h-3.5" />
             {isHebrew ? 'שלח' : 'Email'}
           </Button>
         </div>
       </div>
 
       {/* Quick date ranges */}
-      <div className="flex gap-1.5 sm:gap-2 flex-wrap no-print">
+      <div className="flex gap-1.5 flex-wrap no-print">
         {QUICK_RANGES.map((r, i) => (
           <Button
             key={i}
             variant={activeRange === i ? 'default' : 'outline'}
             size="sm"
             onClick={() => handleQuickRange(r.days, i)}
+            className="h-7 px-2.5 text-xs sm:h-8 sm:px-3 sm:text-sm"
           >
             {isHebrew ? r.label : r.labelEn}
           </Button>
