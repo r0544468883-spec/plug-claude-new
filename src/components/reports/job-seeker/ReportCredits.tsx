@@ -4,7 +4,7 @@ import { ReportShell } from '../ReportShell';
 import { Card, CardContent } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-export function ReportCredits() {
+export function ReportCredits({ compact }: { compact?: boolean } = {}) {
   const { language } = useLanguage();
   const { credits } = useCredits();
   const dailyFuel = credits?.daily_fuel || 0;
@@ -18,7 +18,7 @@ export function ReportCredits() {
   }));
 
   return (
-    <ReportShell
+    <ReportShell compact={compact}
       title={isHebrew ? 'דוח קרדיטים' : 'Credits Report'}
       description={isHebrew ? 'יתרה, הוצאות וצבירה' : 'Balance, expenses, and earnings'}
       data={dummyTrend}

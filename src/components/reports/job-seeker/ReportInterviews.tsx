@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 
-export function ReportInterviews() {
+export function ReportInterviews({ compact }: { compact?: boolean } = {}) {
   const { user } = useAuth();
   const { language } = useLanguage();
   const isHebrew = language === 'he';
@@ -33,7 +33,7 @@ export function ReportInterviews() {
   const completed = data.filter(i => i.status === 'completed').length;
 
   return (
-    <ReportShell
+    <ReportShell compact={compact}
       title={isHebrew ? 'דוח ראיונות' : 'Interviews Report'}
       description={isHebrew ? 'ראיונות, ציונים וסטטוסים' : 'Interviews, scores, and statuses'}
       data={data}

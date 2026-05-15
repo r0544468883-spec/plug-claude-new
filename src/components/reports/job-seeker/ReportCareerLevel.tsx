@@ -41,7 +41,7 @@ function parseCareerLevel(title: string): CareerLevel {
   return 'mid';
 }
 
-export function ReportCareerLevel() {
+export function ReportCareerLevel({ compact }: { compact?: boolean } = {}) {
   const { user } = useAuth();
   const { language } = useLanguage();
   const isHe = language === 'he';
@@ -112,7 +112,7 @@ export function ReportCareerLevel() {
   const dominantLevel = barData.sort((a, b) => b.count - a.count)[0];
 
   return (
-    <ReportShell
+    <ReportShell compact={compact}
       title={isHe ? 'לפי רמת קריירה' : 'By Career Level'}
       description={isHe ? 'התפלגות הגשות לפי Junior / Senior / Manager / Executive' : 'Distribution by Junior / Senior / Manager / Executive'}
       data={data}

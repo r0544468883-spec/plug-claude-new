@@ -42,7 +42,7 @@ function getMethodLabel(method: string | null, isHe: boolean) {
   return isHe ? (meta?.he || method || 'אחר') : (meta?.en || method || 'Other');
 }
 
-export function ReportChannels() {
+export function ReportChannels({ compact }: { compact?: boolean } = {}) {
   const { user } = useAuth();
   const { language } = useLanguage();
   const isHe = language === 'he';
@@ -114,7 +114,7 @@ export function ReportChannels() {
   const plugAiCount = methodStats['plug_ai']?.count || 0;
 
   return (
-    <ReportShell
+    <ReportShell compact={compact}
       title={isHe ? 'ערוצי הגשה' : 'Application Channels'}
       description={isHe ? 'מאיפה הגשת ואיזה ערוץ מביא הכי הרבה תגובות' : 'Where you applied and which channel drives the most responses'}
       data={data}

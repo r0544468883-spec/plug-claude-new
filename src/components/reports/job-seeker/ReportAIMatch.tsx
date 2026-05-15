@@ -39,7 +39,7 @@ const SCORE_BUCKETS = [
   { label: '81–100',min: 81,  max: 100 },
 ];
 
-export function ReportAIMatch() {
+export function ReportAIMatch({ compact }: { compact?: boolean } = {}) {
   const { user } = useAuth();
   const { language } = useLanguage();
   const isHe = language === 'he';
@@ -108,7 +108,7 @@ export function ReportAIMatch() {
   const highScoreCount = withScore.filter(a => (a.score || 0) >= 70).length;
 
   return (
-    <ReportShell
+    <ReportShell compact={compact}
       title={isHe ? 'ניתוחי AI מהתוסף' : 'AI Match Analyses'}
       description={isHe ? 'ניתוחי ההתאמה שבוצעו ע"י התוסף PLUG' : 'Match analyses performed by the PLUG extension'}
       data={data}

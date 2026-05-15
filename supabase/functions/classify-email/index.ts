@@ -214,11 +214,101 @@ serve(async (req) => {
 
     // If no application_id was provided, try to match using AI-extracted company/job info
     let application_id = rawApplicationId || null;
+    let autoCreatedApp = false;
     if (!application_id && (result.company_name || result.job_title)) {
       console.log(`[classify-email] No app match from sync — retrying with AI-extracted company="${result.company_name}", title="${result.job_title}"`);
       application_id = await retryMatchWithAI(supabase, userId, result, subject || "", from_email || "");
       if (application_id) {
         console.log(`[classify-email] AI retry matched application: ${application_id}`);
+      }
+    }
+
+    // Auto-create application card if no match found and classification is meaningful
+    const MEANINGFUL_CLASSIFICATIONS = ["interview_invitation", "rejection", "offer", "task_assignment"];
+    if (!application_id && MEANINGFUL_CLASSIFICATIONS.includes(result.classification) && result.confidence >= 0.60) {
+      const companyName = result.company_name || from_email?.split("@")[1]?.split(".")[0] || "Unknown";
+      const jobTitle = result.job_title || subject || "";
+      const initialStage = CLASSIFICATION_TO_STAGE[result.classification]?.stage || "applied";
+
+      console.log(`[classify-email] Auto-creating application: company="${companyName}", title="${jobTitle}", stage="${initialStage}"`);
+
+      const { data: newApp, error: createErr } = await supabase
+        .from("applications")
+        .insert({
+          candidate_id: userId,
+          job_company: companyName,
+          job_title: jobTitle,
+          current_stage: initialStage,
+          source: "email_scan",
+          notes: `Auto-created from email: "${subject}"`,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (createErr) {
+        console.error(`[classify-email] Auto-create app failed: ${createErr.message}`);
+      } else if (newApp) {
+        application_id = newApp.id;
+        autoCreatedApp = true;
+        console.log(`[classify-email] Auto-created application ${newApp.id} for "${companyName}" — ${jobTitle}`);
+      }
+    }
+
+    // Auto-create/update company card from email sender
+    if (result.company_name && result.classification !== "general") {
+      const domain = (from_email || "").split("@")[1]?.toLowerCase() || "";
+      // Skip generic email providers
+      const GENERIC_DOMAINS = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "live.com", "icloud.com", "aol.com", "walla.co.il", "012.net.il"];
+      if (domain && !GENERIC_DOMAINS.includes(domain)) {
+        const companyWebsite = `https://${domain}`;
+        // Check if company already exists by website
+        const { data: existingCompany } = await supabase
+          .from("companies")
+          .select("id, metadata")
+          .eq("website", companyWebsite)
+          .limit(1)
+          .single();
+
+        if (!existingCompany) {
+          // Create new company card
+          const { data: newCompany, error: companyErr } = await supabase
+            .from("companies")
+            .insert({
+              name: result.company_name,
+              website: companyWebsite,
+              lead_status: "lead",
+              metadata: {
+                source: "email_scan",
+                contact_email: from_email,
+                extracted_job_title: result.job_title,
+                first_seen_at: new Date().toISOString(),
+              },
+            })
+            .select("id")
+            .single();
+
+          if (companyErr) {
+            console.log(`[classify-email] Company insert failed (may already exist): ${companyErr.message}`);
+          } else {
+            console.log(`[classify-email] Auto-created company "${result.company_name}" (${domain}) → ${newCompany.id}`);
+          }
+        } else {
+          // Update metadata with new contact info
+          const meta = (existingCompany.metadata || {}) as Record<string, unknown>;
+          const emails = (meta.contact_emails as string[] || []);
+          if (from_email && !emails.includes(from_email)) {
+            emails.push(from_email);
+          }
+          await supabase
+            .from("companies")
+            .update({
+              metadata: { ...meta, contact_emails: emails, last_email_at: new Date().toISOString() },
+            })
+            .eq("id", existingCompany.id);
+          console.log(`[classify-email] Updated company "${result.company_name}" with new contact: ${from_email}`);
+        }
       }
     }
 
@@ -355,6 +445,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         ...result,
+        application_id: application_id || null,
+        auto_created_app: autoCreatedApp,
         stage_updated: stageUpdated,
         previous_stage: previousStage,
         new_stage: newStage,

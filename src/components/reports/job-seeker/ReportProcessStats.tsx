@@ -45,7 +45,7 @@ interface GlobalBenchmarks {
   avg_match_score: number;
 }
 
-export function ReportProcessStats() {
+export function ReportProcessStats({ compact }: { compact?: boolean } = {}) {
   const { user } = useAuth();
   const { language } = useLanguage();
   const isHe = language === 'he';
@@ -139,7 +139,7 @@ export function ReportProcessStats() {
   };
 
   return (
-    <ReportShell
+    <ReportShell compact={compact}
       title={isHe ? 'סטטיסטיקות תהליך חיפוש' : 'Job Search Process Stats'}
       description={isHe ? 'ניתוח כולל של תהליך חיפוש העבודה שלך' : 'Full analysis of your job search process'}
       data={data}

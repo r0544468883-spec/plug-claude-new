@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "skills": {
+    "brand-copywriter": {
+      "source": "ognjengt/founder-skills",
+      "sourceType": "github",
+      "computedHash": "2d2699da05226c6f34462607af8313f3c39316e47ff916b9777653274b3bcf3b"
+    },
+    "hebrew-writer": {
+      "source": "baldiga/Hebrew-writer",
+      "sourceType": "github",
+      "computedHash": "fee47232cc5b1675b1f0f39e0de91b2c70892f8cd1a020a88d48f4e3b62f0c21"
+    },
+    "linkedin-posts": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "computedHash": "20bb665c6db1c45e75f022c9b468569384a0e5bc68d3956d5782591792d55326"
+    },
+    "social-content": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "computedHash": "c141cd0a4cbd8ce1b9ead79ada85ea349d794119c3cb730c3def3f689022bfb1"
+    },
+    "writing-linkedin-posts": {
+      "source": "jamesgray007/hoai-course",
+      "sourceType": "github",
+      "computedHash": "907d4a4e6c128e925be84e708046fd95fc648dc3278acf4ffa077064a5d8c5dd"
+    }
+  }
+}

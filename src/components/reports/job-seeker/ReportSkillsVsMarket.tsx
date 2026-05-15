@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-export function ReportSkillsVsMarket() {
+export function ReportSkillsVsMarket({ compact }: { compact?: boolean } = {}) {
   const { user } = useAuth();
   const { language } = useLanguage();
   const isHebrew = language === 'he';
@@ -38,7 +38,7 @@ export function ReportSkillsVsMarket() {
   }));
 
   return (
-    <ReportShell
+    <ReportShell compact={compact}
       title={isHebrew ? 'מיומנויות מול שוק' : 'Skills vs Market'}
       description={isHebrew ? 'הסקילים שלך מול ביקוש השוק' : 'Your skills vs market demand'}
       data={chartData}

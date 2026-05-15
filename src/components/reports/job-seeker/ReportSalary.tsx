@@ -13,12 +13,12 @@ const SALARY_DATA = [
   { role: 'Data Scientist', min: 24000, median: 38000, max: 60000, samples: 55 },
 ];
 
-export function ReportSalary() {
+export function ReportSalary({ compact }: { compact?: boolean } = {}) {
   const { language } = useLanguage();
   const isHebrew = language === 'he';
 
   return (
-    <ReportShell
+    <ReportShell compact={compact}
       title={isHebrew ? 'דוח שכר' : 'Salary Report'}
       description={isHebrew ? 'נתוני שכר לפי תפקיד' : 'Salary data by role'}
       data={SALARY_DATA}

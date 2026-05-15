@@ -199,20 +199,22 @@ async function syncGmail(
   accessToken: string,
   userId: string,
   lastHistoryId: string | null,
-  supabase: ReturnType<typeof createClient>
+  supabase: ReturnType<typeof createClient>,
+  overrideDays?: number
 ): Promise<{ emails: ParsedEmail[]; newHistoryId: string | null }> {
   const emails: ParsedEmail[] = [];
 
   // Always do full sync to ensure we catch all emails
   console.log("[sync-emails] Running FULL sync (always)");
-  return syncGmailFull(accessToken, userId);
+  return syncGmailFull(accessToken, userId, overrideDays);
 }
 
-async function syncGmailFull(accessToken: string, userId: string): Promise<{ emails: ParsedEmail[]; newHistoryId: string | null }> {
+async function syncGmailFull(accessToken: string, userId: string, overrideDays?: number): Promise<{ emails: ParsedEmail[]; newHistoryId: string | null }> {
   const emails: ParsedEmail[] = [];
   const seenIds = new Set<string>();
   let newHistoryId: string | null = null;
-  const after = Math.floor((Date.now() - 90 * 24 * 60 * 60 * 1000) / 1000);
+  const days = overrideDays && overrideDays > 0 ? overrideDays : 90;
+  const after = Math.floor((Date.now() - days * 24 * 60 * 60 * 1000) / 1000);
 
   // 4 targeted queries — cast a wide net, let AI classify
   const queries = [
@@ -221,7 +223,7 @@ async function syncGmailFull(accessToken: string, userId: string): Promise<{ ema
     // Q2: REJECTIONS — real phrases from actual rejection emails
     `after:${after} {unfortunately regret "not moving forward" "decided to move forward" "not selected" "went with another" "position has been filled" "position has been closed" "no longer open" "unable to move" "will not be advancing" "not the right fit" "after careful consideration" "after careful review" "do not fully align" "does not align" "different direction" "other candidates" "לצערנו" "לא נוכל להציע" "לא נוכל לקדם" "לא ממשיכים" "בחרנו במועמד" "נסגרה המשרה" "בשלב זה לא נוכל"}`,
     // Q3: INTERVIEWS + OFFERS
-    `after:${after} {"schedule your interview" "schedule an interview" "next step" "we'd like to invite" "shortlisted" "pleased to offer" "offer letter" "הזמנה לראיון" "ראיון עבודה" "הצעת עבודה" "שמחים להזמינך"}`,
+    `after:${after} {"schedule your interview" "schedule an interview" "next step" "we'd like to invite" "shortlisted" "pleased to offer" "offer letter" "הזמנה לראיון" "זימון לראיון" "ראיון עבודה" "הצעת עבודה" "שמחים להזמינך" "זומנת לראיון" "נקבע ראיון" "קביעת ראיון"}`,
     // Q4: ATS platforms — these send rejections with generic subjects
     `after:${after} from:(greenhouse-mail.io OR lever.co OR workablemail.com OR bamboohr.com OR ashbyhq.com OR comeet-notifications.com OR smartrecruiters.com OR icims.com OR jobvite.com OR breezy.hr OR recruitee.com OR workday.com)`,
     // Q5: LinkedIn job emails — rejections, views, updates
@@ -543,6 +545,7 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const targetUserId = body.user_id || null;
     const forceFull = body.force_full === true;
+    const rescanDays = typeof body.rescan_days === "number" ? body.rescan_days : 0;
 
     // If force_full, reset history + delete old emails so we re-process everything
     if (forceFull) {
@@ -555,6 +558,15 @@ serve(async (req) => {
         await supabase.from("application_emails").delete().eq("direction", "received");
       }
       console.log(`[sync-emails] Reset complete`);
+    }
+
+    // rescan_days: delete recent emails (last N days) so they get re-classified
+    if (rescanDays > 0 && !forceFull) {
+      const since = new Date(Date.now() - rescanDays * 24 * 60 * 60 * 1000).toISOString();
+      console.log(`[sync-emails] Rescan last ${rescanDays} days — deleting emails since ${since}`);
+      let delQuery = supabase.from("application_emails").delete().eq("direction", "received").gte("created_at", since);
+      if (targetUserId) delQuery = delQuery.eq("user_id", targetUserId);
+      await delQuery;
     }
 
     // Get users with sync_enabled tokens
@@ -582,8 +594,15 @@ serve(async (req) => {
     const errors: string[] = [];
     const debugInfo: Record<string, unknown> = {};
 
+    // System sender email — used only for sending, never scan it
+    const SYSTEM_EMAILS = ["plug.hotjobs@gmail.com"];
+
     for (const token of tokens) {
       try {
+        if (SYSTEM_EMAILS.includes(token.email_address?.toLowerCase?.())) {
+          console.log(`[sync-emails] Skipping system sender: ${token.email}`);
+          continue;
+        }
         console.log(`[sync-emails] Processing ${token.provider} for user ${token.user_id}`);
         const accessToken = await getValidAccessToken(supabase, token);
         debugInfo.tokenOk = true;
@@ -604,7 +623,8 @@ serve(async (req) => {
             accessToken,
             token.user_id,
             syncState?.last_history_id || null,
-            supabase
+            supabase,
+            rescanDays > 0 ? rescanDays : undefined
           );
           emails = result.emails;
           newHistoryId = result.newHistoryId;

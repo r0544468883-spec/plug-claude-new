@@ -52,7 +52,7 @@ function normalizeRole(title: string): string {
   return 'Other';
 }
 
-export function ReportRolesFields() {
+export function ReportRolesFields({ compact }: { compact?: boolean } = {}) {
   const { user } = useAuth();
   const { language } = useLanguage();
   const isHe = language === 'he';
@@ -121,7 +121,7 @@ export function ReportRolesFields() {
   const topRole = roleData[0]?.role || '—';
 
   return (
-    <ReportShell
+    <ReportShell compact={compact}
       title={isHe ? 'לפי תפקיד ותחום' : 'By Role & Field'}
       description={isHe ? 'פילוח הגשות לפי תפקיד ותחום עיסוק' : 'Breakdown of applications by job role and industry'}
       data={data}

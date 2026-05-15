@@ -30,3 +30,10 @@ Shared resources (same Supabase project):
 - `jobs` table — extension upserts with `external_source`/`external_id`
 - `extension_agent_control` table — dashboard controls extension agent
 - `job_history` table — extension-only browsing history
+
+## Extension Version Update Rule
+After finishing work on extension files (content scripts, service worker, side panel, etc.):
+1. Bump the `version` field in `C:\Users\User\Desktop\PLUG extension\public\manifest.json`
+2. Update the `extension_config.latest_version` value in Supabase (`extension_agent_control` or dedicated config row)
+3. Build the extension (`npm run build` in the extension directory)
+4. The extension checks Supabase every 30 minutes — if version mismatch, it shows a refresh banner to the user

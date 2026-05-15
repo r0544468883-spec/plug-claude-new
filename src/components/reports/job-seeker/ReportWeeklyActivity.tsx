@@ -8,7 +8,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { format, subDays, eachDayOfInterval } from 'date-fns';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
-export function ReportWeeklyActivity() {
+export function ReportWeeklyActivity({ compact }: { compact?: boolean } = {}) {
   const { user } = useAuth();
   const { language } = useLanguage();
   const isHebrew = language === 'he';
@@ -43,7 +43,7 @@ export function ReportWeeklyActivity() {
   }));
 
   return (
-    <ReportShell
+    <ReportShell compact={compact}
       title={isHebrew ? 'פעילות שבועית' : 'Weekly Activity'}
       description={isHebrew ? 'פעילות השבוע לעומת שבוע שעבר' : 'This week vs last week'}
       data={apps}

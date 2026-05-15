@@ -1,12 +1,11 @@
 import { ReactNode, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Download, FileText, Mail, CalendarDays, ChevronLeft } from 'lucide-react';
+import { Download, FileText, Mail, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
-import { format, subDays, subMonths, startOfYear } from 'date-fns';
+import { format, subDays } from 'date-fns';
 
 export type DateRange = { from: Date; to: Date };
 
@@ -18,6 +17,8 @@ interface ReportShellProps {
   columns?: { key: string; label: string }[];
   isLoading?: boolean;
   onDateRangeChange?: (range: DateRange) => void;
+  /** When true, renders as a simple card without header/buttons/dates (for embedding in MyStatsPage) */
+  compact?: boolean;
 }
 
 const QUICK_RANGES = [
@@ -27,10 +28,10 @@ const QUICK_RANGES = [
   { label: 'שנה', labelEn: 'Year', days: 365 },
 ];
 
-export function ReportShell({ title, description, children, data, columns, isLoading, onDateRangeChange }: ReportShellProps) {
+export function ReportShell({ title, description, children, data, columns, isLoading, onDateRangeChange, compact }: ReportShellProps) {
   const { language } = useLanguage();
   const isHebrew = language === 'he';
-  const [activeRange, setActiveRange] = useState(1); // default: month
+  const [activeRange, setActiveRange] = useState(1);
 
   const handleQuickRange = (days: number, index: number) => {
     setActiveRange(index);
@@ -58,19 +59,43 @@ export function ReportShell({ title, description, children, data, columns, isLoa
     toast.success(isHebrew ? 'CSV יוצא בהצלחה' : 'CSV exported successfully');
   };
 
-  const exportPDF = () => {
-    window.print();
-  };
+  // ── Compact mode: simple card with title + content ──
+  if (compact) {
+    if (isLoading) {
+      return (
+        <Card className="bg-card border-border">
+          <CardContent className="p-4 space-y-3">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-32 w-full" />
+          </CardContent>
+        </Card>
+      );
+    }
+    if (data.length === 0) {
+      return (
+        <Card className="bg-card border-border">
+          <CardContent className="py-10 text-center text-muted-foreground">
+            <CalendarDays className="w-8 h-8 mx-auto mb-2 opacity-30" />
+            <p className="text-sm">{isHebrew ? 'אין נתונים' : 'No data'}</p>
+          </CardContent>
+        </Card>
+      );
+    }
+    return (
+      <Card className="bg-card border-border">
+        <CardContent className="p-3 sm:p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          </div>
+          {children}
+        </CardContent>
+      </Card>
+    );
+  }
 
-  const sendEmail = () => {
-    const subject = encodeURIComponent(`${isHebrew ? 'דוח PLUG' : 'PLUG Report'}: ${title}`);
-    const body = encodeURIComponent(`${isHebrew ? 'מצורף דוח' : 'Attached report'}: ${title}\n${description}`);
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
-  };
-
+  // ── Full mode: standalone page with header + controls ──
   return (
     <div className="space-y-4 print:space-y-2">
-      {/* Header */}
       <div className="flex items-start justify-between gap-2 no-print">
         <div className="min-w-0 flex-1">
           <h1 className="text-base sm:text-2xl font-bold text-foreground truncate">{title}</h1>
@@ -81,18 +106,21 @@ export function ReportShell({ title, description, children, data, columns, isLoa
             <Download className="w-3.5 h-3.5" />
             CSV
           </Button>
-          <Button variant="outline" size="sm" onClick={exportPDF} className="gap-1.5">
+          <Button variant="outline" size="sm" onClick={() => window.print()} className="gap-1.5">
             <FileText className="w-3.5 h-3.5" />
             PDF
           </Button>
-          <Button variant="outline" size="sm" onClick={sendEmail} className="gap-1.5">
+          <Button variant="outline" size="sm" onClick={() => {
+            const subject = encodeURIComponent(`${isHebrew ? 'דוח PLUG' : 'PLUG Report'}: ${title}`);
+            const body = encodeURIComponent(`${isHebrew ? 'מצורף דוח' : 'Attached report'}: ${title}\n${description}`);
+            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+          }} className="gap-1.5">
             <Mail className="w-3.5 h-3.5" />
             {isHebrew ? 'שלח' : 'Email'}
           </Button>
         </div>
       </div>
 
-      {/* Quick date ranges */}
       <div className="flex gap-1.5 flex-wrap no-print">
         {QUICK_RANGES.map((r, i) => (
           <Button
@@ -107,14 +135,12 @@ export function ReportShell({ title, description, children, data, columns, isLoa
         ))}
       </div>
 
-      {/* Content */}
       {isLoading ? (
         <div className="space-y-4">
           <Skeleton className="h-32 w-full" />
           <Skeleton className="h-64 w-full" />
-          <Skeleton className="h-48 w-full" />
         </div>
-      ) : data.length === 0 && !isLoading ? (
+      ) : data.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center text-muted-foreground">
             <CalendarDays className="w-12 h-12 mx-auto mb-3 opacity-30" />

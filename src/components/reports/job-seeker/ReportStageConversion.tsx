@@ -26,7 +26,7 @@ const STAGE_META: Record<string, { he: string; en: string; color: string; bg: st
   hired:     { he: 'התקבלתי',   en: 'Hired',      color: 'text-emerald-400', bg: 'bg-emerald-500' },
 };
 
-export function ReportStageConversion() {
+export function ReportStageConversion({ compact }: { compact?: boolean } = {}) {
   const { user } = useAuth();
   const { language } = useLanguage();
   const isHe = language === 'he';
@@ -96,7 +96,7 @@ export function ReportStageConversion() {
   const maxCount = Math.max(...stageCounts.map(s => s.count), 1);
 
   return (
-    <ReportShell
+    <ReportShell compact={compact}
       title={isHe ? 'המרת שלבים' : 'Stage Conversion'}
       description={isHe ? 'כמה מהגשות עברו כל שלב בתהליך' : 'How many applications progressed through each stage'}
       data={data}

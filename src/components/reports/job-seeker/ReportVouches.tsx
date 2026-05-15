@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--primary)/0.6)', 'hsl(var(--primary)/0.3)', '#88d4ab', '#f7c59f'];
 
-export function ReportVouches() {
+export function ReportVouches({ compact }: { compact?: boolean } = {}) {
   const { user } = useAuth();
   const { language } = useLanguage();
   const isHebrew = language === 'he';
@@ -55,7 +55,7 @@ export function ReportVouches() {
   const topSkill = pieData.sort((a, b) => b.value - a.value)[0]?.name || '—';
 
   return (
-    <ReportShell
+    <ReportShell compact={compact}
       title={isHebrew ? 'דוח Vouches' : 'Vouches Report'}
       description={isHebrew ? 'ההמלצות שקיבלת' : 'Your endorsements'}
       data={data}

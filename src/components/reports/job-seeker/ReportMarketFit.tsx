@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis } from 'recharts';
 
-export function ReportMarketFit() {
+export function ReportMarketFit({ compact }: { compact?: boolean } = {}) {
   const { user } = useAuth();
   const { language } = useLanguage();
   const isHebrew = language === 'he';
@@ -40,7 +40,7 @@ export function ReportMarketFit() {
   ];
 
   return (
-    <ReportShell
+    <ReportShell compact={compact}
       title={isHebrew ? 'דוח התאמה לשוק' : 'Market Fit Report'}
       description={isHebrew ? 'כמה משרות מתאימות לפרופיל שלך' : 'How well your profile fits the market'}
       data={data}

@@ -19,7 +19,7 @@ const STATUS_COLORS: Record<string, string> = {
   hired: 'bg-emerald-500/20 text-emerald-400',
 };
 
-export function ReportApplications() {
+export function ReportApplications({ compact }: { compact?: boolean } = {}) {
   const { user } = useAuth();
   const { language } = useLanguage();
   const isHebrew = language === 'he';
@@ -68,7 +68,7 @@ export function ReportApplications() {
   ];
 
   return (
-    <ReportShell
+    <ReportShell compact={compact}
       title={isHebrew ? 'דוח מועמדויות' : 'Applications Report'}
       description={isHebrew ? 'מעקב אחר כל ההגשות שלך' : 'Track all your applications'}
       data={filtered}
