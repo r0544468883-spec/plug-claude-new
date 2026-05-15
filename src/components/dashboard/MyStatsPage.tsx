@@ -112,13 +112,13 @@ export function MyStatsPage() {
 
       const { data: apps } = await supabase
         .from('applications')
-        .select('id, status, match_score, created_at, interview_date')
+        .select('id, status, current_stage, match_score, created_at')
         .eq('candidate_id', profile.user_id) as any;
 
       const allApps = apps || [];
       const total = allApps.length;
       const withResponse = allApps.filter((a: any) => a.status && a.status !== 'applied' && a.status !== 'pending').length;
-      const withInterview = allApps.filter((a: any) => a.interview_date || a.status === 'interview').length;
+      const withInterview = allApps.filter((a: any) => a.current_stage === 'interview' || a.status === 'interview').length;
       const scores = allApps.filter((a: any) => a.match_score != null).map((a: any) => a.match_score);
       const avgScore = scores.length > 0 ? Math.round(scores.reduce((s: number, v: number) => s + v, 0) / scores.length) : 0;
 
