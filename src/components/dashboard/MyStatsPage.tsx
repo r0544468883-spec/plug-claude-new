@@ -106,14 +106,14 @@ export function MyStatsPage() {
 
   // Personal KPIs
   const { data: kpis, isLoading: kpisLoading } = useQuery({
-    queryKey: ['my-stats-kpis', profile?.id],
+    queryKey: ['my-stats-kpis', profile?.user_id],
     queryFn: async () => {
-      if (!profile?.id) return null;
+      if (!profile?.user_id) return null;
 
       const { data: apps } = await supabase
         .from('applications')
         .select('id, status, match_score, created_at, interview_date')
-        .eq('candidate_id', profile.id) as any;
+        .eq('candidate_id', profile.user_id) as any;
 
       const allApps = apps || [];
       const total = allApps.length;
@@ -135,7 +135,7 @@ export function MyStatsPage() {
         daysActive,
       };
     },
-    enabled: !!profile?.id,
+    enabled: !!profile?.user_id,
   });
 
   // Market benchmarks (from RPC)
@@ -146,7 +146,7 @@ export function MyStatsPage() {
       if (error) return null;
       return data as { avg_response_rate: number; avg_interview_rate: number; avg_match_score: number } | null;
     },
-    enabled: !!profile?.id,
+    enabled: !!profile?.user_id,
   });
 
   const kpiCardsData = [
