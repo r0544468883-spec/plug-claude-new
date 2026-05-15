@@ -211,7 +211,7 @@ export function MyStatsPage() {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
           {kpisLoading ? (
             // Skeleton loading
             Array.from({ length: 5 }).map((_, i) => (
@@ -238,20 +238,19 @@ export function MyStatsPage() {
                 <Tooltip key={kpi.key}>
                   <TooltipTrigger asChild>
                     <Card className="bg-card border-border cursor-help hover:border-primary/30 transition-colors group">
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2.5 rounded-xl ${kpi.color}`}>
-                            <kpi.icon className="w-5 h-5" />
+                      <CardContent className="p-2.5 sm:p-4">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <div className={`p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl ${kpi.color}`}>
+                            <kpi.icon className="w-4 h-4 sm:w-5 sm:h-5" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                               {kpi.label}
-                              <HelpCircle className="w-3 h-3 opacity-0 group-hover:opacity-50 transition-opacity" />
                             </p>
-                            <div className="flex items-center gap-1.5">
-                              <p className="text-xl font-bold text-foreground">{kpi.display}</p>
+                            <div className="flex items-center gap-1">
+                              <p className="text-base sm:text-xl font-bold text-foreground">{kpi.display}</p>
                               {kpis && rating !== 'neutral' && (
-                                <RatingIcon className={cn('w-4 h-4', rCfg.color)} />
+                                <RatingIcon className={cn('w-3 h-3 sm:w-4 sm:h-4', rCfg.color)} />
                               )}
                             </div>
                           </div>
@@ -259,15 +258,15 @@ export function MyStatsPage() {
 
                         {/* Rating badge + market comparison */}
                         {kpis && (
-                          <div className="mt-2 flex flex-wrap gap-1.5">
+                          <div className="mt-1.5 sm:mt-2 flex flex-wrap gap-1">
                             {rating !== 'neutral' && (
-                              <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0', rCfg.color)}>
+                              <Badge variant="outline" className={cn('text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0', rCfg.color)}>
                                 {isRTL ? rCfg.label.he : rCfg.label.en}
                               </Badge>
                             )}
                             {hasMarketAvg && (
                               <Badge variant="outline" className={cn(
-                                'text-[10px] px-1.5 py-0',
+                                'text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0',
                                 aboveMarket ? 'text-emerald-500 border-emerald-500/30' : 'text-amber-500 border-amber-500/30'
                               )}>
                                 {aboveMarket
