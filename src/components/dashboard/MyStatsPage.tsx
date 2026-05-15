@@ -211,7 +211,7 @@ export function MyStatsPage() {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {kpisLoading ? (
             // Skeleton loading
             Array.from({ length: 5 }).map((_, i) => (
@@ -322,7 +322,7 @@ export function MyStatsPage() {
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 [&>*]:min-w-0 [&>*]:overflow-hidden">
                 <ReportWeeklyActivity />
                 <ReportApplications />
                 <ReportChannels />
@@ -344,7 +344,7 @@ export function MyStatsPage() {
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 [&>*]:min-w-0 [&>*]:overflow-hidden">
                 <ReportStageConversion />
               </div>
             </div>
@@ -364,7 +364,7 @@ export function MyStatsPage() {
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 [&>*]:min-w-0 [&>*]:overflow-hidden">
                 <ReportAIMatch />
                 <ReportVouches />
               </div>
@@ -373,7 +373,7 @@ export function MyStatsPage() {
 
           {/* Market Intelligence */}
           <TabsContent value="market" className="mt-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 [&>*]:min-w-0 [&>*]:overflow-hidden">
               <ReportSalary />
               <ReportSkillsVsMarket />
               <ReportMarketFit />

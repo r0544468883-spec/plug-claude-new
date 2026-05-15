@@ -71,29 +71,29 @@ export function ReportShell({ title, description, children, data, columns, isLoa
   return (
     <div className="space-y-4 print:space-y-2">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 no-print">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">{title}</h1>
-          <p className="text-muted-foreground text-sm mt-1">{description}</p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 no-print">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-2xl font-bold text-foreground truncate">{title}</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">{description}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={exportCSV} className="gap-1.5">
-            <Download className="w-3.5 h-3.5" />
+        <div className="flex flex-wrap gap-1.5 sm:gap-2">
+          <Button variant="outline" size="sm" onClick={exportCSV} className="gap-1 h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3">
+            <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             CSV
           </Button>
-          <Button variant="outline" size="sm" onClick={exportPDF} className="gap-1.5">
-            <FileText className="w-3.5 h-3.5" />
+          <Button variant="outline" size="sm" onClick={exportPDF} className="gap-1 h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3">
+            <FileText className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             PDF
           </Button>
-          <Button variant="outline" size="sm" onClick={sendEmail} className="gap-1.5">
-            <Mail className="w-3.5 h-3.5" />
+          <Button variant="outline" size="sm" onClick={sendEmail} className="gap-1 h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3">
+            <Mail className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             {isHebrew ? 'שלח' : 'Email'}
           </Button>
         </div>
       </div>
 
       {/* Quick date ranges */}
-      <div className="flex gap-2 flex-wrap no-print">
+      <div className="flex gap-1.5 sm:gap-2 flex-wrap no-print">
         {QUICK_RANGES.map((r, i) => (
           <Button
             key={i}
