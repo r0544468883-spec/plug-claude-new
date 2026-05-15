@@ -833,7 +833,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   };
   const connectLinkedIn = () => {
     if (!LINKEDIN_CLIENT_ID || !user) return;
-    const scopes = 'openid profile email';
+    const scopes = 'openid profile email w_member_social';
     const url = `https://www.linkedin.com/oauth/v2/authorization?client_id=${LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(LINKEDIN_REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${user.id}`;
     openOAuthPopup(url, isHebrew ? 'הדפדפן חסם את החלון — אפשר popups לאתר זה ונסה שוב' : 'Browser blocked the popup — allow popups for this site and try again');
     setLinkedinDone(true);

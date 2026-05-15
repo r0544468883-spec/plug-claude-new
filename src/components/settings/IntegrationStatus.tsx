@@ -497,7 +497,7 @@ function LinkedInCard() {
       return;
     }
     const redirectUri = `${SUPABASE_URL}/functions/v1/linkedin-callback`;
-    const scopes = 'openid profile email';
+    const scopes = 'openid profile email w_member_social';
     const url = `https://www.linkedin.com/oauth/v2/authorization?client_id=${LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${user.id}`;
     const popup = window.open(url, '_blank', 'width=600,height=700');
     if (!popup || popup.closed || typeof popup.closed === 'undefined') {
