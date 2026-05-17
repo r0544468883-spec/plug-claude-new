@@ -4,7 +4,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MapPin, Clock, DollarSign, Building2, ExternalLink, Heart, Users, Navigation, Layers, GraduationCap, Briefcase, Zap, Globe, X, CheckCheck } from 'lucide-react';
+import { MapPin, Clock, DollarSign, Building2, ExternalLink, Heart, Users, Navigation, Layers, GraduationCap, Briefcase, Zap, Globe, X, CheckCheck, Send } from 'lucide-react';
+import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { he, enUS } from 'date-fns/locale';
 import { useSavedJobs, useSaveJobMutation } from '@/hooks/useSavedJobs';
@@ -106,6 +107,31 @@ export function JobCard({ job, onViewDetails, onApply, onDismiss, onMarkApplied,
     e.stopPropagation();
     if (!user) return;
     saveJobMutation.mutate({ jobId: job.id, isSaved });
+  };
+
+  const handleShareJob = (e: React.MouseEvent, platform: 'whatsapp' | 'linkedin' | 'copy') => {
+    e.stopPropagation();
+    const jobTitle = job.title;
+    const companyName = job.company?.name || '';
+    const jobUrl = job.source_url || `${window.location.origin}/saved-jobs`;
+    const jobLine = `${jobTitle}${companyName ? ` ב-${companyName}` : ''}`;
+
+    switch (platform) {
+      case 'whatsapp': {
+        const text = isHebrew
+          ? `היי, ראיתי משרה שיכולה להתאים לך:\n${jobLine}\n${jobUrl}\n\nמצאתי את זה דרך PLUG — תוסף AI חינמי שמנתח לך כל משרה:\nhttps://www.plug-hr.com`
+          : `Hey, saw a job that might suit you:\n${jobLine}\n${jobUrl}\n\nFound it via PLUG — free AI job matching:\nhttps://www.plug-hr.com`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        break;
+      }
+      case 'linkedin':
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(jobUrl)}`, '_blank');
+        break;
+      case 'copy':
+        navigator.clipboard.writeText(jobUrl);
+        toast.success(isHebrew ? 'הקישור הועתק!' : 'Link copied!');
+        break;
+    }
   };
 
   const timeAgo = formatDistanceToNow(new Date(job.created_at), {
@@ -323,6 +349,16 @@ export function JobCard({ job, onViewDetails, onApply, onDismiss, onMarkApplied,
               <Button variant="outline" size="sm" className="min-h-[44px] min-w-[44px]" onClick={(e) => { e.stopPropagation(); onViewDetails(job); }}>
                 <ExternalLink className="w-4 h-4" />
               </Button>
+              <div className="relative group">
+                <Button variant="outline" size="sm" className="min-h-[44px] min-w-[44px]" title={isHebrew ? 'שלח משרה לחבר/ה' : 'Send job to a friend'}>
+                  <Send className="w-4 h-4" />
+                </Button>
+                <div className="absolute bottom-full right-0 mb-1 hidden group-hover:flex flex-col bg-popover border rounded-lg shadow-xl overflow-hidden z-50 min-w-[140px]">
+                  <button onClick={(e) => handleShareJob(e, 'whatsapp')} className="px-3 py-2 text-sm hover:bg-accent text-right">ווצאפ</button>
+                  <button onClick={(e) => handleShareJob(e, 'linkedin')} className="px-3 py-2 text-sm hover:bg-accent text-right">לינקדאין</button>
+                  <button onClick={(e) => handleShareJob(e, 'copy')} className="px-3 py-2 text-sm hover:bg-accent text-right">{isHebrew ? 'העתק לינק' : 'Copy link'}</button>
+                </div>
+              </div>
               {onDismiss && (
                 <Button variant="ghost" size="sm" className="min-h-[44px] min-w-[44px] text-muted-foreground hover:text-destructive" title={isHebrew ? 'הסתר משרה' : 'Hide job'} onClick={(e) => { e.stopPropagation(); onDismiss(job); }}>
                   <X className="w-4 h-4" />

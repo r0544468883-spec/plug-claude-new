@@ -20,6 +20,7 @@ export default function Invite() {
   const sharedJob = searchParams.get("job");
   const sharedCompany = searchParams.get("company");
   const channel = searchParams.get("ch") || "direct";
+  const sharedJobUrl = searchParams.get("url");
 
   useEffect(() => {
     if (sharedScore) setScore(parseInt(sharedScore));
@@ -127,45 +128,54 @@ export default function Invite() {
 
           {/* Hero message */}
           <div className="space-y-4">
-            {referrerName ? (
-              <h1 className="text-2xl font-bold text-white">
-                {referrerName} ממליץ/ה לך על PLUG
-              </h1>
-            ) : (
-              <h1 className="text-2xl font-bold text-white">
-                תוסף AI שמנתח לך כל משרה
-              </h1>
-            )}
-
-            {score && (
-              <div className="bg-[#1A2340] border border-[#00FF9D]/30 rounded-xl p-6 space-y-3">
-                <p className="text-sm text-gray-400">
+            {jobTitle ? (
+              <>
+                <h1 className="text-2xl font-bold text-white">
                   {referrerName
-                    ? `${referrerName} קיבל/ה ציון התאמה של`
-                    : "ציון התאמה לדוגמה"}
-                </p>
-                <div className="text-5xl font-black text-[#00FF9D]">{score}%</div>
-                {jobTitle && (
-                  <p className="text-sm text-gray-300">
-                    {jobTitle}
-                    {jobCompany && (
-                      <span className="text-gray-500"> · {jobCompany}</span>
-                    )}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {!score && (
-              <div className="bg-[#1A2340] border border-[#00FF9D]/30 rounded-xl p-6 space-y-4">
-                <div className="text-5xl font-black text-[#00FF9D]">92%</div>
+                    ? `${referrerName} שלח/ה לך משרה 💌`
+                    : "שלחו לך משרה 💌"}
+                </h1>
+                <div className="bg-[#1A2340] border border-[#00FF9D]/30 rounded-xl p-6 space-y-3">
+                  <p className="text-lg font-bold text-white">{jobTitle}</p>
+                  {jobCompany && <p className="text-sm text-gray-400">{jobCompany}</p>}
+                  {score && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-xs text-gray-500">ציון התאמה:</span>
+                      <span className="text-2xl font-black text-[#00FF9D]">{score}%</span>
+                    </div>
+                  )}
+                  {sharedJobUrl && (
+                    <a
+                      href={sharedJobUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-block mt-2 text-sm text-[#00FF9D] hover:underline"
+                    >
+                      צפה במשרה המקורית →
+                    </a>
+                  )}
+                </div>
                 <p className="text-sm text-gray-400">
-                  ככה זה נראה כשהתוסף מנתח משרה בשבילך
+                  רוצה לדעת כמה המשרה הזו מתאימה <span className="text-white font-semibold">לך</span>?
                 </p>
-                <p className="text-xs text-gray-500">
-                  ציון AI אמיתי · מותאם לקורות החיים שלך
-                </p>
-              </div>
+              </>
+            ) : (
+              <>
+                <h1 className="text-2xl font-bold text-white">
+                  {referrerName
+                    ? `${referrerName} ממליץ/ה לך על PLUG`
+                    : "תוסף AI שמנתח לך כל משרה"}
+                </h1>
+                <div className="bg-[#1A2340] border border-[#00FF9D]/30 rounded-xl p-6 space-y-4">
+                  <div className="text-5xl font-black text-[#00FF9D]">92%</div>
+                  <p className="text-sm text-gray-400">
+                    ככה זה נראה כשהתוסף מנתח משרה בשבילך
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    ציון AI אמיתי · מותאם לקורות החיים שלך
+                  </p>
+                </div>
+              </>
             )}
           </div>
 
