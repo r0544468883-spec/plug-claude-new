@@ -405,6 +405,34 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
         </div>
       </div>
 
+      {/* ── WhatsApp Community + Invite Friends ── */}
+      <div className="flex flex-wrap gap-4">
+        <Card className="flex-1 min-w-[280px] bg-gradient-to-r from-[#25D366]/10 to-transparent border-[#25D366]/30">
+          <CardContent className="p-4 flex items-center gap-3">
+            <span className="text-3xl">💬</span>
+            <div className="flex-1">
+              <p className="font-semibold text-sm">{isRTL ? 'קהילת PLUG בווצאפ' : 'PLUG WhatsApp Community'}</p>
+              <p className="text-xs text-muted-foreground">{isRTL ? 'טיפים, משרות חמות, ונטוורקינג' : 'Tips, hot jobs & networking'}</p>
+            </div>
+            <Button size="sm" className="bg-[#25D366] hover:bg-[#20BD5A] text-white gap-1" onClick={() => window.open('https://chat.whatsapp.com/PLUG_COMMUNITY', '_blank')}>
+              {isRTL ? 'הצטרף' : 'Join'}
+            </Button>
+          </CardContent>
+        </Card>
+        <Card className="flex-1 min-w-[280px] bg-gradient-to-r from-primary/10 to-transparent border-primary/30">
+          <CardContent className="p-4 flex items-center gap-3">
+            <span className="text-3xl">🎁</span>
+            <div className="flex-1">
+              <p className="font-semibold text-sm">{isRTL ? 'הזמן חברים וקבל Fuel' : 'Invite friends, earn Fuel'}</p>
+              <p className="text-xs text-muted-foreground">{isRTL ? '10 ⚡ על כל חבר שנרשם' : '10 ⚡ per signup'}</p>
+            </div>
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => navigate('/referrals')}>
+              {isRTL ? 'הזמן' : 'Invite'}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* ── ROW 1: Jobs (wide) + Recent Applications ── */}
       <div className="flex flex-wrap gap-4">
 

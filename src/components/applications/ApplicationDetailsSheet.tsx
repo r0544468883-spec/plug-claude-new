@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
+import { SuccessStoryDialog } from './SuccessStoryDialog';
 import { he, enUS } from 'date-fns/locale';
 import { useQuery } from '@tanstack/react-query';
 import { 
@@ -206,6 +207,7 @@ export function ApplicationDetailsSheet({
   const [currentStage, setCurrentStage] = useState(application?.current_stage || 'applied');
   const [notes, setNotes] = useState(application?.notes || '');
   const [isSaving, setIsSaving] = useState(false);
+  const [showSuccessStory, setShowSuccessStory] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   
   // Reject dialog state
@@ -350,6 +352,11 @@ export function ApplicationDetailsSheet({
       // Show rejection feedback dialog for candidates
       if (currentStage === 'rejected' && currentStage !== oldStage && !isRecruiter) {
         onRejected?.(application.id);
+      }
+
+      // Show success story dialog when hired
+      if (currentStage === 'hired' && currentStage !== oldStage && !isRecruiter) {
+        setShowSuccessStory(true);
       }
 
       // Check for auto-send email templates on stage change
@@ -987,6 +994,15 @@ export function ApplicationDetailsSheet({
         }}
       />
     )}
+
+    {/* Success Story Dialog (for job seekers who got hired) */}
+    <SuccessStoryDialog
+      open={showSuccessStory}
+      onOpenChange={setShowSuccessStory}
+      jobTitle={job?.title || ''}
+      companyName={company?.name || ''}
+      applicationId={application.id}
+    />
     </>
   );
 }

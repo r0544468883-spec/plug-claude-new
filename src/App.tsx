@@ -59,6 +59,7 @@ import CareerSitePage from "./pages/CareerSitePage";
 import NotFound from "./pages/NotFound";
 import SignDocument from "./pages/SignDocument";
 import Referrals from "./pages/Referrals";
+import SuccessStories from "./pages/SuccessStories";
 import Assignments from "./pages/Assignments";
 import Analytics from "./pages/Analytics";
 import CandidateSearchPage from "./pages/CandidateSearchPage";
@@ -114,6 +115,7 @@ const App = () => (
                   <Route path="/careers/:slug" element={<CareerSitePage />} />
                   <Route path="/sign/:token" element={<SignDocument />} />
                   <Route path="/referrals" element={<Referrals />} />
+                  <Route path="/success-stories" element={<SuccessStories />} />
                   <Route path="/assignments" element={<Assignments />} />
                   <Route path="/analytics" element={<Analytics />} />
                   <Route path="/candidate-search" element={<CandidateSearchPage />} />
