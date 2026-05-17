@@ -88,7 +88,7 @@ export default function SavedJobs() {
               {isHebrew ? <ArrowRight className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
             </Button>
           </div>
-          <h1 className="text-2xl font-bold flex items-center gap-3">
+          <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-3">
             <Heart className="w-6 h-6 text-primary fill-primary" />
             {isHebrew ? 'משרות שמורות' : 'Saved Jobs'}
           </h1>
@@ -100,7 +100,7 @@ export default function SavedJobs() {
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-4">
             {[...Array(4)].map((_, i) => (
               <Card key={i} className="bg-card border-border">
                 <CardContent className="p-4">
@@ -119,7 +119,7 @@ export default function SavedJobs() {
         ) : savedJobs.length === 0 ? (
           <EmptySavedJobsState />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-4">
             {savedJobs.map((job) => (
               <JobCard
                 key={job.id}

@@ -99,7 +99,7 @@ const Network = () => {
             <BackIcon className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
+            <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
               <Users className="w-6 h-6 text-blue-500" />
               {isHebrew ? 'הרשת שלי' : 'My Network'}
             </h1>
@@ -112,28 +112,28 @@ const Network = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-6">
           <Card className="bg-card border-border">
             <CardContent className="p-3 text-center">
-              <p className="text-2xl font-bold text-blue-500">{totalNetwork}</p>
+              <p className="text-lg sm:text-2xl font-bold text-blue-500">{totalNetwork}</p>
               <p className="text-[10px] text-muted-foreground">{isHebrew ? 'סה"כ רשת' : 'Total'}</p>
             </CardContent>
           </Card>
           <Card className="bg-card border-border">
             <CardContent className="p-3 text-center">
-              <p className="text-2xl font-bold text-foreground">{colleagues.length}</p>
+              <p className="text-lg sm:text-2xl font-bold text-foreground">{colleagues.length}</p>
               <p className="text-[10px] text-muted-foreground">{isHebrew ? 'קולגות' : 'Colleagues'}</p>
             </CardContent>
           </Card>
           <Card className="bg-card border-border">
             <CardContent className="p-3 text-center">
-              <p className="text-2xl font-bold text-purple-500">{recruiters.length}</p>
+              <p className="text-lg sm:text-2xl font-bold text-purple-500">{recruiters.length}</p>
               <p className="text-[10px] text-muted-foreground">{isHebrew ? 'מגייסים' : 'Recruiters'}</p>
             </CardContent>
           </Card>
           <Card className="bg-card border-border">
             <CardContent className="p-3 text-center">
-              <p className="text-2xl font-bold text-emerald-500">{followedCompanies.length}</p>
+              <p className="text-lg sm:text-2xl font-bold text-emerald-500">{followedCompanies.length}</p>
               <p className="text-[10px] text-muted-foreground">{isHebrew ? 'חברות' : 'Companies'}</p>
             </CardContent>
           </Card>
@@ -400,7 +400,7 @@ function EmptyState({
 }) {
   return (
     <Card className="bg-card border-border">
-      <CardContent className="py-12 text-center">
+      <CardContent className="py-8 sm:py-12 text-center">
         <div className="text-muted-foreground/30 mx-auto mb-3">{icon}</div>
         <p className="text-muted-foreground font-medium">{title}</p>
         <p className="text-sm text-muted-foreground mt-1">{description}</p>

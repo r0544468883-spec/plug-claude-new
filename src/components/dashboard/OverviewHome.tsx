@@ -355,7 +355,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
               const xpPct = xpNeeded > 0 ? Math.min(100, Math.round((xpInTier / xpNeeded) * 100)) : 100;
 
               return (
-                <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
                   {/* Fuel balance */}
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-[#00FF9D]" />
@@ -397,18 +397,18 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
 
       {/* ── Profile Views + Extension Agent ── */}
       <div className="flex flex-wrap gap-4">
-        <div className="flex-1 min-w-[280px]">
+        <div className="flex-1 min-w-0 sm:min-w-[280px]">
           <ProfileViewsWidget />
         </div>
-        <div className="flex-1 min-w-[280px]">
+        <div className="flex-1 min-w-0 sm:min-w-[280px]">
           <ExtensionAgentPanel />
         </div>
       </div>
 
       {/* ── WhatsApp Community + Invite Friends ── */}
       <div className="flex flex-wrap gap-4">
-        <Card className="flex-1 min-w-[280px] bg-gradient-to-r from-[#25D366]/10 to-transparent border-[#25D366]/30">
-          <CardContent className="p-4 flex items-center gap-3">
+        <Card className="flex-1 min-w-0 sm:min-w-[280px] bg-gradient-to-r from-[#25D366]/10 to-transparent border-[#25D366]/30">
+          <CardContent className="p-3 sm:p-4 flex items-center gap-3">
             <span className="text-3xl">💬</span>
             <div className="flex-1">
               <p className="font-semibold text-sm">{isRTL ? 'קהילת PLUG בווצאפ' : 'PLUG WhatsApp Community'}</p>
@@ -419,8 +419,8 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
             </Button>
           </CardContent>
         </Card>
-        <Card className="flex-1 min-w-[280px] bg-gradient-to-r from-primary/10 to-transparent border-primary/30">
-          <CardContent className="p-4 flex items-center gap-3">
+        <Card className="flex-1 min-w-0 sm:min-w-[280px] bg-gradient-to-r from-primary/10 to-transparent border-primary/30">
+          <CardContent className="p-3 sm:p-4 flex items-center gap-3">
             <span className="text-3xl">🎁</span>
             <div className="flex-1">
               <p className="font-semibold text-sm">{isRTL ? 'הזמן חברים וקבל Fuel' : 'Invite friends, earn Fuel'}</p>
@@ -437,7 +437,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
       <div className="flex flex-wrap gap-4">
 
         {/* Jobs preview — takes more space */}
-        <Card className="bg-card border-border border-t-2 border-t-blue-500/50 flex-[2] min-w-[320px]">
+        <Card className="bg-card border-border border-t-2 border-t-blue-500/50 flex-[2] min-w-0 sm:min-w-[320px]">
           <CardContent className="p-4">
             <SectionHeader
               icon={Search} color="text-blue-400"
@@ -483,7 +483,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
         </Card>
 
         {/* Recent Applications */}
-        <Card className="bg-card border-border border-t-2 border-t-violet-500/50 flex-1 min-w-[280px]">
+        <Card className="bg-card border-border border-t-2 border-t-violet-500/50 flex-1 min-w-0 sm:min-w-[280px]">
           <CardContent className="p-4">
             <SectionHeader
               icon={Briefcase} color="text-violet-400"
@@ -521,7 +521,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
       <div className="flex flex-wrap gap-4">
 
         {/* Feed preview */}
-        <Card className="bg-card border-border border-t-2 border-t-pink-500/50 flex-1 min-w-[280px]">
+        <Card className="bg-card border-border border-t-2 border-t-pink-500/50 flex-1 min-w-0 sm:min-w-[280px]">
           <CardContent className="p-4">
             <SectionHeader
               icon={Newspaper} color="text-pink-400"
@@ -543,7 +543,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
         </Card>
 
         {/* Daily Tasks */}
-        <Card className="bg-card border-border border-t-2 border-t-emerald-500/50 flex-1 min-w-[280px]">
+        <Card className="bg-card border-border border-t-2 border-t-emerald-500/50 flex-1 min-w-0 sm:min-w-[280px]">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -573,7 +573,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
         </Card>
 
         {/* Schedule — apps in interview stage */}
-        <Card className="bg-card border-border border-t-2 border-t-amber-500/50 flex-1 min-w-[280px]">
+        <Card className="bg-card border-border border-t-2 border-t-amber-500/50 flex-1 min-w-0 sm:min-w-[280px]">
           <CardContent className="p-4">
             <SectionHeader
               icon={Calendar} color="text-amber-400"
@@ -618,7 +618,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
       <div className="flex flex-wrap gap-4">
 
         {/* Stats */}
-        <Card className="bg-card border-border border-t-2 border-t-cyan-500/50 flex-1 min-w-[280px]">
+        <Card className="bg-card border-border border-t-2 border-t-cyan-500/50 flex-1 min-w-0 sm:min-w-[280px]">
           <CardContent className="p-4">
             <SectionHeader
               icon={BarChart3} color="text-cyan-400"
@@ -634,7 +634,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
                 { label: isRTL ? 'הגשות השבוע'    : 'This week',     value: stats?.weeklyApps ?? 0, cls: 'bg-amber-500/10 text-amber-400' },
               ].map((s, i) => (
                 <div key={i} className={cn('p-2.5 rounded-lg text-center cursor-pointer', s.cls)} onClick={() => onNavigate('my-stats')}>
-                  <p className="text-xl font-bold leading-none">{s.value}</p>
+                  <p className="text-lg sm:text-xl font-bold leading-none">{s.value}</p>
                   <p className="text-[11px] mt-1 opacity-80">{s.label}</p>
                 </div>
               ))}
@@ -643,7 +643,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
         </Card>
 
         {/* Assignments */}
-        <Card className="bg-card border-border border-t-2 border-t-purple-500/50 flex-1 min-w-[280px]">
+        <Card className="bg-card border-border border-t-2 border-t-purple-500/50 flex-1 min-w-0 sm:min-w-[280px]">
           <CardContent className="p-4">
             <SectionHeader
               icon={ClipboardList} color="text-purple-400"
@@ -679,7 +679,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
         </Card>
 
         {/* CV + Credits — combined card */}
-        <Card className="bg-card border-border border-t-2 border-t-rose-500/50 flex-1 min-w-[280px]">
+        <Card className="bg-card border-border border-t-2 border-t-rose-500/50 flex-1 min-w-0 sm:min-w-[280px]">
           <CardContent className="p-4 space-y-4">
             {/* CV */}
             <div>

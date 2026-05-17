@@ -193,8 +193,8 @@ export function JobCard({ job, onViewDetails, onApply, onDismiss, onMarkApplied,
         </div>
       )}
 
-      <CardContent className="p-4" onClick={() => onViewDetails(job)}>
-        <div className="flex gap-4">
+      <CardContent className="p-3 sm:p-4" onClick={() => onViewDetails(job)}>
+        <div className="flex gap-2 sm:gap-4">
           <Avatar className="w-12 h-12 rounded-lg flex-shrink-0">
             <AvatarImage src={job.company?.logo_url || undefined} />
             <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
@@ -204,7 +204,7 @@ export function JobCard({ job, onViewDetails, onApply, onDismiss, onMarkApplied,
 
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <div className={isCommunityShared || displayMatchScore > 0 ? 'pr-16' : ''}>
+              <div className={isCommunityShared || displayMatchScore > 0 ? 'pr-12 sm:pr-16' : ''}>
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">{job.title || (isHebrew ? 'משרה ללא כותרת' : 'Untitled Position')}</h3>
                 <p className="text-sm text-muted-foreground line-clamp-1">
                   {job.company?.name || (job.company_name === 'hr_recruiter' ? (isHebrew ? 'חברת HR' : 'HR Recruiter') : job.company_name) || (isHebrew ? 'חברה חסויה' : 'Confidential')}
@@ -266,7 +266,7 @@ export function JobCard({ job, onViewDetails, onApply, onDismiss, onMarkApplied,
             )}
 
             {/* Meta info */}
-            <div className="flex flex-wrap items-center gap-2 mt-3 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-2 sm:mt-3 text-xs text-muted-foreground">
               {job.location && (
                 <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{job.location}</span>
               )}
@@ -341,7 +341,7 @@ export function JobCard({ job, onViewDetails, onApply, onDismiss, onMarkApplied,
               </p>
             )}
 
-            <div className="flex gap-2 mt-4">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-3 sm:mt-4">
               {isApplied ? (
                 <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white" disabled>
                   <CheckCheck className="w-4 h-4 me-1" />
@@ -365,7 +365,7 @@ export function JobCard({ job, onViewDetails, onApply, onDismiss, onMarkApplied,
                   <Send className="w-4 h-4" />
                 </Button>
                 {showShareMenu && (
-                  <div className="absolute bottom-full right-0 mb-1 flex flex-col bg-popover border rounded-lg shadow-xl overflow-hidden z-50 min-w-[160px]">
+                  <div className="absolute bottom-full end-0 mb-1 flex flex-col bg-popover border rounded-lg shadow-xl overflow-hidden z-50 min-w-[140px] sm:min-w-[160px]">
                     <button onClick={(e) => handleShareJob(e, 'whatsapp')} className="px-3 py-2.5 text-sm hover:bg-accent text-right">📱 ווצאפ</button>
                     <button onClick={(e) => handleShareJob(e, 'linkedin')} className="px-3 py-2.5 text-sm hover:bg-accent text-right">💼 {isHebrew ? 'הודעה בלינקדאין' : 'LinkedIn message'}</button>
                     <button onClick={(e) => handleShareJob(e, 'copy')} className="px-3 py-2.5 text-sm hover:bg-accent text-right">📋 {isHebrew ? 'העתק הודעה' : 'Copy message'}</button>

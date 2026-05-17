@@ -134,7 +134,7 @@ export function ReportsHub() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
           <BarChart3 className="w-8 h-8 text-primary" />
           {isHebrew ? 'מרכז הדוחות' : 'Reports Center'}
         </h1>
@@ -143,7 +143,7 @@ export function ReportsHub() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {reports.map((report) => {
           const Icon = report.icon;
           return (
@@ -152,7 +152,7 @@ export function ReportsHub() {
               className="cursor-pointer transition-all duration-200 hover:border-primary/50 hover:scale-[1.02] bg-card border-border"
               onClick={() => setActiveReport(report.id)}
             >
-              <CardContent className="p-5">
+              <CardContent className="p-3 sm:p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                     <Icon className="w-5 h-5 text-primary" />

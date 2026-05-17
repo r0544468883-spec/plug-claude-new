@@ -358,7 +358,7 @@ export default function Assignments() {
       <div className="space-y-6" dir={isHebrew ? 'rtl' : 'ltr'}>
 
         {/* Page header */}
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
@@ -371,7 +371,7 @@ export default function Assignments() {
             </Button>
             <ClipboardList className="w-7 h-7 text-primary" />
             <div>
-              <h1 className="text-2xl font-bold">{isHebrew ? 'מטלות אופציונאליות' : 'Optional Assignments'}</h1>
+              <h1 className="text-xl sm:text-2xl font-bold">{isHebrew ? 'מטלות אופציונאליות' : 'Optional Assignments'}</h1>
               <p className="text-sm text-muted-foreground">
                 {isHebrew ? 'הוכח את כישוריך עם אתגרים אמיתיים' : 'Prove your skills with real challenges'}
               </p>
@@ -426,7 +426,7 @@ export default function Assignments() {
               <Sparkles className="w-4 h-4" />
               {isHebrew ? 'מומלץ לך' : 'Recommended for you'}
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {recommended.map(template => (
                 <AssignmentCard
                   key={template.id}
@@ -467,7 +467,7 @@ export default function Assignments() {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 -mb-px ${
+              className={`px-2 sm:px-4 py-2 sm:py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 -mb-px ${
                 tab === t.id
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -518,7 +518,7 @@ export default function Assignments() {
               {/* Poster filter */}
               {allPosters.length > 0 && (
                 <Select value={posterFilter} onValueChange={setPosterFilter}>
-                  <SelectTrigger className="w-36 h-8 text-sm">
+                  <SelectTrigger className="w-full sm:w-36 h-8 text-sm">
                     <SelectValue placeholder={isHebrew ? 'מפרסם' : 'Posted by'} />
                   </SelectTrigger>
                   <SelectContent>
@@ -531,7 +531,7 @@ export default function Assignments() {
               )}
 
               <Select value={domainFilter} onValueChange={setDomainFilter}>
-                <SelectTrigger className="w-36 h-8 text-sm">
+                <SelectTrigger className="w-full sm:w-36 h-8 text-sm">
                   <SelectValue placeholder={isHebrew ? 'תחום' : 'Domain'} />
                 </SelectTrigger>
                 <SelectContent>
@@ -559,7 +559,7 @@ export default function Assignments() {
               </Select>
 
               <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
-                <SelectTrigger className="w-32 h-8 text-sm">
+                <SelectTrigger className="w-full sm:w-32 h-8 text-sm">
                   <SelectValue placeholder={isHebrew ? 'קושי' : 'Difficulty'} />
                 </SelectTrigger>
                 <SelectContent>
@@ -571,7 +571,7 @@ export default function Assignments() {
               </Select>
 
               <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-                <SelectTrigger className="w-32 h-8 text-sm">
+                <SelectTrigger className="w-full sm:w-32 h-8 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

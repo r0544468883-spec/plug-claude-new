@@ -564,7 +564,7 @@ export default function CandidateProfile() {
 
   return (
     <div className="min-h-screen bg-background" dir={isHebrew ? 'rtl' : 'ltr'}>
-      <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-6">
+      <div className="max-w-4xl mx-auto p-2 sm:p-4 md:p-8 space-y-6">
         {/* Header Actions */}
         <div className="flex items-center justify-between">
           <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
@@ -765,7 +765,7 @@ export default function CandidateProfile() {
               <Card>
                 <CardContent className="p-4 text-center">
                   <Briefcase className="w-8 h-8 mx-auto mb-2 text-primary" />
-                  <p className="text-2xl font-bold">{applications.length}</p>
+                  <p className="text-lg sm:text-2xl font-bold">{applications.length}</p>
                   <p className="text-xs text-muted-foreground">
                     {isHebrew ? 'מועמדויות' : 'Applications'}
                   </p>
@@ -774,7 +774,7 @@ export default function CandidateProfile() {
               <Card>
                 <CardContent className="p-4 text-center">
                   <Heart className="w-8 h-8 mx-auto mb-2 text-pink-500" />
-                  <p className="text-2xl font-bold">{vouches.length}</p>
+                  <p className="text-lg sm:text-2xl font-bold">{vouches.length}</p>
                   <p className="text-xs text-muted-foreground">
                     {isHebrew ? 'המלצות' : 'Vouches'}
                   </p>
@@ -783,7 +783,7 @@ export default function CandidateProfile() {
               <Card>
                 <CardContent className="p-4 text-center">
                   <FileText className="w-8 h-8 mx-auto mb-2 text-blue-500" />
-                  <p className="text-2xl font-bold">{documents.length + homeAssignments.length}</p>
+                  <p className="text-lg sm:text-2xl font-bold">{documents.length + homeAssignments.length}</p>
                   <p className="text-xs text-muted-foreground">
                     {isHebrew ? 'מסמכים' : 'Documents'}
                   </p>
@@ -792,7 +792,7 @@ export default function CandidateProfile() {
               <Card>
                 <CardContent className="p-4 text-center">
                   <MessageSquare className="w-8 h-8 mx-auto mb-2 text-green-500" />
-                  <p className="text-2xl font-bold">{messages.length}</p>
+                  <p className="text-lg sm:text-2xl font-bold">{messages.length}</p>
                   <p className="text-xs text-muted-foreground">
                     {isHebrew ? 'הודעות' : 'Messages'}
                   </p>
@@ -832,7 +832,7 @@ export default function CandidateProfile() {
                         }}
                       >
                         <CardContent className="p-4">
-                          <div className="flex items-center gap-4">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
                             {/* Company Logo */}
                             <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                               {app.job?.company?.logo_url ? (
@@ -1055,7 +1055,7 @@ export default function CandidateProfile() {
                     />
                   </div>
                 ) : (
-                  <div className="space-y-4 max-h-[500px] overflow-y-auto">
+                  <div className="space-y-4 max-h-[300px] sm:max-h-[500px] overflow-y-auto">
                     {messages.map((message) => {
                       const isFromMe = message.from_user_id === user?.id;
                       return (

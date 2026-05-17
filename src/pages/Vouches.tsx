@@ -148,7 +148,7 @@ const Vouches = () => {
             <BackIcon className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
+            <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
               <Heart className="w-6 h-6 text-pink-500" />
               {isHebrew ? 'ההמלצות שלי' : 'My Vouches'}
             </h1>
@@ -161,10 +161,10 @@ const Vouches = () => {
         </div>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-6">
           <Card className="bg-card border-border">
             <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-pink-500">{totalReceived}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-pink-500">{totalReceived}</p>
               <p className="text-xs text-muted-foreground mt-1">
                 {isHebrew ? 'המלצות שקיבלתי' : 'Received'}
               </p>
@@ -172,7 +172,7 @@ const Vouches = () => {
           </Card>
           <Card className="bg-card border-border">
             <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-primary">{uniqueEndorsers}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-primary">{uniqueEndorsers}</p>
               <p className="text-xs text-muted-foreground mt-1">
                 {isHebrew ? 'ממליצים ייחודיים' : 'Unique Endorsers'}
               </p>
@@ -180,7 +180,7 @@ const Vouches = () => {
           </Card>
           <Card className="bg-card border-border">
             <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-[#00FF9D]">{totalGiven}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-[#00FF9D]">{totalGiven}</p>
               <p className="text-xs text-muted-foreground mt-1">
                 {isHebrew ? 'המלצות שנתתי' : 'Given'}
               </p>
@@ -189,7 +189,7 @@ const Vouches = () => {
         </div>
 
         {/* Action buttons */}
-        <div className="flex gap-3 mb-6">
+        <div className="flex gap-2 sm:gap-3 mb-6">
           <GiveVouchDialog trigger={
             <Button variant="outline" className="flex-1 gap-2">
               <Heart className="w-4 h-4" />

@@ -114,9 +114,9 @@ const Credits = () => {
           className="mb-8"
         >
           <Card className="bg-gradient-to-br from-card via-card to-[#00FF9D]/5 border-[#00FF9D]/20">
-            <CardContent className="p-8">
+            <CardContent className="p-4 sm:p-8">
               <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold mb-2">
+                <h1 className="text-2xl sm:text-3xl font-bold mb-2">
                   {isRTL ? 'מרכז הקרדיטים' : 'Credit Hub'}
                 </h1>
                 <p className="text-muted-foreground">

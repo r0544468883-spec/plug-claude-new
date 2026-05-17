@@ -213,7 +213,7 @@ export default function InterviewPrep() {
           {/* Practice Modes */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="bg-card/50 border-border hover:border-primary/50 transition-colors cursor-pointer">
-              <CardContent className="p-6 text-center">
+              <CardContent className="p-4 sm:p-6 text-center">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
                   <MessageSquare className="w-6 h-6 text-primary" />
                 </div>
@@ -227,7 +227,7 @@ export default function InterviewPrep() {
             </Card>
 
             <Card className="bg-card/50 border-border hover:border-primary/50 transition-colors">
-              <CardContent className="p-6 text-center">
+              <CardContent className="p-4 sm:p-6 text-center">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
                   <Mic className="w-6 h-6 text-primary" />
                 </div>
@@ -241,7 +241,7 @@ export default function InterviewPrep() {
             </Card>
 
             <Card className="bg-card/50 border-border hover:border-primary/50 transition-colors">
-              <CardContent className="p-6 text-center">
+              <CardContent className="p-4 sm:p-6 text-center">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
                   <Video className="w-6 h-6 text-primary" />
                 </div>
@@ -481,7 +481,7 @@ export default function InterviewPrep() {
       <div className="container max-w-4xl space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
         {/* Page Header */}
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold flex items-center gap-3">
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-primary-foreground" />
             </div>
