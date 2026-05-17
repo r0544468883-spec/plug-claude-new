@@ -768,7 +768,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
 
         {/* Page content */}
         <main id="main-content" className={cn(
-          "flex-1 pb-20 lg:pb-6",
+          "flex-1 pb-24 lg:pb-6",
           mobilePreview ? "overflow-hidden flex justify-center items-start bg-muted/30 p-4" : "overflow-auto",
           !mobilePreview && (isSocialSection ? "p-0" : "p-4 md:p-6")
         )} data-dashboard-scroll>
