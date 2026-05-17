@@ -210,8 +210,8 @@ export function MyStatsPage() {
           </p>
         </div>
 
-        {/* KPI Cards — horizontal scroll on mobile */}
-        <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 sm:pb-0 sm:grid sm:grid-cols-3 lg:grid-cols-5 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
+        {/* KPI Cards — 2-col grid on mobile, 5-col on desktop */}
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {kpisLoading ? (
             // Skeleton loading
             Array.from({ length: 5 }).map((_, i) => (
@@ -237,7 +237,7 @@ export function MyStatsPage() {
               return (
                 <Tooltip key={kpi.key}>
                   <TooltipTrigger asChild>
-                    <Card className="bg-card border-border cursor-help hover:border-primary/30 transition-colors group min-w-[140px] sm:min-w-0 flex-shrink-0 sm:flex-shrink">
+                    <Card className="bg-card border-border cursor-help hover:border-primary/30 transition-colors group">
                       <CardContent className="p-2.5 sm:p-4">
                         <div className="flex items-center gap-2 sm:gap-3">
                           <div className={`p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl ${kpi.color}`}>
@@ -321,7 +321,7 @@ export function MyStatsPage() {
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 [&>*]:min-w-0 [&>*]:overflow-hidden">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 [&>*]:min-w-0 [&>*]:overflow-hidden">
                 <ReportWeeklyActivity compact />
                 <ReportApplications compact />
                 <ReportChannels compact />
@@ -343,7 +343,7 @@ export function MyStatsPage() {
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 [&>*]:min-w-0 [&>*]:overflow-hidden">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 [&>*]:min-w-0 [&>*]:overflow-hidden">
                 <ReportStageConversion compact />
               </div>
             </div>
@@ -363,7 +363,7 @@ export function MyStatsPage() {
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 [&>*]:min-w-0 [&>*]:overflow-hidden">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 [&>*]:min-w-0 [&>*]:overflow-hidden">
                 <ReportAIMatch compact />
                 <ReportVouches compact />
               </div>
@@ -372,7 +372,7 @@ export function MyStatsPage() {
 
           {/* Market Intelligence */}
           <TabsContent value="market" className="mt-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 [&>*]:min-w-0 [&>*]:overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 [&>*]:min-w-0 [&>*]:overflow-hidden">
               <ReportSalary compact />
               <ReportSkillsVsMarket compact />
               <ReportMarketFit compact />

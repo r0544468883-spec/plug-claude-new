@@ -155,8 +155,8 @@ export function ReportChannels({ compact }: { compact?: boolean } = {}) {
         {/* Source pie */}
         <Card>
           <CardContent className="p-4">
-            <h3 className="font-medium mb-4">{isHe ? 'לפי מקור' : 'By Source'}</h3>
-            <ResponsiveContainer width="100%" height={220}>
+            <h3 className="font-medium mb-3">{isHe ? 'לפי מקור' : 'By Source'}</h3>
+            <ResponsiveContainer width="100%" height={180}>
               <PieChart>
                 <Pie
                   data={sourcePieData}
@@ -164,23 +164,31 @@ export function ReportChannels({ compact }: { compact?: boolean } = {}) {
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  outerRadius={80}
-                  label={({ name, percent }) => `${name} ${Math.round(percent * 100)}%`}
-                  labelLine={false}
+                  innerRadius={35}
+                  outerRadius={65}
+                  label={false}
                 >
                   {sourcePieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                 </Pie>
-                <Tooltip />
+                <Tooltip formatter={(val: number, name: string) => [`${val}`, name]} />
               </PieChart>
             </ResponsiveContainer>
+            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2">
+              {sourcePieData.map((entry, i) => (
+                <div key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
+                  <span className="truncate">{entry.name} ({entry.value})</span>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
         {/* Method pie */}
         <Card>
           <CardContent className="p-4">
-            <h3 className="font-medium mb-4">{isHe ? 'לפי שיטת הגשה' : 'By Apply Method'}</h3>
-            <ResponsiveContainer width="100%" height={220}>
+            <h3 className="font-medium mb-3">{isHe ? 'לפי שיטת הגשה' : 'By Apply Method'}</h3>
+            <ResponsiveContainer width="100%" height={180}>
               <PieChart>
                 <Pie
                   data={methodPieData}
@@ -188,15 +196,23 @@ export function ReportChannels({ compact }: { compact?: boolean } = {}) {
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  outerRadius={80}
-                  label={({ name, percent }) => `${name} ${Math.round(percent * 100)}%`}
-                  labelLine={false}
+                  innerRadius={35}
+                  outerRadius={65}
+                  label={false}
                 >
                   {methodPieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                 </Pie>
-                <Tooltip />
+                <Tooltip formatter={(val: number, name: string) => [`${val}`, name]} />
               </PieChart>
             </ResponsiveContainer>
+            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2">
+              {methodPieData.map((entry, i) => (
+                <div key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
+                  <span className="truncate">{entry.name} ({entry.value})</span>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>
