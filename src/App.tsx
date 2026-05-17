@@ -75,6 +75,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Extension from "./pages/Extension";
 import Admin from "./pages/Admin";
 import RecordingStudio from "./pages/RecordingStudio";
+import Invite from "./pages/Invite";
 
 const queryClient = new QueryClient();
 
@@ -129,6 +130,7 @@ const App = () => (
                   <Route path="/extension" element={<Extension />} />
                   <Route path="/admin" element={<Admin />} />
                   <Route path="/recording-studio" element={<RecordingStudio />} />
+                  <Route path="/invite/:code" element={<Invite />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

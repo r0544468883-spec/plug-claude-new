@@ -52,10 +52,10 @@ export function AuthForm({ selectedRole, onBack, onSuccess, onRegistration }: Au
   const isHebrew = direction === 'rtl';
   const isJobSeeker = selectedRole === 'job_seeker';
 
-  // Auto-detect referral from URL param (?ref=...)
+  // Auto-detect referral from URL param (?ref=...) or localStorage (from /invite page)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const ref = params.get('ref');
+    const ref = params.get('ref') || localStorage.getItem('plug_referral_code');
     if (ref) {
       setReferredBy(ref);
       setShowReferral(true);

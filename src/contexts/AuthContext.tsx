@@ -226,6 +226,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ];
         await supabase.from('consent_records').insert(consentRows as any);
 
+        // Track referral conversion
+        if (referredBy) {
+          await (supabase as any)
+            .from('referrals')
+            .update({
+              referred_id: data.user.id,
+              status: 'signed_up',
+              signed_up_at: new Date().toISOString(),
+            })
+            .eq('referral_code', referredBy)
+            .eq('status', 'clicked')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          // Increment referrer's count
+          await (supabase as any).rpc('increment_referral_count', { ref_code: referredBy });
+
+          // Clean up localStorage
+          localStorage.removeItem('plug_referral_code');
+          localStorage.removeItem('plug_referral_channel');
+        }
+
         setRole(selectedRole);
         // Cache role immediately so Dashboard useEffect has it on first render
         localStorage.setItem('plug_user_role', selectedRole);
