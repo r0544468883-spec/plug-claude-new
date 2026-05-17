@@ -25,7 +25,7 @@ const SOCIAL_TASK_REWARDS: Record<string, number> = {
 // Recurring rewards (with caps)
 const RECURRING_REWARDS: Record<string, { amount: number; dailyCap?: number; monthlyCap?: number; fuelType?: 'daily' | 'permanent' }> = {
   'community_share': { amount: 5, dailyCap: 3 },
-  'job_share': { amount: 5, dailyCap: 5 },
+  'job_share': { amount: 10, dailyCap: 5 },
   'vouch_received': { amount: 25, monthlyCap: 5 },
   'vouch_given': { amount: 5, monthlyCap: 5 },
   'vouch_reciprocal': { amount: 5 },
@@ -61,7 +61,7 @@ const XP_REWARDS: Record<string, number> = {
 
 // Progressive referral rewards
 const REFERRAL_STAGES: Record<string, { fuel: number; xp: number; stage: string }> = {
-  'referral_signup': { fuel: 15, xp: 10, stage: 'signed_up' },
+  'referral_signup': { fuel: 10, xp: 10, stage: 'signed_up' },
   'referral_profile_complete': { fuel: 10, xp: 5, stage: 'profile_complete' },
   'referral_applied': { fuel: 25, xp: 25, stage: 'applied' },
   'referral_active_7d': { fuel: 15, xp: 15, stage: 'active_7d' },
@@ -326,7 +326,7 @@ serve(async (req) => {
         await supabase.rpc('check_achievements', { p_user_id: referrer.user_id });
 
         // Award referred user welcome bonus
-        amountToAward = 20; // welcome bonus for new user
+        amountToAward = 10; // welcome bonus for new user
         xpToAward = 0;
         actionType = 'referral_welcome';
         description = 'Welcome bonus for joining via referral';
@@ -558,14 +558,14 @@ serve(async (req) => {
       await supabase
         .from('user_credits')
         .update({
-          permanent_fuel: (referrerCredits?.permanent_fuel || 0) + 15,
+          permanent_fuel: (referrerCredits?.permanent_fuel || 0) + 10,
           total_referrals: (referrerCredits?.total_referrals || 0) + 1,
         })
         .eq('user_id', referrer.user_id);
 
       await supabase.from('credit_transactions').insert({
         user_id: referrer.user_id,
-        amount: 15,
+        amount: 10,
         credit_type: 'permanent',
         action_type: 'referral_signup',
         description: 'Referral bonus: new user signed up with your code'
@@ -573,7 +573,7 @@ serve(async (req) => {
 
       await supabase.rpc('check_achievements', { p_user_id: referrer.user_id });
 
-      amountToAward = 20;
+      amountToAward = 10;
       actionType = 'referral_welcome';
       description = 'Welcome bonus for joining via referral';
     }
