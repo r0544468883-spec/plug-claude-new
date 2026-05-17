@@ -126,10 +126,10 @@ export function ReportAIMatch({ compact }: { compact?: boolean } = {}) {
           const Icon = s.icon;
           return (
             <Card key={i}>
-              <CardContent className="p-4 text-center">
-                <Icon className="w-5 h-5 text-primary mx-auto mb-1" />
-                <div className="text-2xl font-bold text-primary">{s.value}</div>
-                <div className="text-sm text-muted-foreground mt-1">{s.label}</div>
+              <CardContent className="p-2.5 sm:p-4 text-center">
+                <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary mx-auto mb-1" />
+                <div className="text-lg sm:text-2xl font-bold text-primary">{s.value}</div>
+                <div className="text-[11px] sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{s.label}</div>
               </CardContent>
             </Card>
           );
@@ -183,7 +183,7 @@ export function ReportAIMatch({ compact }: { compact?: boolean } = {}) {
         <Card>
           <CardContent className="p-4">
             <h3 className="font-medium mb-4">{isHe ? 'התפלגות ציונים' : 'Score Distribution'}</h3>
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={170}>
               <BarChart data={histData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="label" tick={{ fontSize: 11 }} />

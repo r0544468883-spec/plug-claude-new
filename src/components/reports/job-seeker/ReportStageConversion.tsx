@@ -107,9 +107,9 @@ export function ReportStageConversion({ compact }: { compact?: boolean } = {}) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {summaryStats.map((s, i) => (
           <Card key={i}>
-            <CardContent className="p-4 text-center">
-              <div className="text-3xl font-bold text-primary">{s.value}</div>
-              <div className="text-sm text-muted-foreground mt-1">{s.label}</div>
+            <CardContent className="p-2.5 sm:p-4 text-center">
+              <div className="text-lg sm:text-3xl font-bold text-primary">{s.value}</div>
+              <div className="text-[11px] sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{s.label}</div>
               {/* Benchmark badges for response/interview rates */}
               {i === 0 && marketBenchmarks && total > 0 && (
                 <div className="mt-2 flex justify-center">
@@ -128,8 +128,8 @@ export function ReportStageConversion({ compact }: { compact?: boolean } = {}) {
 
       {/* Funnel */}
       <Card>
-        <CardContent className="p-6">
-          <h3 className="font-medium mb-6">{isHe ? 'פאנל שלבים' : 'Stage Funnel'}</h3>
+        <CardContent className="p-3 sm:p-6">
+          <h3 className="font-medium mb-3 sm:mb-6">{isHe ? 'פאנל שלבים' : 'Stage Funnel'}</h3>
           <div className="space-y-3">
             {stageCounts.map(({ stage, count }, i) => {
               const meta = STAGE_META[stage];

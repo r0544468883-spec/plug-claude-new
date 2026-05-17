@@ -86,9 +86,9 @@ export function ReportApplications({ compact }: { compact?: boolean } = {}) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {stats.map((s, i) => (
           <Card key={i}>
-            <CardContent className="p-4 text-center">
-              <div className="text-3xl font-bold text-primary">{s.value}</div>
-              <div className="text-sm text-muted-foreground mt-1">{s.label}</div>
+            <CardContent className="p-2.5 sm:p-4 text-center">
+              <div className="text-lg sm:text-3xl font-bold text-primary">{s.value}</div>
+              <div className="text-[11px] sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{s.label}</div>
             </CardContent>
           </Card>
         ))}
@@ -98,7 +98,7 @@ export function ReportApplications({ compact }: { compact?: boolean } = {}) {
       <Card>
         <CardContent className="p-4">
           <h3 className="font-medium mb-4">{isHebrew ? 'הגשות לפי יום' : 'Applications by Day'}</h3>
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={160}>
             <AreaChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="date" tick={{ fontSize: 11 }} />

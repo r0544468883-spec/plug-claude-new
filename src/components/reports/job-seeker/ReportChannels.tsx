@@ -130,9 +130,9 @@ export function ReportChannels({ compact }: { compact?: boolean } = {}) {
           { label: isHe ? 'ערוץ מוביל'      : 'Best Channel',        value: bestSource?.source || '—' },
         ].map((s, i) => (
           <Card key={i}>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-primary truncate">{s.value}</div>
-              <div className="text-sm text-muted-foreground mt-1">{s.label}</div>
+            <CardContent className="p-2.5 sm:p-4 text-center">
+              <div className="text-lg sm:text-2xl font-bold text-primary truncate">{s.value}</div>
+              <div className="text-[11px] sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{s.label}</div>
             </CardContent>
           </Card>
         ))}
@@ -222,7 +222,7 @@ export function ReportChannels({ compact }: { compact?: boolean } = {}) {
         <Card>
           <CardContent className="p-4">
             <h3 className="font-medium mb-4">{isHe ? 'שיעור תגובה לפי ערוץ' : 'Response Rate by Channel'}</h3>
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={160}>
               <BarChart data={sourceBarData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="source" tick={{ fontSize: 12 }} />
