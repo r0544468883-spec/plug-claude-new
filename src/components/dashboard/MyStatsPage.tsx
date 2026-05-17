@@ -290,16 +290,16 @@ export function MyStatsPage() {
 
         {/* Tabs */}
         <Tabs defaultValue="personal" className="w-full">
-          <TabsList className="w-full justify-start bg-muted/50 rounded-lg p-1">
-            <TabsTrigger value="personal" className="rounded-md">
+          <TabsList className="w-full flex flex-col sm:flex-row justify-start bg-muted/50 rounded-lg p-1 h-auto gap-1">
+            <TabsTrigger value="personal" className="rounded-md w-full sm:w-auto justify-center">
               <BarChart3 className="w-4 h-4 me-1.5" />
               {isRTL ? 'נתונים אישיים' : 'Personal'}
             </TabsTrigger>
-            <TabsTrigger value="market" className="rounded-md">
+            <TabsTrigger value="market" className="rounded-md w-full sm:w-auto justify-center">
               <TrendingUp className="w-4 h-4 me-1.5" />
               {isRTL ? 'נתוני שוק' : 'Market'}
             </TabsTrigger>
-            <TabsTrigger value="credits" className="rounded-md">
+            <TabsTrigger value="credits" className="rounded-md w-full sm:w-auto justify-center">
               {isRTL ? 'קרדיטים' : 'Credits'}
             </TabsTrigger>
           </TabsList>

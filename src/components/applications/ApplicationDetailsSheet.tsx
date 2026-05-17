@@ -736,7 +736,7 @@ export function ApplicationDetailsSheet({
 
           {/* Tabs for Status, Interviews, Home Assignment, Team Notes, Plug */}
           <Tabs defaultValue="status" className="w-full">
-            <TabsList className={`grid w-full ${isRecruiter ? 'grid-cols-6' : 'grid-cols-5'}`}>
+            <TabsList className={`grid w-full ${isRecruiter ? 'grid-cols-3 sm:grid-cols-6' : 'grid-cols-2 sm:grid-cols-5'}`}>
               <TabsTrigger value="status" className="text-xs">
                 {isRTL ? 'סטטוס' : 'Status'}
               </TabsTrigger>

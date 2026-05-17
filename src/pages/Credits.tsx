@@ -189,7 +189,7 @@ const Credits = () => {
 
         {/* Tabs Section */}
         <Tabs defaultValue="ambassador" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="ambassador" className="gap-1.5">
               <Trophy className="w-3.5 h-3.5" />
               {isRTL ? 'שגריר' : 'Ambassador'}

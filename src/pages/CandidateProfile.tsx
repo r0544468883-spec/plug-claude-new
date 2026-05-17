@@ -633,7 +633,7 @@ export default function CandidateProfile() {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5">
             <TabsTrigger value="overview" className="gap-1 text-xs sm:text-sm">
               <User className="w-4 h-4 hidden sm:inline" />
               {isHebrew ? 'סקירה' : 'Overview'}

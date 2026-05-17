@@ -174,7 +174,7 @@ const Network = () => {
 
             {/* Tabs */}
             <Tabs defaultValue="colleagues" className="space-y-4">
-              <TabsList className="w-full grid grid-cols-3">
+              <TabsList className="w-full grid grid-cols-1 sm:grid-cols-3">
                 <TabsTrigger value="colleagues" className="gap-1.5 text-xs sm:text-sm">
                   <Users className="w-4 h-4" />
                   {isHebrew ? `קולגות (${colleagues.length})` : `Colleagues (${colleagues.length})`}

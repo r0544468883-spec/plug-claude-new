@@ -665,7 +665,7 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
 
       {/* ── Tabs: Applications | Saved | Extension ── */}
       <Tabs defaultValue={initialTab || "applications"} className="w-full">
-        <TabsList className="w-full justify-start bg-muted/50 rounded-lg p-1 plug-glow-purple">
+        <TabsList className="w-full flex flex-col sm:flex-row justify-start bg-muted/50 rounded-lg p-1 h-auto gap-1 plug-glow-purple">
           <TabsTrigger value="applications" className="rounded-md data-[state=active]:plug-glow-purple">
             <Briefcase className="w-4 h-4 me-1.5" />
             {isRTL ? 'מועמדויות' : 'Applications'}
