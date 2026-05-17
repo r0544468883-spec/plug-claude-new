@@ -13,6 +13,7 @@ import { useSavedJobs, useSaveJobMutation } from '@/hooks/useSavedJobs';
 import { useMatchScore, useStoredMatchScores } from '@/hooks/useMatchScore';
 import { formatSalaryRange, getILSFootnote } from '@/lib/salary-utils';
 import { GhostingMeter } from './GhostingMeter';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Job {
   id: string;
@@ -137,6 +138,11 @@ export function JobCard({ job, onViewDetails, onApply, onDismiss, onMarkApplied,
         toast.success(isHebrew ? 'ההודעה הועתקה!' : 'Message copied!');
         break;
     }
+
+    // Award credits for sharing
+    supabase.functions.invoke('award-credits', { body: { action: 'job_share' } })
+      .then(() => toast.success(isHebrew ? 'קיבלת 10 קרדיטים על השיתוף!' : '+10 credits for sharing!'))
+      .catch(() => {});
   };
 
   const timeAgo = formatDistanceToNow(new Date(job.created_at), {
