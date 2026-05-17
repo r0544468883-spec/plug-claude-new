@@ -363,6 +363,7 @@ export function JobCard({ job, onViewDetails, onApply, onDismiss, onMarkApplied,
                     <button onClick={(e) => handleShareJob(e, 'whatsapp')} className="px-3 py-2.5 text-sm hover:bg-accent text-right">📱 ווצאפ</button>
                     <button onClick={(e) => handleShareJob(e, 'linkedin')} className="px-3 py-2.5 text-sm hover:bg-accent text-right">💼 {isHebrew ? 'הודעה בלינקדאין' : 'LinkedIn message'}</button>
                     <button onClick={(e) => handleShareJob(e, 'copy')} className="px-3 py-2.5 text-sm hover:bg-accent text-right">📋 {isHebrew ? 'העתק הודעה' : 'Copy message'}</button>
+                    <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(job.source_url || `${window.location.origin}/saved-jobs`); toast.success(isHebrew ? 'הקישור הועתק!' : 'Link copied!'); setShowShareMenu(false); }} className="px-3 py-2.5 text-sm hover:bg-accent text-right">🔗 {isHebrew ? 'העתק קישור' : 'Copy link'}</button>
                   </div>
                 )}
               </div>
