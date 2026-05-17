@@ -14,6 +14,7 @@ export default function Invite() {
   const [jobTitle, setJobTitle] = useState<string>("");
   const [jobCompany, setJobCompany] = useState<string>("");
   const [userCount, setUserCount] = useState(3200);
+  const [senderProfile, setSenderProfile] = useState<{ full_name: string; title?: string; avatar_url?: string; user_id: string } | null>(null);
 
   // Extract share context from URL params
   const sharedScore = searchParams.get("score");
@@ -21,12 +22,31 @@ export default function Invite() {
   const sharedCompany = searchParams.get("company");
   const channel = searchParams.get("ch") || "direct";
   const sharedJobUrl = searchParams.get("url");
+  const senderId = searchParams.get("from");
 
   useEffect(() => {
     if (sharedScore) setScore(parseInt(sharedScore));
     if (sharedJob) setJobTitle(decodeURIComponent(sharedJob));
     if (sharedCompany) setJobCompany(decodeURIComponent(sharedCompany));
   }, [sharedScore, sharedJob, sharedCompany]);
+
+  // Fetch sender profile
+  useEffect(() => {
+    if (!senderId) return;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("profiles")
+        .select("full_name, title, avatar_url, user_id")
+        .eq("user_id", senderId)
+        .single();
+      if (data) {
+        setSenderProfile(data);
+        if (data.full_name && !referrerName) {
+          setReferrerName(data.full_name.split(" ")[0]);
+        }
+      }
+    })();
+  }, [senderId]);
 
   useEffect(() => {
     if (!code) return;
@@ -198,6 +218,33 @@ export default function Invite() {
               <span className="text-xs text-gray-300">חינם לגמרי, בלי הגבלה</span>
             </div>
           </div>
+
+          {/* Sender profile card */}
+          {senderProfile && (
+            <a
+              href={`/p/${senderProfile.user_id}`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-3 bg-[#1A2340]/60 border border-[#00FF9D]/20 rounded-xl p-4 hover:border-[#00FF9D]/50 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-full bg-[#00FF9D]/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                {senderProfile.avatar_url ? (
+                  <img src={senderProfile.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                ) : (
+                  <span className="text-[#00FF9D] font-bold text-sm">
+                    {senderProfile.full_name?.charAt(0)}
+                  </span>
+                )}
+              </div>
+              <div className="text-right flex-1">
+                <p className="text-sm font-semibold text-white">{senderProfile.full_name}</p>
+                {senderProfile.title && (
+                  <p className="text-xs text-gray-400">{senderProfile.title}</p>
+                )}
+              </div>
+              <span className="text-xs text-[#00FF9D]">צפה בפרופיל →</span>
+            </a>
+          )}
 
           {/* CTA */}
           <div className="space-y-3">

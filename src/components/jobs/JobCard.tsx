@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -109,27 +110,31 @@ export function JobCard({ job, onViewDetails, onApply, onDismiss, onMarkApplied,
     saveJobMutation.mutate({ jobId: job.id, isSaved });
   };
 
+  const [showShareMenu, setShowShareMenu] = useState(false);
+
   const handleShareJob = (e: React.MouseEvent, platform: 'whatsapp' | 'linkedin' | 'copy') => {
     e.stopPropagation();
+    setShowShareMenu(false);
     const jobTitle = job.title;
     const companyName = job.company?.name || '';
     const jobUrl = job.source_url || `${window.location.origin}/saved-jobs`;
+    const profileUrl = user ? `${window.location.origin}/p/${user.id}` : '';
     const jobLine = `${jobTitle}${companyName ? ` ב-${companyName}` : ''}`;
 
+    const shareText = isHebrew
+      ? `היי, ראיתי משרה שיכולה להתאים לך:\n${jobLine}\n${jobUrl}${profileUrl ? `\n\nהפרופיל שלי: ${profileUrl}` : ''}\n\nמצאתי את זה דרך PLUG — תוסף AI חינמי שמנתח לך כל משרה:\nhttps://www.plug-hr.com`
+      : `Hey, saw a job that might suit you:\n${jobLine}\n${jobUrl}${profileUrl ? `\n\nMy profile: ${profileUrl}` : ''}\n\nFound it via PLUG — free AI job matching:\nhttps://www.plug-hr.com`;
+
     switch (platform) {
-      case 'whatsapp': {
-        const text = isHebrew
-          ? `היי, ראיתי משרה שיכולה להתאים לך:\n${jobLine}\n${jobUrl}\n\nמצאתי את זה דרך PLUG — תוסף AI חינמי שמנתח לך כל משרה:\nhttps://www.plug-hr.com`
-          : `Hey, saw a job that might suit you:\n${jobLine}\n${jobUrl}\n\nFound it via PLUG — free AI job matching:\nhttps://www.plug-hr.com`;
-        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
         break;
-      }
       case 'linkedin':
-        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(jobUrl)}`, '_blank');
+        window.open(`https://www.linkedin.com/messaging/compose/?body=${encodeURIComponent(shareText)}`, '_blank');
         break;
       case 'copy':
-        navigator.clipboard.writeText(jobUrl);
-        toast.success(isHebrew ? 'הקישור הועתק!' : 'Link copied!');
+        navigator.clipboard.writeText(shareText);
+        toast.success(isHebrew ? 'ההודעה הועתקה!' : 'Message copied!');
         break;
     }
   };
@@ -349,15 +354,17 @@ export function JobCard({ job, onViewDetails, onApply, onDismiss, onMarkApplied,
               <Button variant="outline" size="sm" className="min-h-[44px] min-w-[44px]" onClick={(e) => { e.stopPropagation(); onViewDetails(job); }}>
                 <ExternalLink className="w-4 h-4" />
               </Button>
-              <div className="relative group">
-                <Button variant="outline" size="sm" className="min-h-[44px] min-w-[44px]" title={isHebrew ? 'שלח משרה לחבר/ה' : 'Send job to a friend'}>
+              <div className="relative">
+                <Button variant="outline" size="sm" className="min-h-[44px] min-w-[44px]" title={isHebrew ? 'שלח משרה לחבר/ה' : 'Send job to a friend'} onClick={(e) => { e.stopPropagation(); setShowShareMenu(prev => !prev); }}>
                   <Send className="w-4 h-4" />
                 </Button>
-                <div className="absolute bottom-full right-0 mb-1 hidden group-hover:flex flex-col bg-popover border rounded-lg shadow-xl overflow-hidden z-50 min-w-[140px]">
-                  <button onClick={(e) => handleShareJob(e, 'whatsapp')} className="px-3 py-2 text-sm hover:bg-accent text-right">ווצאפ</button>
-                  <button onClick={(e) => handleShareJob(e, 'linkedin')} className="px-3 py-2 text-sm hover:bg-accent text-right">לינקדאין</button>
-                  <button onClick={(e) => handleShareJob(e, 'copy')} className="px-3 py-2 text-sm hover:bg-accent text-right">{isHebrew ? 'העתק לינק' : 'Copy link'}</button>
-                </div>
+                {showShareMenu && (
+                  <div className="absolute bottom-full right-0 mb-1 flex flex-col bg-popover border rounded-lg shadow-xl overflow-hidden z-50 min-w-[160px]">
+                    <button onClick={(e) => handleShareJob(e, 'whatsapp')} className="px-3 py-2.5 text-sm hover:bg-accent text-right">📱 ווצאפ</button>
+                    <button onClick={(e) => handleShareJob(e, 'linkedin')} className="px-3 py-2.5 text-sm hover:bg-accent text-right">💼 {isHebrew ? 'הודעה בלינקדאין' : 'LinkedIn message'}</button>
+                    <button onClick={(e) => handleShareJob(e, 'copy')} className="px-3 py-2.5 text-sm hover:bg-accent text-right">📋 {isHebrew ? 'העתק הודעה' : 'Copy message'}</button>
+                  </div>
+                )}
               </div>
               {onDismiss && (
                 <Button variant="ghost" size="sm" className="min-h-[44px] min-w-[44px] text-muted-foreground hover:text-destructive" title={isHebrew ? 'הסתר משרה' : 'Hide job'} onClick={(e) => { e.stopPropagation(); onDismiss(job); }}>
