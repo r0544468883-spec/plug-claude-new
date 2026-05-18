@@ -60,6 +60,11 @@ import NotFound from "./pages/NotFound";
 import SignDocument from "./pages/SignDocument";
 import Referrals from "./pages/Referrals";
 import SuccessStories from "./pages/SuccessStories";
+import AIJobSearch from "./pages/seo/AIJobSearch";
+import TechJobs from "./pages/seo/TechJobs";
+import CareerChange from "./pages/seo/CareerChange";
+import AfterLayoff from "./pages/seo/AfterLayoff";
+import CVAnalysis from "./pages/seo/CVAnalysis";
 import Assignments from "./pages/Assignments";
 import Analytics from "./pages/Analytics";
 import CandidateSearchPage from "./pages/CandidateSearchPage";
@@ -116,6 +121,11 @@ const App = () => (
                   <Route path="/sign/:token" element={<SignDocument />} />
                   <Route path="/referrals" element={<Referrals />} />
                   <Route path="/success-stories" element={<SuccessStories />} />
+                  <Route path="/ai-job-search" element={<AIJobSearch />} />
+                  <Route path="/tech-jobs" element={<TechJobs />} />
+                  <Route path="/career-change" element={<CareerChange />} />
+                  <Route path="/after-layoff" element={<AfterLayoff />} />
+                  <Route path="/cv-analysis" element={<CVAnalysis />} />
                   <Route path="/assignments" element={<Assignments />} />
                   <Route path="/analytics" element={<Analytics />} />
                   <Route path="/candidate-search" element={<CandidateSearchPage />} />
