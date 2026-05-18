@@ -49,6 +49,7 @@ interface AuthContextType {
   isLoading: boolean;
   signUp: (email: string, password: string, fullName: string, phone: string, role: AppRole, visibleToHR?: boolean, gender?: string, referredBy?: string, consentMarketing?: boolean) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInWithGoogle: (selectedRole: AppRole) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
   refreshProfile: () => Promise<void>;
@@ -81,9 +82,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (currentSession?.user) {
           // Defer profile and role fetch to avoid blocking
-          setTimeout(() => {
-            fetchProfile(currentSession.user.id);
-            fetchRole(currentSession.user.id);
+          setTimeout(async () => {
+            const userId = currentSession.user.id;
+
+            // Check if this is a new Google OAuth user that needs profile + role
+            const pendingRole = localStorage.getItem('plug_google_pending_role') as AppRole | null;
+            if (pendingRole) {
+              localStorage.removeItem('plug_google_pending_role');
+              const meta = currentSession.user.user_metadata || {};
+              const fullName = meta.full_name || meta.name || '';
+              const email = currentSession.user.email || '';
+
+              // Create profile if not exists
+              await supabase.from('profiles').upsert({
+                user_id: userId,
+                email,
+                full_name: fullName,
+                visible_to_hr: pendingRole === 'job_seeker',
+              } as any, { onConflict: 'user_id' });
+
+              // Create role if not exists
+              const { data: existingRole } = await supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', userId)
+                .maybeSingle();
+
+              if (!existingRole) {
+                await supabase.from('user_roles').insert({ user_id: userId, role: pendingRole });
+              }
+
+              setRole(pendingRole);
+              localStorage.setItem('plug_user_role', pendingRole);
+            }
+
+            fetchProfile(userId);
+            fetchRole(userId);
           }, 0);
         } else {
           setProfile(null);
@@ -259,6 +293,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async (selectedRole: AppRole): Promise<{ error: Error | null }> => {
+    try {
+      // Store role before redirect — we'll use it when the user returns
+      localStorage.setItem('plug_google_pending_role', selectedRole);
+      localStorage.removeItem('plug-onboarding-done');
+      localStorage.removeItem('plug-onboarding-skipped');
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+          queryParams: { prompt: 'select_account' },
+        },
+      });
+
+      if (error) throw error;
+      return { error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
   const signIn = async (email: string, password: string): Promise<{ error: Error | null }> => {
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -319,6 +375,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       signUp,
       signIn,
+      signInWithGoogle,
       signOut,
       updateProfile,
       refreshProfile,
