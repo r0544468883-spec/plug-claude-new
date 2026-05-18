@@ -367,6 +367,15 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
                     <span className="text-[11px] text-muted-foreground">{isRTL ? 'קבוע' : 'perm'}</span>
                   </div>
 
+                  {/* Login streak */}
+                  {(credits as any).login_streak > 0 && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm">🔥</span>
+                      <span className="text-sm font-bold text-orange-400">{(credits as any).login_streak}</span>
+                      <span className="text-[11px] text-muted-foreground">{isRTL ? 'ימים' : 'days'}</span>
+                    </div>
+                  )}
+
                   <div className="w-px h-6 bg-border hidden sm:block" />
 
                   {/* Ambassador tier + XP bar */}

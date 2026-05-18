@@ -124,6 +124,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             fetchProfile(userId);
             fetchRole(userId);
+
+            // Fire login streak (once per session)
+            const streakKey = `plug_streak_${new Date().toISOString().split('T')[0]}`;
+            if (!sessionStorage.getItem(streakKey)) {
+              sessionStorage.setItem(streakKey, '1');
+              supabase.functions.invoke('award-credits', { body: { action: 'login_streak' } }).catch(() => {});
+            }
           }, 0);
         } else {
           setProfile(null);
