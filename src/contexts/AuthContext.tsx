@@ -114,6 +114,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
               setRole(pendingRole);
               localStorage.setItem('plug_user_role', pendingRole);
+
+              // Force onboarding wizard for new Google users
+              localStorage.removeItem('plug-onboarding-done');
+              localStorage.removeItem('plug-onboarding-skipped');
+              localStorage.removeItem('plug-fuel-welcome-done');
+              localStorage.removeItem('plug-tour-prompt-done');
             }
 
             fetchProfile(userId);
