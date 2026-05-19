@@ -486,60 +486,32 @@ const Credits = () => {
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <span>{isRTL ? 'בונה קורות חיים' : 'CV Builder'}</span>
-                  <span className="font-bold text-destructive">-{CREDIT_COSTS.CV_BUILDER}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <span>{isRTL ? 'הכנה לראיון AI' : 'AI Interview Prep'}</span>
-                  <span className="font-bold text-destructive">-{CREDIT_COSTS.AI_INTERVIEW}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <span>{isRTL ? 'התאמת קו"ח' : 'Resume Match'}</span>
-                  <span className="font-bold text-destructive">-{CREDIT_COSTS.RESUME_MATCH}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <span>{isRTL ? 'בדיקת משימת בית' : 'Home Task Review'}</span>
-                  <span className="font-bold text-destructive">-{CREDIT_COSTS.HOME_TASK_REVIEW}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <span>{isRTL ? 'ניתוח קורות חיים' : 'Resume Analysis'}</span>
-                  <span className="font-bold text-destructive">-{CREDIT_COSTS.RESUME_ANALYSIS}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <span>{isRTL ? 'חיפוש חכם' : 'Smart Search'}</span>
-                  <span className="font-bold text-destructive">-{CREDIT_COSTS.SMART_SEARCH}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <span>{isRTL ? 'שכתוב טקסט בקו"ח' : 'CV Text Rewrite'}</span>
-                  <span className="font-bold text-destructive">-{CREDIT_COSTS.CV_INLINE_REWRITE}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <span>{isRTL ? 'טיוטת מייל AI' : 'AI Email Draft'}</span>
-                  <span className="font-bold text-destructive">-{CREDIT_COSTS.EMAIL_AI_DRAFT}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <span>{isRTL ? 'סיווג מייל' : 'Email Classify'}</span>
-                  <span className="font-bold text-destructive">-{CREDIT_COSTS.EMAIL_CLASSIFY}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div>
-                    <span>{isRTL ? 'צ\'אט PLUG' : 'PLUG Chat'}</span>
-                    <span className="text-xs text-muted-foreground ms-2">
-                      ({isRTL ? '5 הודעות/יום חינם' : '5 msgs/day free'})
+                {[
+                  { label: isRTL ? 'בונה קורות חיים' : 'CV Builder', cost: CREDIT_COSTS.CV_BUILDER, free: false },
+                  { label: isRTL ? 'הכנה לראיון AI' : 'AI Interview Prep', cost: CREDIT_COSTS.AI_INTERVIEW, free: false },
+                  { label: isRTL ? 'התאמת קו"ח' : 'Resume Match', cost: CREDIT_COSTS.RESUME_MATCH, free: false },
+                  { label: isRTL ? 'בדיקת משימת בית' : 'Home Task Review', cost: CREDIT_COSTS.HOME_TASK_REVIEW, free: false },
+                  { label: isRTL ? 'ניתוח קורות חיים' : 'Resume Analysis', cost: CREDIT_COSTS.RESUME_ANALYSIS, free: false },
+                  { label: isRTL ? 'חיפוש חכם' : 'Smart Search', cost: CREDIT_COSTS.SMART_SEARCH, free: false },
+                  { label: isRTL ? 'שכתוב טקסט בקו"ח' : 'CV Text Rewrite', cost: CREDIT_COSTS.CV_INLINE_REWRITE, free: false },
+                  { label: isRTL ? 'טיוטת מייל AI' : 'AI Email Draft', cost: CREDIT_COSTS.EMAIL_AI_DRAFT, free: false },
+                  { label: isRTL ? 'סיווג מייל' : 'Email Classify', cost: CREDIT_COSTS.EMAIL_CLASSIFY, free: false },
+                  { label: isRTL ? 'צ\'אט PLUG' : 'PLUG Chat', cost: 0, free: true, note: isRTL ? '5 הודעות/יום חינם' : '5 msgs/day free' },
+                  { label: isRTL ? 'פינג' : 'Ping', cost: CREDIT_COSTS.PING_AFTER_FREE, free: false, note: isRTL ? 'אחרי 4 חינם' : 'after 4 free' },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-transparent hover:border-border hover:shadow-sm transition-all duration-200">
+                    <div>
+                      <span className="text-sm font-medium">{item.label}</span>
+                      {item.note && <span className="text-xs text-muted-foreground ms-2">({item.note})</span>}
+                    </div>
+                    <span className={cn(
+                      "font-bold text-sm px-2 py-0.5 rounded-lg",
+                      item.free ? "text-[#00FF9D] bg-[#00FF9D]/10" : "text-destructive bg-destructive/10"
+                    )}>
+                      {item.free ? (isRTL ? 'חינם' : 'FREE') : `-${item.cost}`}
                     </span>
                   </div>
-                  <span className="font-bold text-[#00FF9D]">{isRTL ? 'חינם' : 'FREE'}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div>
-                    <span>{isRTL ? 'פינג' : 'Ping'}</span>
-                    <span className="text-xs text-muted-foreground ms-2">
-                      ({isRTL ? 'אחרי 4 חינם' : 'after 4 free'})
-                    </span>
-                  </div>
-                  <span className="font-bold text-destructive">-{CREDIT_COSTS.PING_AFTER_FREE}</span>
-                </div>
+                ))}
               </div>
             </CardContent>
           </Card>

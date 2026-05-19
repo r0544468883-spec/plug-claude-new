@@ -165,6 +165,15 @@ export const FuelCard = ({ taskId, credits, label, url, icon, isCompleted = fals
       )}
       onClick={!showConfirm ? handleClick : undefined}
     >
+      {/* Best value badge */}
+      {credits >= 75 && !completed && (
+        <div className="absolute top-2 end-2 z-10">
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg">
+            {isRTL ? 'שווה במיוחד' : 'Best Value'}
+          </span>
+        </div>
+      )}
+
       {/* Background gradient */}
       <div className={cn(
         "absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity",

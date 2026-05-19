@@ -16,6 +16,7 @@ import {
   Briefcase, Search, FileEdit, Mic,
   Calendar, CheckCircle2, Circle,
   ClipboardList, Gem, Newspaper, BarChart3, ArrowUpRight, Zap, Trophy,
+  Send, Activity, Users, TrendingUp, MapPin,
 } from 'lucide-react';
 import { getTierFromXP, AMBASSADOR_TIERS } from '@/lib/credit-costs';
 import { cn } from '@/lib/utils';
@@ -299,7 +300,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
     <div className="w-full space-y-4" dir={isRTL ? 'rtl' : 'ltr'}>
 
       {/* ── HERO: Greeting + Profile + 4 stat chips ── */}
-      <Card className="bg-card border-border">
+      <Card className="bg-gradient-to-br from-card to-primary/[0.03] border-border shadow-sm">
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex-1 min-w-0">
@@ -323,13 +324,14 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
             {/* Stat chips */}
             <div className="flex items-center gap-2 flex-wrap">
               {[
-                { label: isRTL ? 'הגשות'     : 'Applied',    value: stats?.totalApplications ?? 0, cls: 'bg-blue-500/10 text-blue-400' },
-                { label: isRTL ? 'פעיל'       : 'Active',     value: stats?.activeApplications ?? 0, cls: 'bg-emerald-500/10 text-emerald-400' },
-                { label: isRTL ? 'ראיונות'   : 'Interviews', value: stats?.interviews ?? 0, cls: 'bg-violet-500/10 text-violet-400' },
-                { label: isRTL ? 'השבוע'      : 'This week',  value: stats?.weeklyApps ?? 0, cls: 'bg-amber-500/10 text-amber-400' },
+                { label: isRTL ? 'הגשות'     : 'Applied',    value: stats?.totalApplications ?? 0, cls: 'bg-blue-500/10 text-blue-400', icon: Send },
+                { label: isRTL ? 'פעיל'       : 'Active',     value: stats?.activeApplications ?? 0, cls: 'bg-emerald-500/10 text-emerald-400', icon: Activity },
+                { label: isRTL ? 'ראיונות'   : 'Interviews', value: stats?.interviews ?? 0, cls: 'bg-violet-500/10 text-violet-400', icon: Users },
+                { label: isRTL ? 'השבוע'      : 'This week',  value: stats?.weeklyApps ?? 0, cls: 'bg-amber-500/10 text-amber-400', icon: TrendingUp },
               ].map((s, i) => (
-                <div key={i} className={cn('px-3 py-1.5 rounded-lg text-center min-w-[56px] cursor-pointer', s.cls)} onClick={() => onNavigate('my-stats')}>
-                  <p className="text-lg font-bold leading-none">{s.value}</p>
+                <div key={i} className={cn('px-3 py-2 rounded-xl text-center min-w-[64px] cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md', s.cls)} onClick={() => onNavigate('my-stats')}>
+                  <s.icon className="w-3.5 h-3.5 mx-auto mb-1 opacity-70" />
+                  <p className="text-xl font-bold leading-none">{s.value}</p>
                   <p className="text-[11px] sm:text-[10px] mt-0.5 opacity-80 whitespace-nowrap">{s.label}</p>
                 </div>
               ))}
@@ -468,7 +470,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
                 {latestJobs.map((job: any) => (
                   <div
                     key={job.id}
-                    className="p-3 rounded-lg border border-border hover:border-blue-500/40 hover:bg-blue-500/5 cursor-pointer transition-all"
+                    className="p-3 rounded-xl border border-border hover:border-blue-500/40 hover:bg-blue-500/5 hover:shadow-md hover:-translate-y-0.5 cursor-pointer transition-all duration-200"
                     onClick={() => onNavigate('job-search')}
                   >
                     <div className="flex items-start justify-between gap-1 mb-1">
@@ -476,7 +478,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
                       {job.job_type && jobTypeBadge(job.job_type)}
                     </div>
                     <p className="text-sm font-semibold text-foreground truncate">{job.title}</p>
-                    {job.location && <p className="text-[11px] text-muted-foreground mt-1 truncate">{job.location}</p>}
+                    {job.location && <p className="text-[11px] text-muted-foreground mt-1 truncate flex items-center gap-0.5"><MapPin className="w-3 h-3 shrink-0" />{job.location}</p>}
                   </div>
                 ))}
               </div>
@@ -637,14 +639,15 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
             />
             <div className="grid grid-cols-2 gap-2">
               {[
-                { label: isRTL ? 'סה״כ הגשות'    : 'Total applied', value: stats?.totalApplications ?? 0, cls: 'bg-blue-500/10 text-blue-400' },
-                { label: isRTL ? 'בפעילות'        : 'Active now',    value: stats?.activeApplications ?? 0, cls: 'bg-emerald-500/10 text-emerald-400' },
-                { label: isRTL ? 'ראיונות'        : 'Interviews',    value: stats?.interviews ?? 0, cls: 'bg-violet-500/10 text-violet-400' },
-                { label: isRTL ? 'הגשות השבוע'    : 'This week',     value: stats?.weeklyApps ?? 0, cls: 'bg-amber-500/10 text-amber-400' },
+                { label: isRTL ? 'סה״כ הגשות'    : 'Total applied', value: stats?.totalApplications ?? 0, cls: 'bg-blue-500/10 text-blue-400', icon: Send, border: 'border-blue-500/20' },
+                { label: isRTL ? 'בפעילות'        : 'Active now',    value: stats?.activeApplications ?? 0, cls: 'bg-emerald-500/10 text-emerald-400', icon: Activity, border: 'border-emerald-500/20' },
+                { label: isRTL ? 'ראיונות'        : 'Interviews',    value: stats?.interviews ?? 0, cls: 'bg-violet-500/10 text-violet-400', icon: Users, border: 'border-violet-500/20' },
+                { label: isRTL ? 'הגשות השבוע'    : 'This week',     value: stats?.weeklyApps ?? 0, cls: 'bg-amber-500/10 text-amber-400', icon: TrendingUp, border: 'border-amber-500/20' },
               ].map((s, i) => (
-                <div key={i} className={cn('p-2.5 rounded-lg text-center cursor-pointer', s.cls)} onClick={() => onNavigate('my-stats')}>
-                  <p className="text-lg sm:text-xl font-bold leading-none">{s.value}</p>
-                  <p className="text-[11px] mt-1 opacity-80">{s.label}</p>
+                <div key={i} className={cn('p-3 rounded-xl text-center cursor-pointer border transition-all duration-200 hover:scale-[1.03] hover:shadow-md', s.cls, s.border)} onClick={() => onNavigate('my-stats')}>
+                  <s.icon className="w-4 h-4 mx-auto mb-1.5 opacity-60" />
+                  <p className="text-2xl font-bold leading-none">{s.value}</p>
+                  <p className="text-[11px] mt-1.5 opacity-80">{s.label}</p>
                 </div>
               ))}
             </div>

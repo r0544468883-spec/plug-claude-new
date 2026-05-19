@@ -431,9 +431,9 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
                       <button
                         onClick={() => setOpenGroup(isOpen ? null : group.labelEn)}
                         className={cn(
-                          "w-full flex items-center justify-between px-3 py-2.5 mt-2 rounded-lg transition-colors",
+                          "w-full flex items-center justify-between px-3 py-2.5 mt-2 rounded-lg transition-all duration-200",
                           hasActive
-                            ? "text-primary bg-primary/10 font-bold"
+                            ? "text-primary bg-primary/10 font-bold shadow-sm"
                             : "text-foreground/70 hover:text-foreground hover:bg-muted/50"
                         )}
                       >
@@ -449,10 +449,10 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
                               <button
                                 onClick={() => handleNavClick(item.section)}
                                 className={cn(
-                                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-start text-sm",
+                                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-start text-sm",
                                   (item.section === 'feed' ? SOCIAL_SECTIONS.includes(currentSection) : currentSection === item.section)
-                                    ? "bg-primary/10 text-primary plug-row-active plug-glow-purple"
-                                    : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/10"
+                                    ? "bg-primary/10 text-primary plug-row-active plug-glow-purple shadow-sm"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/10 hover:translate-x-0.5 rtl:hover:-translate-x-0.5"
                                 )}
                               >
                                 <item.icon className="w-4 h-4 shrink-0" />
@@ -605,7 +605,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
         {/* Top bar */}
         <header className={cn(
           "h-16 border-b flex items-center justify-between px-4 sticky top-0 z-30",
-          "bg-card/50 backdrop-blur-sm border-border"
+          "bg-card/80 backdrop-blur-md border-border shadow-sm"
         )}>
           <div className="flex items-center gap-2">
             {/* Desktop sidebar toggle */}
@@ -747,15 +747,15 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
                   key={section}
                   onClick={() => handleNavClick(section)}
                   className={cn(
-                    "flex flex-1 flex-col items-center justify-center gap-2 py-3 px-4 text-sm font-semibold transition-all border-b-2 -mb-0.5",
+                    "flex flex-1 flex-col items-center justify-center gap-2 py-3 px-4 text-sm font-semibold transition-all duration-300 border-b-2 -mb-0.5",
                     isActive
                       ? "border-primary text-primary bg-primary/8"
                       : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40"
                   )}
                 >
                   <div className={cn(
-                    "p-2 rounded-xl transition-colors",
-                    isActive ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                    "p-2 rounded-xl transition-all duration-300",
+                    isActive ? "bg-primary/20 text-primary scale-110 shadow-sm shadow-primary/20" : "bg-muted text-muted-foreground hover:scale-105"
                   )}>
                     <Icon className="w-5 h-5 shrink-0" />
                   </div>

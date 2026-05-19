@@ -13,14 +13,17 @@ export default function AfterLayoff() {
         <link rel="canonical" href="https://www.plug-hr.com/after-layoff" />
       </Helmet>
 
-      <section className="bg-gradient-to-b from-amber-500/10 to-transparent py-16 px-4">
-        <div className="max-w-3xl mx-auto text-center space-y-4">
-          <h1 className="text-3xl md:text-4xl font-bold">פוטרת? לא לבד. יש תוכנית.</h1>
+      <section className="relative overflow-hidden bg-gradient-to-b from-amber-500/10 to-transparent py-20 px-4">
+        <div className="absolute top-10 start-10 w-72 h-72 bg-red-500/15 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-10 end-20 w-56 h-56 bg-blue-500/15 rounded-full blur-3xl animate-pulse [animation-delay:1s]" />
+        <div className="relative max-w-3xl mx-auto text-center space-y-4">
+          <span className="inline-block bg-amber-500/20 text-amber-700 dark:text-amber-400 text-sm font-medium px-4 py-1.5 rounded-full">אחרי פיטורים</span>
+          <h1 className="text-3xl md:text-5xl font-bold leading-tight">פוטרת? לא לבד. יש תוכנית.</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             גל הפיטורים פגע בהרבה אנשים טובים. פלאג נבנה בדיוק בשביל הרגע הזה. כלי AI חינמי שעושה את העבודה המלוכלכת של חיפוש עבודה בשבילך.
           </p>
           <Link to="/">
-            <Button size="lg" className="gap-2 text-base mt-4">התחל עכשיו, חינם</Button>
+            <Button size="lg" className="gap-2 text-base mt-4 shadow-lg shadow-primary/25">התחל עכשיו, חינם</Button>
           </Link>
         </div>
       </section>
@@ -36,7 +39,7 @@ export default function AfterLayoff() {
               { num: '4', title: 'תנו ל-AI לעבוד', desc: 'פלאג סורק משרות בלינקדאין ובאתרי דרושים, נותן ציון התאמה, ומגיש אוטומטית.' },
               { num: '5', title: 'תתמקדו בראיונות', desc: 'במקום לבזבז שעות על הגשות, השקיעו את הזמן בהכנה לראיונות.' },
             ].map((step, i) => (
-              <Card key={i}>
+              <Card key={i} className="hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                 <CardContent className="p-4 flex gap-4 items-start">
                   <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-600 flex items-center justify-center flex-shrink-0 font-bold text-sm">{step.num}</div>
                   <div>
@@ -74,7 +77,7 @@ export default function AfterLayoff() {
         <h2 className="text-xl font-bold mb-3">החיפוש מתחיל פה</h2>
         <p className="text-sm text-muted-foreground mb-4">10 שניות התקנה. חינם. בלי התחייבות. בהצלחה.</p>
         <Link to="/">
-          <Button size="lg">התקן פלאג חינם</Button>
+          <Button size="lg" className="shadow-lg shadow-primary/25">התקן פלאג חינם</Button>
         </Link>
       </section>
     </div>

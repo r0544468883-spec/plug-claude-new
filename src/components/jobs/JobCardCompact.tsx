@@ -33,8 +33,10 @@ export function JobCardCompact({ job, isSelected, onClick, matchScore: propMatch
     <div
       onClick={onClick}
       className={cn(
-        'p-3 border-b border-border cursor-pointer transition-colors hover:bg-muted/50',
-        isSelected && 'bg-primary/5 border-s-2 border-s-primary'
+        'p-3 border-b border-border cursor-pointer transition-all duration-200 hover:bg-muted/50 hover:shadow-sm',
+        isSelected && 'bg-primary/5 border-s-2 border-s-primary',
+        !isSelected && displayMatchScore >= 85 && 'border-s-2 border-s-green-500/50',
+        !isSelected && displayMatchScore >= 60 && displayMatchScore < 85 && 'border-s-2 border-s-yellow-500/50',
       )}
     >
       <div className="flex gap-3">
@@ -65,12 +67,18 @@ export function JobCardCompact({ job, isSelected, onClick, matchScore: propMatch
           <div className="flex items-center gap-1.5 mt-1.5">
             {displayMatchScore > 0 && (
               <Badge className={cn(
-                'text-[10px] px-1.5 py-0 h-4',
+                'text-[10px] px-1.5 py-0 h-4 gap-0.5 font-bold',
                 displayMatchScore >= 85 ? 'bg-green-500 text-white' :
                 displayMatchScore >= 60 ? 'bg-yellow-500 text-white' :
                 'bg-muted text-muted-foreground'
               )}>
+                {displayMatchScore >= 85 && <Sparkles className="w-2.5 h-2.5" />}
                 {displayMatchScore}%
+              </Badge>
+            )}
+            {(Date.now() - new Date(job.created_at).getTime()) / (1000 * 60 * 60) <= 24 && (
+              <Badge className="text-[10px] px-1.5 py-0 h-4 gap-0.5 bg-orange-500 text-white">
+                <Flame className="w-2.5 h-2.5" />
               </Badge>
             )}
             {job.is_community_shared && (

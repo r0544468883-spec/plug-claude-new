@@ -13,14 +13,17 @@ export default function TechJobs() {
         <link rel="canonical" href="https://www.plug-hr.com/tech-jobs" />
       </Helmet>
 
-      <section className="bg-gradient-to-b from-blue-500/10 to-transparent py-16 px-4">
-        <div className="max-w-3xl mx-auto text-center space-y-4">
-          <h1 className="text-3xl md:text-4xl font-bold">חיפוש עבודה בהייטק עם AI</h1>
+      <section className="relative overflow-hidden bg-gradient-to-b from-blue-500/10 to-transparent py-20 px-4">
+        <div className="absolute top-10 start-10 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-10 end-20 w-56 h-56 bg-violet-500/15 rounded-full blur-3xl animate-pulse [animation-delay:1s]" />
+        <div className="relative max-w-3xl mx-auto text-center space-y-4">
+          <span className="inline-block text-xs font-bold px-3 py-1 rounded-full bg-blue-500/20 text-blue-500 mb-2">Hi-Tech Jobs</span>
+          <h1 className="text-3xl md:text-5xl font-bold leading-tight">חיפוש עבודה בהייטק עם AI</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             פלאג מנתח משרות פיתוח, QA, דאטה, DevOps ועוד. ציון התאמה אישי לכל משרה. הגשה אוטומטית. חינם.
           </p>
           <Link to="/">
-            <Button size="lg" className="gap-2 text-base mt-4">התחל חיפוש חכם</Button>
+            <Button size="lg" className="gap-2 text-base mt-4 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-shadow">התחל חיפוש חכם</Button>
           </Link>
         </div>
       </section>
@@ -35,9 +38,11 @@ export default function TechJobs() {
               { icon: Cpu, label: 'DevOps & Cloud', desc: 'AWS, GCP, K8s, CI/CD' },
               { icon: Globe, label: 'מוצר וניהול', desc: 'Product, PM, Scrum, QA' },
             ].map((item, i) => (
-              <Card key={i}>
+              <Card key={i} className="hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                 <CardContent className="p-4 text-center space-y-2">
-                  <item.icon className="w-6 h-6 text-blue-500 mx-auto" />
+                  <div className="w-14 h-14 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center mx-auto">
+                    <item.icon className="w-7 h-7" />
+                  </div>
                   <h3 className="font-bold text-sm">{item.label}</h3>
                   <p className="text-xs text-muted-foreground">{item.desc}</p>
                 </CardContent>

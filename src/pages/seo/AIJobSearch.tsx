@@ -16,21 +16,33 @@ export default function AIJobSearch() {
       </Helmet>
 
       {/* Hero */}
-      <section className="bg-gradient-to-b from-primary/10 to-transparent py-16 px-4">
-        <div className="max-w-3xl mx-auto text-center space-y-4">
-          <h1 className="text-3xl md:text-4xl font-bold">כלי AI חינמי לחיפוש עבודה בישראל</h1>
+      <section className="relative overflow-hidden bg-gradient-to-b from-primary/10 via-primary/5 to-transparent py-20 px-4">
+        {/* Animated background blobs */}
+        <div className="absolute top-10 start-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-10 end-20 w-56 h-56 bg-violet-500/15 rounded-full blur-3xl animate-pulse [animation-delay:1s]" />
+        <div className="absolute top-1/2 start-1/2 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl animate-pulse [animation-delay:2s]" />
+
+        <div className="relative max-w-3xl mx-auto text-center space-y-5">
+          <span className="inline-block text-xs font-bold px-3 py-1 rounded-full bg-primary/20 text-primary mb-2">AI-Powered Job Search</span>
+          <h1 className="text-3xl md:text-5xl font-bold leading-tight">כלי AI חינמי לחיפוש עבודה בישראל</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             פלאג הוא תוסף כרום שמנתח כל משרה בלינקדאין ובאתרי דרושים, נותן לך ציון התאמה אישי, ומגיש בשבילך. חינם לגמרי.
           </p>
           <div className="flex gap-3 justify-center pt-4">
             <Link to="/">
-              <Button size="lg" className="gap-2 text-base">התקן תוסף חינם</Button>
+              <Button size="lg" className="gap-2 text-base shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-shadow">
+                <Zap className="w-4 h-4" />
+                התקן תוסף חינם
+              </Button>
             </Link>
             <Link to="/success-stories">
-              <Button size="lg" variant="outline" className="gap-2 text-base">סיפורי הצלחה</Button>
+              <Button size="lg" variant="outline" className="gap-2 text-base hover:shadow-md transition-shadow">סיפורי הצלחה</Button>
             </Link>
           </div>
-          <p className="text-sm text-muted-foreground">+3,200 מחפשי עבודה כבר משתמשים</p>
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Users className="w-4 h-4 text-primary" />
+            <span>+3,200 מחפשי עבודה כבר משתמשים</span>
+          </div>
         </div>
       </section>
 
@@ -40,14 +52,16 @@ export default function AIJobSearch() {
           <h2 className="text-2xl font-bold text-center mb-8">איך פלאג עובד?</h2>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { icon: Zap, title: 'מתקינים בקליק', desc: 'תוסף כרום חינמי. התקנה של 10 שניות, בלי הרשמה מסובכת.' },
-              { icon: Target, title: 'AI מנתח כל משרה', desc: 'גולשים בלינקדאין או אולג\'ובס. פלאג סורק כל משרה ונותן ציון התאמה מ-0 עד 100.' },
-              { icon: Clock, title: 'הגשה אוטומטית', desc: 'רואים ציון גבוה? פלאג מגיש Easy Apply בשבילכם. חוסך שעות ביום.' },
+              { icon: Zap, title: 'מתקינים בקליק', desc: 'תוסף כרום חינמי. התקנה של 10 שניות, בלי הרשמה מסובכת.', color: 'text-emerald-500 bg-emerald-500/10' },
+              { icon: Target, title: 'AI מנתח כל משרה', desc: 'גולשים בלינקדאין או אולג\'ובס. פלאג סורק כל משרה ונותן ציון התאמה מ-0 עד 100.', color: 'text-blue-500 bg-blue-500/10' },
+              { icon: Clock, title: 'הגשה אוטומטית', desc: 'רואים ציון גבוה? פלאג מגיש Easy Apply בשבילכם. חוסך שעות ביום.', color: 'text-violet-500 bg-violet-500/10' },
             ].map((item, i) => (
-              <Card key={i}>
-                <CardContent className="p-5 text-center space-y-3">
-                  <item.icon className="w-8 h-8 text-primary mx-auto" />
-                  <h3 className="font-bold">{item.title}</h3>
+              <Card key={i} className="border-border hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                <CardContent className="p-6 text-center space-y-3">
+                  <div className={`w-14 h-14 rounded-2xl ${item.color} flex items-center justify-center mx-auto`}>
+                    <item.icon className="w-7 h-7" />
+                  </div>
+                  <h3 className="font-bold text-lg">{item.title}</h3>
                   <p className="text-sm text-muted-foreground">{item.desc}</p>
                 </CardContent>
               </Card>
@@ -83,15 +97,15 @@ export default function AIJobSearch() {
           <h2 className="text-2xl font-bold text-center mb-8">המספרים מדברים</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             {[
-              { num: '3,200+', label: 'משתמשים רשומים' },
-              { num: '10,000+', label: 'משרות נותחו' },
-              { num: '35', label: 'הגשות ממוצע עד הצעה (במקום 120)' },
-              { num: '3:40', label: 'דקות עד ההגשה הראשונה' },
+              { num: '3,200+', label: 'משתמשים רשומים', color: 'text-blue-500' },
+              { num: '10,000+', label: 'משרות נותחו', color: 'text-emerald-500' },
+              { num: '35', label: 'הגשות ממוצע עד הצעה (במקום 120)', color: 'text-violet-500' },
+              { num: '3:40', label: 'דקות עד ההגשה הראשונה', color: 'text-amber-500' },
             ].map((s, i) => (
-              <Card key={i}>
-                <CardContent className="p-4">
-                  <p className="text-2xl font-black text-primary">{s.num}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
+              <Card key={i} className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                <CardContent className="p-5">
+                  <p className={`text-3xl font-black ${s.color}`}>{s.num}</p>
+                  <p className="text-xs text-muted-foreground mt-2">{s.label}</p>
                 </CardContent>
               </Card>
             ))}
@@ -123,12 +137,18 @@ export default function AIJobSearch() {
       </section>
 
       {/* CTA */}
-      <section className="py-12 px-4 text-center">
-        <h2 className="text-xl font-bold mb-3">מוכנים להתחיל?</h2>
-        <p className="text-sm text-muted-foreground mb-4">ההתקנה לוקחת 10 שניות. בלי התחייבות.</p>
-        <Link to="/">
-          <Button size="lg">התקן תוסף חינם</Button>
-        </Link>
+      <section className="relative py-16 px-4 text-center overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-violet-500/5 to-primary/5" />
+        <div className="relative">
+          <h2 className="text-2xl font-bold mb-3">מוכנים להתחיל?</h2>
+          <p className="text-muted-foreground mb-6">ההתקנה לוקחת 10 שניות. בלי התחייבות.</p>
+          <Link to="/">
+            <Button size="lg" className="shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all">
+              <Zap className="w-4 h-4 me-2" />
+              התקן תוסף חינם
+            </Button>
+          </Link>
+        </div>
       </section>
     </div>
   );

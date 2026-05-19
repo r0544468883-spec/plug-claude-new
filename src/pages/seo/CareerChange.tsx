@@ -13,14 +13,17 @@ export default function CareerChange() {
         <link rel="canonical" href="https://www.plug-hr.com/career-change" />
       </Helmet>
 
-      <section className="bg-gradient-to-b from-purple-500/10 to-transparent py-16 px-4">
-        <div className="max-w-3xl mx-auto text-center space-y-4">
-          <h1 className="text-3xl md:text-4xl font-bold">הסבת קריירה? כך תמצא עבודה מהר יותר</h1>
+      <section className="relative overflow-hidden bg-gradient-to-b from-purple-500/10 to-transparent py-20 px-4">
+        <div className="absolute top-10 start-10 w-72 h-72 bg-amber-500/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-10 end-20 w-56 h-56 bg-rose-500/15 rounded-full blur-3xl animate-pulse [animation-delay:1s]" />
+        <div className="relative max-w-3xl mx-auto text-center space-y-4">
+          <span className="inline-block text-xs font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-500 mb-2">Career Change</span>
+          <h1 className="text-3xl md:text-5xl font-bold leading-tight">הסבת קריירה? כך תמצא עבודה מהר יותר</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             סיימת בוטקמפ, קורס, או תואר חדש? פלאג מנתח את מה שאתה כן יודע ומוצא משרות שמתאימות. לא רק את מה שדורשים 5 שנות ניסיון.
           </p>
           <Link to="/">
-            <Button size="lg" className="gap-2 text-base mt-4">התחל חיפוש חכם</Button>
+            <Button size="lg" className="gap-2 text-base mt-4 shadow-lg shadow-primary/25 hover:shadow-xl transition-shadow">התחל חיפוש חכם</Button>
           </Link>
         </div>
       </section>
@@ -35,12 +38,12 @@ export default function CareerChange() {
               { icon: Compass, title: 'לא יודעים לאן לכוון', desc: 'ה-AI של פלאג מציע משרות שלא חשבתם עליהן. UX designer עם רקע בפסיכולוגיה? יש משרות שמחפשות בדיוק את זה.' },
               { icon: Users, title: 'בלי נטוורק בתחום החדש', desc: 'פלאג לא צריך קשרים. הוא מוצא משרות על סמך כישורים, לא על סמך מי שאתה מכיר.' },
             ].map((item, i) => (
-              <Card key={i}>
-                <CardContent className="p-5 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <item.icon className="w-5 h-5 text-purple-500" />
-                    <h3 className="font-bold text-sm">{item.title}</h3>
+              <Card key={i} className="hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                <CardContent className="p-5 space-y-3">
+                  <div className="w-14 h-14 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center mx-auto">
+                    <item.icon className="w-7 h-7" />
                   </div>
+                  <h3 className="font-bold text-sm text-center">{item.title}</h3>
                   <p className="text-sm text-muted-foreground">{item.desc}</p>
                 </CardContent>
               </Card>
@@ -73,7 +76,7 @@ export default function CareerChange() {
         <h2 className="text-xl font-bold mb-3">הקריירה החדשה שלך מתחילה פה</h2>
         <p className="text-sm text-muted-foreground mb-4">התקנה של 10 שניות. חינם. בלי התחייבות.</p>
         <Link to="/">
-          <Button size="lg">התקן פלאג חינם</Button>
+          <Button size="lg" className="shadow-lg shadow-primary/25 hover:shadow-xl transition-shadow">התקן פלאג חינם</Button>
         </Link>
       </section>
     </div>
