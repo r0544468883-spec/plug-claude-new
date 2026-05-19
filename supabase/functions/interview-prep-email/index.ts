@@ -324,18 +324,52 @@ serve(async (req) => {
     });
   }
 
-  // ── Source 2: schedule_tasks table ─────────────────────────────
-  const { data: tasks } = await (supabase as any)
+  // ── Source 2: schedule_tasks table (fuzzy — type match OR keyword match) ──
+  // First: get ALL incomplete tasks for today (any task_type)
+  const { data: allTodayTasks } = await (supabase as any)
     .from("schedule_tasks")
-    .select("id, user_id, title, task_type, due_date, due_time, related_job, related_candidate, source_id, location, meeting_link")
-    .in("task_type", ["interview", "phone_call", "frontal_interview"])
+    .select("id, user_id, title, description, task_type, due_date, due_time, related_job, related_candidate, source_id, location, meeting_link")
     .eq("is_completed", false)
     .gte("due_date", todayStart.split("T")[0])
     .lte("due_date", todayStart.split("T")[0]);
 
-  for (const task of tasks || []) {
+  // Fuzzy keywords for detecting interviews in title/description (Hebrew + English)
+  const INTERVIEW_KEYWORDS = [
+    // Hebrew
+    "ראיון", "ריאיון", "שיחת סינון", "סינון טלפוני", "שיחה טלפונית",
+    "שיחת היכרות", "מיון", "שיחת מיון", "פגישת גיוס", "מרכז הערכה",
+    "שיחה עם", "פגישה עם", "הכנה לראיון", "ראיון טכני", "ראיון HR",
+    "ראיון מנהל", "ראיון צוות", "ראיון סופי", "יום מיונים", "יום הערכה",
+    // English
+    "interview", "phone screen", "screening call", "assessment",
+    "hiring", "recruiter call", "hr call", "technical interview",
+    "onsite", "on-site", "final round", "panel interview",
+    "coding interview", "behavioral interview", "case study",
+    "meet the team", "culture fit",
+  ];
+
+  const PHONE_KEYWORDS = [
+    "טלפון", "טלפוני", "סינון", "phone", "call", "שיחה", "שיחת",
+    "screening", "hr call", "recruiter call", "שיחת היכרות",
+  ];
+
+  for (const task of allTodayTasks || []) {
+    // Check if task is interview by type OR by fuzzy keyword match
+    const exactTypeMatch = ["interview", "phone_call", "frontal_interview"].includes(task.task_type);
+    const searchText = `${task.title || ""} ${task.description || ""} ${task.related_job || ""}`.toLowerCase();
+    const fuzzyMatch = INTERVIEW_KEYWORDS.some(kw => searchText.includes(kw.toLowerCase()));
+
+    if (!exactTypeMatch && !fuzzyMatch) continue;
+
     const key = `${task.user_id}:${task.title || task.related_job || "unknown"}`;
     if (interviewMap.has(key)) continue;
+
+    // Determine phone vs frontal: exact type first, then fuzzy keyword detection
+    let interviewType: "phone" | "frontal" = classifyInterview(task.task_type);
+    if (!exactTypeMatch && fuzzyMatch) {
+      // Fuzzy-detected — check if keywords suggest phone
+      interviewType = PHONE_KEYWORDS.some(kw => searchText.includes(kw.toLowerCase())) ? "phone" : "frontal";
+    }
 
     interviewMap.set(key, {
       userId: task.user_id,
@@ -344,8 +378,47 @@ serve(async (req) => {
       jobTitle: task.related_job || task.title || "",
       companyName: "",
       interviewTime: task.due_time || null,
-      interviewType: classifyInterview(task.task_type),
+      interviewType,
       applicationId: task.source_id || null,
+      source: "schedule",
+      isHebrew: true,
+    });
+  }
+
+  // ── Source 2b: applications with interview stage changed recently ──
+  // Catches cases where stage moved to interview but no reminder/task was created
+  const INTERVIEW_STAGES = [
+    "phone_screen", "hr_interview", "technical", "interview",
+    "manager_interview", "team_interview", "ceo_interview",
+  ];
+  const { data: interviewApps } = await supabase
+    .from("applications")
+    .select("id, candidate_id, job_title, job_company, current_stage, last_stage_change_at")
+    .in("current_stage", INTERVIEW_STAGES);
+
+  for (const app of interviewApps || []) {
+    if (!app.candidate_id) continue;
+    const key = `${app.candidate_id}:${app.job_title || "unknown"}`;
+    if (interviewMap.has(key)) continue;
+
+    // Only include if stage changed in the last 3 days (recently scheduled)
+    // We can't know the exact interview date from just the stage, so this is a "heads up"
+    const changedAt = app.last_stage_change_at ? new Date(app.last_stage_change_at) : null;
+    if (!changedAt) continue;
+    const daysSinceChange = (todayIsrael.getTime() - changedAt.getTime()) / (1000 * 60 * 60 * 24);
+    if (daysSinceChange > 3) continue; // Only recent stage changes
+
+    const isPhone = ["phone_screen", "hr_interview"].includes(app.current_stage);
+
+    interviewMap.set(key, {
+      userId: app.candidate_id,
+      email: "",
+      fullName: "",
+      jobTitle: app.job_title || "",
+      companyName: app.job_company || "",
+      interviewTime: null, // we don't know the exact time from stage alone
+      interviewType: isPhone ? "phone" : "frontal",
+      applicationId: app.id,
       source: "schedule",
       isHebrew: true,
     });
