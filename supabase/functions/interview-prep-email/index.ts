@@ -106,7 +106,7 @@ function buildPrepEmail(interview: InterviewToday): string {
   const baseUrl = "https://www.plug-hr.com";
 
   // Deep links
-  const chatPrepUrl = `${baseUrl}/dashboard?section=chat&prepFor=${encodeURIComponent(interview.companyName || interview.jobTitle)}`;
+  const chatPrepUrl = `${baseUrl}/?section=chat&prepFor=${encodeURIComponent(interview.companyName || interview.jobTitle)}`;
   const interviewPrepUrl = `${baseUrl}/interview-prep${interview.applicationId ? `?app=${interview.applicationId}` : `?company=${encodeURIComponent(interview.companyName)}&role=${encodeURIComponent(interview.jobTitle)}`}`;
   const ctaUrl = isPhone ? chatPrepUrl : interviewPrepUrl;
 
@@ -596,7 +596,7 @@ serve(async (req) => {
           ? `בוא נתכונן ביחד! לחץ כאן להכנה עם PLUG.`
           : `Let's prepare together! Click here to prep with PLUG.`,
         action_url: isPhone
-          ? `/dashboard?section=chat&prepFor=${encodeURIComponent(interview.companyName || interview.jobTitle)}`
+          ? `/?section=chat&prepFor=${encodeURIComponent(interview.companyName || interview.jobTitle)}`
           : `/interview-prep${interview.applicationId ? `?app=${interview.applicationId}` : ""}`,
         is_read: false,
       }).then(() => {});
