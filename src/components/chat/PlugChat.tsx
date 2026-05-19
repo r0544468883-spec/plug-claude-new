@@ -897,11 +897,11 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, onC
   }, []);
 
   return (
-    <div data-tour="plug-chat" className="flex h-full rounded-2xl bg-card overflow-hidden relative">
+    <div data-tour="plug-chat" className="flex h-full bg-card overflow-hidden relative">
       {/* Main Chat Area */}
-      <div ref={chatContainerRef} className="flex flex-col flex-1 min-w-0">
+      <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/80 backdrop-blur-sm">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/80 backdrop-blur-sm flex-shrink-0">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
           <Sparkles className="w-4 h-4 text-primary-foreground" />
         </div>
@@ -921,7 +921,7 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, onC
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
         {showGreeting && (
           <div className="flex flex-col items-center py-4 gap-3">
             <div className="text-center max-w-sm">
@@ -1088,7 +1088,7 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, onC
       </div>
 
       {/* Input area */}
-      <div className="px-3 py-2.5 border-t border-border bg-card/80 backdrop-blur-sm">
+      <div className="px-3 py-2.5 border-t border-border bg-card/80 backdrop-blur-sm flex-shrink-0">
         {/* Attachment indicator */}
         {uploadedAttachmentSummary && (
           <div className="flex items-center gap-2 mb-2 px-1">
