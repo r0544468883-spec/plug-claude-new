@@ -300,7 +300,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
     <div className="w-full space-y-4" dir={isRTL ? 'rtl' : 'ltr'}>
 
       {/* ── HERO: Greeting + Profile + 4 stat chips ── */}
-      <Card className="bg-gradient-to-br from-card to-primary/[0.03] border-border shadow-sm">
+      <Card className="bg-gradient-to-br from-card via-card to-primary/10 border-border shadow-sm">
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex-1 min-w-0">
