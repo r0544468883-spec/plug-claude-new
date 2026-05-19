@@ -66,7 +66,7 @@ export function PlugFAB({ contextPage = 'default', className }: PlugFABProps) {
 
       {/* Chat Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-2xl !p-0 !gap-0 flex flex-col overflow-hidden h-[min(80vh,680px)] [&>button.absolute]:hidden">
+        <DialogContent className="sm:max-w-3xl w-[95vw] !p-0 !gap-0 flex flex-col overflow-hidden h-[min(90vh,800px)] [&>button.absolute]:hidden">
           {/* Hidden title for accessibility — visible header is inside PlugChat */}
           <DialogHeader className="sr-only">
             <DialogTitle>Plug AI Chat</DialogTitle>
