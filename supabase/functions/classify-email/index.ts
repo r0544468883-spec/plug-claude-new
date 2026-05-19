@@ -253,6 +253,27 @@ serve(async (req) => {
         application_id = newApp.id;
         autoCreatedApp = true;
         console.log(`[classify-email] Auto-created application ${newApp.id} for "${companyName}" — ${jobTitle}`);
+
+        // Link all unmatched emails from the same sender to this new application
+        const senderDomain = (from_email || "").split("@")[1]?.toLowerCase() || "";
+        if (senderDomain) {
+          const { data: orphanedEmails } = await supabase
+            .from("application_emails")
+            .select("id")
+            .eq("user_id", userId)
+            .is("application_id", null)
+            .eq("needs_review", true)
+            .ilike("from_email", `%@${senderDomain}`);
+
+          if (orphanedEmails && orphanedEmails.length > 0) {
+            const ids = orphanedEmails.map((e: any) => e.id);
+            await supabase
+              .from("application_emails")
+              .update({ application_id: newApp.id, needs_review: false })
+              .in("id", ids);
+            console.log(`[classify-email] Linked ${ids.length} orphaned emails from @${senderDomain} to new app ${newApp.id}`);
+          }
+        }
       }
     }
 
@@ -313,6 +334,7 @@ serve(async (req) => {
     }
 
     // Save classification to application_emails if email_id provided
+    // If we matched or auto-created an application, clear needs_review
     if (email_id) {
       await supabase
         .from("application_emails")
@@ -326,6 +348,7 @@ serve(async (req) => {
             interview_date: result.interview_date,
             action_required: result.action_required,
           },
+          needs_review: application_id ? false : true,
         })
         .eq("id", email_id)
         .eq("user_id", userId);
