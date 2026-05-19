@@ -50,7 +50,7 @@ type PracticeMode = 'none' | 'text' | 'voice' | 'video';
 
 export default function InterviewPrep() {
   const { language } = useLanguage();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { deductCredits, canAfford, getCost } = useCredits();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -451,6 +451,10 @@ export default function InterviewPrep() {
       </div>
     </div>
   );
+
+  if (authLoading) {
+    return null;
+  }
 
   if (!user) {
     navigate('/');
