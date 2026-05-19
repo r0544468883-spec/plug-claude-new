@@ -82,6 +82,7 @@ import Extension from "./pages/Extension";
 import Admin from "./pages/Admin";
 import RecordingStudio from "./pages/RecordingStudio";
 import Invite from "./pages/Invite";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
@@ -143,6 +144,7 @@ const App = () => (
                   <Route path="/admin" element={<Admin />} />
                   <Route path="/recording-studio" element={<RecordingStudio />} />
                   <Route path="/invite/:code" element={<Invite />} />
+                  <Route path="/privacy" element={<PrivacyPolicy />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
