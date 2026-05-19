@@ -125,7 +125,7 @@ const Credits = () => {
               </div>
 
               <div className="grid sm:grid-cols-2 gap-6 mb-8">
-                {/* Daily Fuel */}
+                {/* Daily Credits */}
                 <motion.div 
                   whileHover={{ scale: 1.02 }}
                   className="bg-gradient-to-br from-[#00FF9D]/10 to-[#00FF9D]/5 rounded-2xl p-6 border border-[#00FF9D]/20"
@@ -149,7 +149,7 @@ const Credits = () => {
                   </div>
                 </motion.div>
 
-                {/* Permanent Fuel */}
+                {/* Permanent Credits */}
                 <motion.div 
                   whileHover={{ scale: 1.02 }}
                   className="bg-gradient-to-br from-[#B794F4]/10 to-[#B794F4]/5 rounded-2xl p-6 border border-[#B794F4]/20"

@@ -308,7 +308,7 @@ export function TourGuideFAB({ onNavigate, onStartTour }: TourGuideFABProps) {
           tools: [
             { icon: '📊', label: isRTL ? 'Pipeline Analytics' : 'Pipeline Analytics', desc: isRTL ? 'Funnel + Time-to-Hire + מקורות' : 'Funnel + Time-to-Hire + sources', section: 'hr-tools' as DashboardSection },
             { icon: '⭐', label: isRTL ? 'סקרי מועמדים' : 'Candidate Surveys', desc: isRTL ? 'NPS + חוויית מועמד' : 'NPS + candidate experience', section: 'hr-tools' as DashboardSection },
-            { icon: '🎁', label: isRTL ? 'חבר מביא חבר' : 'Referral Program', desc: isRTL ? 'הרוויח Fuel על הפניות' : 'Earn Fuel for referrals', section: 'hr-tools' as DashboardSection, isNew: true },
+            { icon: '🎁', label: isRTL ? 'חבר מביא חבר' : 'Referral Program', desc: isRTL ? 'הרוויח קרדיטים על הפניות' : 'Earn Credits for referrals', section: 'hr-tools' as DashboardSection, isNew: true },
           ],
         },
         {

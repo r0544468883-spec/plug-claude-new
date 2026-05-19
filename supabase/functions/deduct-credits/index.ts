@@ -140,13 +140,13 @@ serve(async (req) => {
     if (dailyDeduct > 0) {
       transactions.push({
         user_id: user.id, amount: -dailyDeduct, credit_type: 'daily',
-        action_type: action, description: `Used ${dailyDeduct} daily fuel for ${action}`,
+        action_type: action, description: `Used ${dailyDeduct} daily credits for ${action}`,
       });
     }
     if (permanentDeduct > 0) {
       transactions.push({
         user_id: user.id, amount: -permanentDeduct, credit_type: 'permanent',
-        action_type: action, description: `Used ${permanentDeduct} permanent fuel for ${action}`,
+        action_type: action, description: `Used ${permanentDeduct} permanent credits for ${action}`,
       });
     }
     if (transactions.length > 0) {

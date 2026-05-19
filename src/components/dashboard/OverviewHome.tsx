@@ -434,7 +434,7 @@ export function OverviewHome({ onNavigate, onShowResumeDialog: _onShowResumeDial
           <CardContent className="p-3 sm:p-4 flex items-center gap-3">
             <span className="text-3xl">🎁</span>
             <div className="flex-1">
-              <p className="font-semibold text-sm">{isRTL ? 'הזמן חברים וקבל Fuel' : 'Invite friends, earn Fuel'}</p>
+              <p className="font-semibold text-sm">{isRTL ? 'הזמן חברים וקבל קרדיטים' : 'Invite friends, earn Credits'}</p>
               <p className="text-xs text-muted-foreground">{isRTL ? '10 ⚡ על כל חבר שנרשם' : '10 ⚡ per signup'}</p>
             </div>
             <Button size="sm" variant="outline" className="gap-1" onClick={() => navigate('/referrals')}>

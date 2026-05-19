@@ -13,10 +13,10 @@ import { Copy, Share2, Users, Zap, Gift, CheckCircle2, Loader2, Trophy, Target, 
 // Milestones — tiered rewards
 const MILESTONES = [
   { count: 1, fuel: 0, label: { he: 'שיתוף ראשון', en: 'First Share' }, icon: '🌱', unlocks: { he: 'תחילת הדרך', en: 'Getting started' } },
-  { count: 3, fuel: 25, label: { he: 'חבר מביא חבר', en: 'Friend Magnet' }, icon: '🔥', unlocks: { he: '+25 Fuel בונוס', en: '+25 Fuel bonus' } },
+  { count: 3, fuel: 25, label: { he: 'חבר מביא חבר', en: 'Friend Magnet' }, icon: '🔥', unlocks: { he: '+25 קרדיטים בונוס', en: '+25 Credits bonus' } },
   { count: 5, fuel: 50, label: { he: 'שגריר PLUG', en: 'PLUG Ambassador' }, icon: '⭐', unlocks: { he: 'ניתוח שכר מתקדם', en: 'Salary analysis' } },
-  { count: 10, fuel: 100, label: { he: 'מגייס כוכב', en: 'Star Recruiter' }, icon: '🏆', unlocks: { he: 'פיצ\'רים בטא + 100 Fuel', en: 'Beta features + 100 Fuel' } },
-  { count: 25, fuel: 250, label: { he: 'אגדת PLUG', en: 'PLUG Legend' }, icon: '👑', unlocks: { he: 'גישה VIP + 250 Fuel', en: 'VIP access + 250 Fuel' } },
+  { count: 10, fuel: 100, label: { he: 'מגייס כוכב', en: 'Star Recruiter' }, icon: '🏆', unlocks: { he: 'פיצ\'רים בטא + 100 קרדיטים', en: 'Beta features + 100 Credits' } },
+  { count: 25, fuel: 250, label: { he: 'אגדת PLUG', en: 'PLUG Legend' }, icon: '👑', unlocks: { he: 'גישה VIP + 250 קרדיטים', en: 'VIP access + 250 Credits' } },
 ];
 
 const STATUS_LABELS: Record<string, { en: string; he: string }> = {

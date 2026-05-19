@@ -609,7 +609,7 @@ serve(async (req) => {
         description
       });
 
-      console.log(`[award-credits] Awarded ${amountToAward} fuel + ${xpToAward} XP to ${user.id} for ${actionType}`);
+      console.log(`[award-credits] Awarded ${amountToAward} credits + ${xpToAward} XP to ${user.id} for ${actionType}`);
 
       return new Response(
         JSON.stringify({

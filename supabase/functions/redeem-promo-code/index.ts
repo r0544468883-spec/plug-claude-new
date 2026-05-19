@@ -165,7 +165,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         creditsAwarded,
-        message: promoCode.type === 'unlimited' ? 'Unlimited fuel activated! 🚀' : `${creditsAwarded} fuel added!`
+        message: promoCode.type === 'unlimited' ? 'Unlimited credits activated! 🚀' : `${creditsAwarded} credits added!`
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
