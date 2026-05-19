@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { VoicePracticeSession } from '@/components/interview/VoicePracticeSession';
 import { VideoPracticeSession } from '@/components/interview/VideoPracticeSession';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -53,11 +53,20 @@ export default function InterviewPrep() {
   const { user } = useAuth();
   const { deductCredits, canAfford, getCost } = useCredits();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isRTL = language === 'he';
 
   const [activeTab, setActiveTab] = useState('practice');
   const [jobTitle, setJobTitle] = useState('');
   const [companyName, setCompanyName] = useState('');
+
+  // Pre-fill from URL query params (e.g. from interview prep email)
+  useEffect(() => {
+    const qCompany = searchParams.get('company');
+    const qRole = searchParams.get('role');
+    if (qCompany && !companyName) setCompanyName(qCompany);
+    if (qRole && !jobTitle) setJobTitle(qRole);
+  }, [searchParams]);
   const [jobDescription, setJobDescription] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
