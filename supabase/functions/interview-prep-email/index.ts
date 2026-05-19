@@ -57,7 +57,7 @@ async function sendEmail(
 ): Promise<void> {
   const subjectEncoded = `=?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`;
   const rawMessage = [
-    `From: PLUG <${fromEmail}>`,
+    `From: =?UTF-8?B?${btoa(unescape(encodeURIComponent("פלאג")))}?= <${fromEmail}>`,
     `To: ${toEmail}`,
     `Subject: ${subjectEncoded}`,
     `MIME-Version: 1.0`,
@@ -101,11 +101,13 @@ function classifyInterview(rawType: string | null | undefined): "phone" | "front
 function buildPrepEmail(interview: InterviewToday): string {
   const isPhone = interview.interviewType === "phone";
   const isHe = interview.isHebrew;
-  const dir = isHe ? "rtl" : "ltr";
+
+  // Always use production URL — never Vercel preview
+  const baseUrl = "https://www.plug-hr.com";
 
   // Deep links
-  const chatPrepUrl = `${APP_URL}/dashboard?section=chat&prepFor=${encodeURIComponent(interview.companyName || interview.jobTitle)}`;
-  const interviewPrepUrl = `${APP_URL}/interview-prep${interview.applicationId ? `?app=${interview.applicationId}` : `?company=${encodeURIComponent(interview.companyName)}&role=${encodeURIComponent(interview.jobTitle)}`}`;
+  const chatPrepUrl = `${baseUrl}/dashboard?section=chat&prepFor=${encodeURIComponent(interview.companyName || interview.jobTitle)}`;
+  const interviewPrepUrl = `${baseUrl}/interview-prep${interview.applicationId ? `?app=${interview.applicationId}` : `?company=${encodeURIComponent(interview.companyName)}&role=${encodeURIComponent(interview.jobTitle)}`}`;
   const ctaUrl = isPhone ? chatPrepUrl : interviewPrepUrl;
 
   // Time display
@@ -133,23 +135,23 @@ function buildPrepEmail(interview: InterviewToday): string {
 
   const prepMessage = isPhone
     ? (isHe
-        ? "בוא נתכונן ביחד לשיחה! PLUG יכול לעזור לך עם נקודות מפתח, שאלות צפויות, ותשובות מנצחות."
+        ? "בוא נתכונן ביחד לשיחה! פלאג יעזור לך עם נקודות מפתח, שאלות צפויות, ותשובות מנצחות."
         : "Let's prepare for the call together! PLUG can help with key talking points, expected questions, and winning answers.")
     : (isHe
-        ? "בוא נתכונן ביחד לראיון! PLUG יכין לך שאלות מותאמות, טיפים לחברה הספציפית, ותרגול תשובות."
+        ? "בוא נתכונן ביחד לראיון! פלאג יכין לך שאלות מותאמות, טיפים לחברה הספציפית, ותרגול תשובות."
         : "Let's prepare for the interview! PLUG will generate tailored questions, company-specific tips, and answer practice.");
 
   const ctaText = isPhone
-    ? (isHe ? "התכונן לשיחה עם PLUG" : "Prepare for the call with PLUG")
-    : (isHe ? "התכונן לראיון עם PLUG" : "Prepare for interview with PLUG");
+    ? (isHe ? "← התכונן לשיחה עם פלאג" : "Prepare for the call with PLUG →")
+    : (isHe ? "← התכונן לראיון עם פלאג" : "Prepare for interview with PLUG →");
 
   const footerText = isHe
     ? "קיבלת מייל זה כי זוהה ראיון עבודה ביומן שלך. בהצלחה!"
     : "You received this email because an interview was detected in your schedule. Good luck!";
 
   const tipTitle = isPhone
-    ? (isHe ? "טיפ מהיר לשיחה טלפונית" : "Quick phone screen tip")
-    : (isHe ? "טיפ מהיר לראיון" : "Quick interview tip");
+    ? (isHe ? "💡 טיפ מהיר לשיחה טלפונית" : "Quick phone screen tip")
+    : (isHe ? "💡 טיפ מהיר לראיון" : "Quick interview tip");
 
   const tipContent = isPhone
     ? (isHe
@@ -159,35 +161,41 @@ function buildPrepEmail(interview: InterviewToday): string {
         ? "הכירו את החברה — אתר, מוצר, חדשות אחרונות. הכינו סיפורים מניסיון העבר שמדגימים את הכישורים הרלוונטיים (שיטת STAR)."
         : "Research the company — website, product, recent news. Prepare stories from past experience that demonstrate relevant skills (STAR method).");
 
+  // Hebrew emails are always RTL; English LTR
+  const dir = isHe ? "rtl" : "ltr";
+  const align = isHe ? "right" : "left";
+  const brandName = isHe ? "פלאג" : "PLUG";
+  const subLabel = isHe ? "הכנה לראיון" : "Interview Prep";
+
   return `<!DOCTYPE html>
 <html dir="${dir}" lang="${isHe ? "he" : "en"}">
 <head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
-<body style="margin:0;padding:0;background:#0A1128;font-family:'Segoe UI',system-ui,sans-serif;color:#e2e8f0;">
-  <div style="max-width:560px;margin:32px auto;background:#0f1f3d;border-radius:16px;border:1px solid #1e3a5f;overflow:hidden;">
+<body dir="${dir}" style="margin:0;padding:0;background:#0A1128;font-family:'Segoe UI',system-ui,sans-serif;color:#e2e8f0;direction:${dir};text-align:${align};">
+  <div dir="${dir}" style="max-width:560px;margin:32px auto;background:#0f1f3d;border-radius:16px;border:1px solid #1e3a5f;overflow:hidden;direction:${dir};text-align:${align};">
 
     <!-- Header -->
-    <div style="background:linear-gradient(135deg,#0a1840,#0d2855);padding:28px 32px;border-bottom:1px solid #1e3a5f;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span style="background:#00FF9D;color:#0A1128;font-weight:900;font-size:18px;padding:4px 10px;border-radius:8px;">PLUG</span>
-        <span style="color:#8899aa;font-size:13px;">Interview Prep</span>
+    <div dir="${dir}" style="background:linear-gradient(135deg,#0a1840,#0d2855);padding:28px 32px;border-bottom:1px solid #1e3a5f;text-align:${align};">
+      <div style="display:flex;align-items:center;gap:10px;direction:${dir};">
+        <span style="background:#00FF9D;color:#0A1128;font-weight:900;font-size:18px;padding:4px 10px;border-radius:8px;">${brandName}</span>
+        <span style="color:#8899aa;font-size:13px;">${subLabel}</span>
       </div>
-      <h1 style="margin:16px 0 4px;font-size:22px;color:#ffffff;">${headline}</h1>
-      <p style="margin:0;color:#00FF9D;font-size:15px;font-weight:600;">${subtitle}</p>
+      <h1 dir="${dir}" style="margin:16px 0 4px;font-size:22px;color:#ffffff;text-align:${align};">${headline}</h1>
+      <p dir="${dir}" style="margin:0;color:#00FF9D;font-size:15px;font-weight:600;text-align:${align};">${subtitle}</p>
     </div>
 
     <!-- Prep message -->
-    <div style="padding:24px 32px;">
-      <p style="color:#cbd5e1;font-size:14px;line-height:1.7;margin:0 0 20px;">${prepMessage}</p>
+    <div dir="${dir}" style="padding:24px 32px;text-align:${align};">
+      <p dir="${dir}" style="color:#cbd5e1;font-size:14px;line-height:1.7;margin:0 0 20px;text-align:${align};">${prepMessage}</p>
 
       <!-- Quick tip box -->
-      <div style="background:#0a1840;border:1px solid #1e3a5f;border-radius:12px;padding:16px 20px;margin-bottom:24px;">
-        <p style="color:#00FF9D;font-weight:700;font-size:13px;margin:0 0 8px;">${tipTitle}</p>
-        <p style="color:#94a3b8;font-size:13px;line-height:1.6;margin:0;">${tipContent}</p>
+      <div dir="${dir}" style="background:#0a1840;border:1px solid #1e3a5f;border-radius:12px;padding:16px 20px;margin-bottom:24px;text-align:${align};">
+        <p dir="${dir}" style="color:#00FF9D;font-weight:700;font-size:13px;margin:0 0 8px;text-align:${align};">${tipTitle}</p>
+        <p dir="${dir}" style="color:#94a3b8;font-size:13px;line-height:1.6;margin:0;text-align:${align};">${tipContent}</p>
       </div>
 
       <!-- CTA button -->
       <div style="text-align:center;">
-        <a href="${ctaUrl}" style="display:inline-block;background:#00FF9D;color:#0A1128;font-weight:700;padding:14px 36px;border-radius:50px;text-decoration:none;font-size:15px;">${ctaText} →</a>
+        <a href="${ctaUrl}" style="display:inline-block;background:#00FF9D;color:#0A1128;font-weight:700;padding:14px 36px;border-radius:50px;text-decoration:none;font-size:15px;">${ctaText}</a>
       </div>
     </div>
 
@@ -256,12 +264,12 @@ serve(async (req) => {
 
     // Send both variants as test
     await sendEmail(accessToken, SYSTEM_SENDER_EMAIL, testTo,
-      "PLUG — יש לך שיחה טלפונית היום! (דוגמה)",
+      "פלאג — יש לך שיחה טלפונית היום! (דוגמה)",
       buildPrepEmail(sample)
     );
     const frontalSample = { ...sample, interviewType: "frontal" as const, interviewTime: "10:00" };
     await sendEmail(accessToken, SYSTEM_SENDER_EMAIL, testTo,
-      "PLUG — יש לך ראיון עבודה היום! (דוגמה)",
+      "פלאג — יש לך ראיון עבודה היום! (דוגמה)",
       buildPrepEmail(frontalSample)
     );
 
@@ -558,7 +566,7 @@ serve(async (req) => {
       const isHe = interview.isHebrew;
 
       const subject = isHe
-        ? `PLUG — ${isPhone ? "יש לך שיחה טלפונית" : "יש לך ראיון עבודה"} היום${interview.companyName ? ` ב-${interview.companyName}` : ""}!`
+        ? `פלאג — ${isPhone ? "יש לך שיחה טלפונית" : "יש לך ראיון עבודה"} היום${interview.companyName ? ` ב-${interview.companyName}` : ""}!`
         : `PLUG — You have a ${isPhone ? "phone screen" : "job interview"} today${interview.companyName ? ` at ${interview.companyName}` : ""}!`;
 
       await sendEmail(
