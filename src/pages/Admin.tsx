@@ -109,9 +109,12 @@ export default function Admin() {
       supabase.from('email_oauth_tokens').select('*', { count: 'exact', head: true }),
     ]);
 
-    // Extension users: those with job_history entries
-    const { data: extUsers } = await (supabase as any).from('job_history').select('user_id').limit(1000);
-    const uniqueExtUsers = new Set((extUsers || []).map((r: any) => r.user_id));
+    // Extension users: those with job_history entries (may fail if RLS restricts access)
+    let uniqueExtUsers = new Set<string>();
+    try {
+      const { data: extUsers } = await (supabase as any).from('job_history').select('user_id').limit(1000);
+      uniqueExtUsers = new Set((extUsers || []).map((r: any) => r.user_id));
+    } catch { /* RLS may block — fall back to 0 */ }
 
     // Active this week: profiles with updated_at in last 7 days (approximation)
     const { count: activeThisWeek } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('updated_at', weekAgo);
@@ -147,9 +150,12 @@ export default function Admin() {
     const { data: gmailTokens } = await supabase.from('email_oauth_tokens').select('user_id');
     const gmailSet = new Set((gmailTokens || []).map((r: any) => r.user_id));
 
-    // Get extension users
-    const { data: extHistory } = await (supabase as any).from('job_history').select('user_id').limit(5000);
-    const extSet = new Set((extHistory || []).map((r: any) => r.user_id));
+    // Get extension users (may fail if RLS restricts)
+    let extSet = new Set<string>();
+    try {
+      const { data: extHistory } = await (supabase as any).from('job_history').select('user_id').limit(5000);
+      extSet = new Set((extHistory || []).map((r: any) => r.user_id));
+    } catch { /* RLS may block */ }
 
     // Get application counts
     const { data: apps } = await supabase.from('applications').select('user_id');
@@ -220,13 +226,12 @@ export default function Admin() {
     const checks: HealthCheck[] = [];
     const now = new Date().toISOString();
 
-    // 1. AI (check if we can reach the edge function)
+    // 1. AI (use daily-health-check which validates the Anthropic key server-side)
     try {
-      const { data, error } = await supabase.functions.invoke('ai-proxy', {
-        body: { messages: [{ role: 'user', content: 'ping' }], maxTokens: 5 },
-        headers: { 'X-Plug-Key': 'health-check' },
-      });
-      checks.push({ name: 'AI (Anthropic)', status: error ? 'error' : 'ok', details: error ? String(error) : 'Responding', checked_at: now });
+      const { data, error } = await supabase.functions.invoke('daily-health-check');
+      if (error) throw error;
+      const aiCheck = (data?.checks || []).find((c: any) => c.name === 'AI Credits');
+      checks.push({ name: 'AI (Anthropic)', status: aiCheck?.status || 'error', details: aiCheck?.detail || 'No response', checked_at: now });
     } catch (e: any) {
       checks.push({ name: 'AI (Anthropic)', status: 'error', details: e.message, checked_at: now });
     }
@@ -248,9 +253,13 @@ export default function Admin() {
     const { count: linkedinToday } = await supabase.from('jobs').select('*', { count: 'exact', head: true }).eq('external_source', 'linkedin').gte('created_at', todayStart);
     checks.push({ name: 'LinkedIn Scraping', status: (linkedinToday || 0) > 0 ? 'ok' : 'warning', details: `${linkedinToday || 0} jobs today`, checked_at: now });
 
-    // 6. Extension
-    const { count: extToday } = await (supabase as any).from('job_history').select('*', { count: 'exact', head: true }).gte('created_at', todayStart);
-    checks.push({ name: 'Extension Activity', status: (extToday || 0) > 0 ? 'ok' : 'warning', details: `${extToday || 0} events today`, checked_at: now });
+    // 6. Extension (job_history may be RLS-restricted)
+    try {
+      const { count: extToday } = await (supabase as any).from('job_history').select('*', { count: 'exact', head: true }).gte('created_at', todayStart);
+      checks.push({ name: 'Extension Activity', status: (extToday || 0) > 0 ? 'ok' : 'warning', details: `${extToday || 0} events today`, checked_at: now });
+    } catch {
+      checks.push({ name: 'Extension Activity', status: 'warning', details: 'Cannot query job_history (RLS)', checked_at: now });
+    }
 
     // 7. Clarity (just check if snippet is present — always ok since we embed it)
     checks.push({ name: 'Microsoft Clarity', status: 'ok', details: 'Snippet embedded', checked_at: now });
