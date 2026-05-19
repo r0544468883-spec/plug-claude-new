@@ -459,6 +459,64 @@ serve(async (req) => {
             }
 
             stageUpdated = true;
+
+            // ── Auto-add to calendar (schedule_tasks + interview_reminders) ──
+            if (result.classification === "interview_invitation" && application_id) {
+              const interviewDateStr = result.interview_date || null;
+              const companyForCal = companyName || result.company_name || "";
+              const titleForCal = jobTitle || result.job_title || "";
+
+              // Determine interview type from email content
+              const emailText = `${subject || ""} ${body_text || ""}`.toLowerCase();
+              const isPhone = /טלפון|טלפוני|סינון|phone|call|screening|שיחה/.test(emailText);
+              const taskType = isPhone ? "phone_call" : "interview";
+
+              // Parse date for due_date / due_time
+              let dueDate: string | null = null;
+              let dueTime: string | null = null;
+              if (interviewDateStr) {
+                try {
+                  const d = new Date(interviewDateStr);
+                  if (!isNaN(d.getTime())) {
+                    dueDate = d.toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" }); // YYYY-MM-DD
+                    const hours = d.toLocaleTimeString("he-IL", { timeZone: "Asia/Jerusalem", hour: "2-digit", minute: "2-digit", hour12: false });
+                    if (hours !== "00:00") dueTime = hours;
+                  }
+                } catch { /* ignore parse errors */ }
+              }
+
+              // Create schedule_task (shows in calendar view)
+              await (supabase as any).from("schedule_tasks").upsert({
+                user_id: userId,
+                title: `${isPhone ? "📞 שיחה טלפונית" : "🏢 ראיון עבודה"} — ${titleForCal}${companyForCal ? ` ב-${companyForCal}` : ""}`,
+                task_type: taskType,
+                due_date: dueDate || new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" }),
+                due_time: dueTime,
+                related_job: titleForCal,
+                related_candidate: companyForCal,
+                source: "application",
+                source_id: application_id,
+                is_completed: false,
+                priority: "high",
+              }, { onConflict: "source,source_id" }).then(({ error: taskErr }: any) => {
+                if (taskErr) console.error(`[classify-email] schedule_task insert failed: ${taskErr.message}`);
+                else console.log(`[classify-email] Created schedule_task for interview at ${companyForCal} on ${dueDate}`);
+              });
+
+              // Create interview_reminder (used by interview-prep-email)
+              if (interviewDateStr) {
+                await (supabase as any).from("interview_reminders").insert({
+                  application_id,
+                  interview_date: interviewDateStr,
+                  interview_type: isPhone ? "phone" : "general",
+                  notes: `זוהה אוטומטית ממייל: "${subject}"`,
+                  reminder_sent: false,
+                }).then(({ error: remErr }: any) => {
+                  if (remErr) console.log(`[classify-email] interview_reminder insert failed (may be duplicate): ${remErr.message}`);
+                  else console.log(`[classify-email] Created interview_reminder for ${interviewDateStr}`);
+                });
+              }
+            }
           }
           // For 0.60-0.84: return suggestion but don't auto-update
         }
