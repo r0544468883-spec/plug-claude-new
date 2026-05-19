@@ -298,6 +298,16 @@ serve(async (req) => {
       testMode = body?.test === true;
     } catch { /* no body or not JSON */ }
 
+    // ── Pause dates: skip auto-posting on these days ──
+    const PAUSED_DATES = ["2026-05-18"];
+    const todayStr = new Date().toISOString().slice(0, 10);
+    if (!testMode && PAUSED_DATES.includes(todayStr)) {
+      return new Response(
+        JSON.stringify({ ok: true, skipped: true, reason: `Paused for ${todayStr}` }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
     // Pick today's topic (rotate through all 12)
     const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / (24 * 60 * 60 * 1000));
     const topicIndex = dayOfYear % TOPIC_FETCHERS.length;

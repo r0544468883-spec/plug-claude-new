@@ -5,7 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MapPin, Clock, DollarSign, Building2, ExternalLink, Heart, Users, Navigation, Layers, GraduationCap, Briefcase, Zap, Globe, X, CheckCheck, Send } from 'lucide-react';
+import { MapPin, Clock, DollarSign, Building2, ExternalLink, Heart, Users, Navigation, Layers, GraduationCap, Briefcase, Zap, Globe, X, CheckCheck, Send, Flame, Sparkles } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { he, enUS } from 'date-fns/locale';
@@ -175,14 +176,36 @@ export function JobCard({ job, onViewDetails, onApply, onDismiss, onMarkApplied,
   const expLevelSlug = job.experience_level?.slug;
 
   return (
-    <Card className="bg-card border-border hover:border-primary/50 transition-colors plug-card-hover cursor-pointer group relative">
-      {displayMatchScore > 0 && (
-        <div className="absolute top-2 start-2 z-10">
-          <Badge className={`gap-1 shadow-lg ${displayMatchScore >= 85 ? 'bg-green-500 text-white' : displayMatchScore >= 60 ? 'bg-yellow-500 text-white' : 'bg-muted text-muted-foreground'}`}>
+    <Card className={cn(
+      'bg-card border-border transition-all duration-200 cursor-pointer group relative',
+      'hover:shadow-lg hover:shadow-primary/5 hover:border-primary/50 hover:-translate-y-0.5',
+      displayMatchScore >= 85 && 'border-s-2 border-s-green-500',
+      displayMatchScore >= 60 && displayMatchScore < 85 && 'border-s-2 border-s-yellow-500',
+    )}>
+      {/* Top-start badges: Match + New/Hot */}
+      <div className="absolute top-2 start-2 z-10 flex items-center gap-1.5">
+        {displayMatchScore > 0 && (
+          <Badge className={cn(
+            'gap-1 shadow-lg font-bold',
+            displayMatchScore >= 85 ? 'bg-green-500 text-white' :
+            displayMatchScore >= 60 ? 'bg-yellow-500 text-white' :
+            'bg-muted text-muted-foreground'
+          )}>
+            {displayMatchScore >= 85 && <Sparkles className="w-3 h-3" />}
             {displayMatchScore}% {isHebrew ? 'התאמה' : 'Match'}
           </Badge>
-        </div>
-      )}
+        )}
+        {(() => {
+          const hoursAgo = (Date.now() - new Date(job.created_at).getTime()) / (1000 * 60 * 60);
+          if (hoursAgo <= 24) return (
+            <Badge className="gap-1 bg-orange-500 text-white shadow-lg text-[10px] animate-pulse">
+              <Flame className="w-3 h-3" />
+              {isHebrew ? 'חדש' : 'New'}
+            </Badge>
+          );
+          return null;
+        })()}
+      </div>
 
       {isCommunityShared && (
         <div className="absolute top-2 end-2 z-10">

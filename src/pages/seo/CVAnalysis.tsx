@@ -19,7 +19,7 @@ export default function CVAnalysis() {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             העלו את ה-CV שלכם. תוך 8 שניות תקבלו רשימה מדויקת של מה לתקן, מה חסר, ואיזה מילות מפתח להוסיף כדי לעבור את ה-ATS.
           </p>
-          <Link to="/auth">
+          <Link to="/">
             <Button size="lg" className="gap-2 text-base mt-4">
               <FileText className="w-4 h-4" />
               בדוק את ה-CV שלי
@@ -77,7 +77,7 @@ export default function CVAnalysis() {
       <section className="py-12 px-4 text-center">
         <h2 className="text-xl font-bold mb-3">מוכנים לשדרג את ה-CV?</h2>
         <p className="text-sm text-muted-foreground mb-4">העלו קובץ ותקבלו ניתוח תוך שניות. חינם.</p>
-        <Link to="/auth">
+        <Link to="/">
           <Button size="lg">בדוק את ה-CV שלי</Button>
         </Link>
       </section>

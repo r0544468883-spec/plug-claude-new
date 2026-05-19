@@ -49,7 +49,7 @@ export default function SuccessStories() {
               : 'Real people who found jobs with PLUG. Your story could be next.'}
           </p>
           <div className="flex gap-3 justify-center pt-2">
-            <Link to="/auth">
+            <Link to="/">
               <Button>{isHebrew ? 'התחל/י עכשיו — חינם' : 'Get Started — Free'}</Button>
             </Link>
           </div>
@@ -133,7 +133,7 @@ export default function SuccessStories() {
             ? 'תוסף AI חינמי שמנתח לך כל משרה בלינקדאין'
             : 'Free AI extension that analyzes every LinkedIn job for you'}
         </p>
-        <Link to="/auth">
+        <Link to="/">
           <Button size="lg">{isHebrew ? 'הצטרף/י חינם' : 'Join Free'}</Button>
         </Link>
       </div>

@@ -23,7 +23,7 @@ export default function AIJobSearch() {
             פלאג הוא תוסף כרום שמנתח כל משרה בלינקדאין ובאתרי דרושים, נותן לך ציון התאמה אישי, ומגיש בשבילך. חינם לגמרי.
           </p>
           <div className="flex gap-3 justify-center pt-4">
-            <Link to="/auth">
+            <Link to="/">
               <Button size="lg" className="gap-2 text-base">התקן תוסף חינם</Button>
             </Link>
             <Link to="/success-stories">
@@ -126,7 +126,7 @@ export default function AIJobSearch() {
       <section className="py-12 px-4 text-center">
         <h2 className="text-xl font-bold mb-3">מוכנים להתחיל?</h2>
         <p className="text-sm text-muted-foreground mb-4">ההתקנה לוקחת 10 שניות. בלי התחייבות.</p>
-        <Link to="/auth">
+        <Link to="/">
           <Button size="lg">התקן תוסף חינם</Button>
         </Link>
       </section>

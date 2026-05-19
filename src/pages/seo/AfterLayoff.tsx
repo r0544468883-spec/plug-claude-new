@@ -19,7 +19,7 @@ export default function AfterLayoff() {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             גל הפיטורים פגע בהרבה אנשים טובים. פלאג נבנה בדיוק בשביל הרגע הזה. כלי AI חינמי שעושה את העבודה המלוכלכת של חיפוש עבודה בשבילך.
           </p>
-          <Link to="/auth">
+          <Link to="/">
             <Button size="lg" className="gap-2 text-base mt-4">התחל עכשיו, חינם</Button>
           </Link>
         </div>
@@ -73,7 +73,7 @@ export default function AfterLayoff() {
       <section className="py-12 px-4 text-center">
         <h2 className="text-xl font-bold mb-3">החיפוש מתחיל פה</h2>
         <p className="text-sm text-muted-foreground mb-4">10 שניות התקנה. חינם. בלי התחייבות. בהצלחה.</p>
-        <Link to="/auth">
+        <Link to="/">
           <Button size="lg">התקן פלאג חינם</Button>
         </Link>
       </section>

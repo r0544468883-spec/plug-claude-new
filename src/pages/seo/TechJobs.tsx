@@ -19,7 +19,7 @@ export default function TechJobs() {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             פלאג מנתח משרות פיתוח, QA, דאטה, DevOps ועוד. ציון התאמה אישי לכל משרה. הגשה אוטומטית. חינם.
           </p>
-          <Link to="/auth">
+          <Link to="/">
             <Button size="lg" className="gap-2 text-base mt-4">התחל חיפוש חכם</Button>
           </Link>
         </div>
@@ -70,7 +70,7 @@ export default function TechJobs() {
       <section className="py-12 px-4 text-center">
         <h2 className="text-xl font-bold mb-3">מוכנים למצוא את המשרה הבאה?</h2>
         <p className="text-sm text-muted-foreground mb-4">חינם. 10 שניות התקנה. בלי התחייבות.</p>
-        <Link to="/auth">
+        <Link to="/">
           <Button size="lg">התקן פלאג חינם</Button>
         </Link>
       </section>

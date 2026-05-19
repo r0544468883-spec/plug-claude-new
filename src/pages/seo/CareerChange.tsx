@@ -19,7 +19,7 @@ export default function CareerChange() {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             סיימת בוטקמפ, קורס, או תואר חדש? פלאג מנתח את מה שאתה כן יודע ומוצא משרות שמתאימות. לא רק את מה שדורשים 5 שנות ניסיון.
           </p>
-          <Link to="/auth">
+          <Link to="/">
             <Button size="lg" className="gap-2 text-base mt-4">התחל חיפוש חכם</Button>
           </Link>
         </div>
@@ -72,7 +72,7 @@ export default function CareerChange() {
       <section className="py-12 px-4 text-center">
         <h2 className="text-xl font-bold mb-3">הקריירה החדשה שלך מתחילה פה</h2>
         <p className="text-sm text-muted-foreground mb-4">התקנה של 10 שניות. חינם. בלי התחייבות.</p>
-        <Link to="/auth">
+        <Link to="/">
           <Button size="lg">התקן פלאג חינם</Button>
         </Link>
       </section>
