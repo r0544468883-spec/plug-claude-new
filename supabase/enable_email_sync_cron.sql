@@ -48,3 +48,24 @@ SELECT cron.schedule(
   ) AS request_id;
   $$
 );
+
+-- Interview prep email — daily at 08:30 Israel time (05:30 UTC)
+-- Sends prep reminders to users with interviews scheduled for today
+DO $$
+BEGIN
+  PERFORM cron.unschedule('interview-prep-email');
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
+
+SELECT cron.schedule(
+  'interview-prep-email',
+  '30 5 * * *',
+  $$
+  SELECT net.http_post(
+    url := 'https://llrzeexnzgknpwcxdxpm.supabase.co/functions/v1/interview-prep-email',
+    headers := '{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxscnplZXhuemdrbnB3Y3hkeHBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczMjcxMDA4NCwiZXhwIjoyMDQ4Mjg2MDg0fQ.R6IM8MFIoLKynJMBqpGxNt-Z5Kk1LsBnp1LjAf53xSw"}'::jsonb,
+    body := '{}'::jsonb
+  ) AS request_id;
+  $$
+);
