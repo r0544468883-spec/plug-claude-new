@@ -66,20 +66,13 @@ export function PlugFAB({ contextPage = 'default', className }: PlugFABProps) {
 
       {/* Chat Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0">
-          <DialogHeader className="px-4 pt-4 pb-2 border-b border-border flex-shrink-0">
-            <DialogTitle className="flex items-center gap-2 text-base">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-primary-foreground" />
-              </div>
-              Plug AI
-              <span className="text-xs text-muted-foreground font-normal ms-1">
-                {isRTL ? '— עוזר חכם' : '— Smart Assistant'}
-              </span>
-            </DialogTitle>
+        <DialogContent className="sm:max-w-2xl h-[min(85vh,720px)] flex flex-col p-0 gap-0 overflow-hidden">
+          {/* Hidden title for accessibility — visible header is inside PlugChat */}
+          <DialogHeader className="sr-only">
+            <DialogTitle>Plug AI Chat</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-hidden min-h-0">
-            <PlugChat contextPage={contextPage} />
+            <PlugChat contextPage={contextPage} onClose={() => setOpen(false)} />
           </div>
         </DialogContent>
       </Dialog>

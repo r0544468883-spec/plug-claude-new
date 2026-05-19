@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { SharePrompt } from '@/components/growth/SharePrompt';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Sparkles, User, Loader2, Paperclip, Mic, Image, FileText, Search, DollarSign, BarChart3, ChevronRight } from 'lucide-react';
+import { Send, Sparkles, User, Loader2, Paperclip, Mic, Image, FileText, Search, DollarSign, BarChart3, ChevronRight, Square, X, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -24,10 +24,11 @@ interface PlugChatProps {
   /** A monotonically increasing key to force re-processing of the same initialMessage (e.g. repeated Quick Action clicks) */
   initialMessageKey?: number;
   onMessageSent?: () => void;
+  onClose?: () => void;
   contextPage?: 'dashboard' | 'cv-builder' | 'applications' | 'jobs' | 'default';
 }
 
-export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, contextPage = 'default' }: PlugChatProps) {
+export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, onClose, contextPage = 'default' }: PlugChatProps) {
   const { t, direction, language } = useLanguage();
   const isRTL = language === 'he';
   const { user } = useAuth();
@@ -763,6 +764,14 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, con
     }
   };
 
+  const handleStopGenerating = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setIsLoading(false);
+    }
+  };
+
   const handleSend = async () => {
     await sendMessage(input);
   };
@@ -888,43 +897,44 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, con
   }, []);
 
   return (
-    <div data-tour="plug-chat" className="flex h-[600px] rounded-2xl border border-border bg-card overflow-hidden relative">
+    <div data-tour="plug-chat" className="flex h-full rounded-2xl bg-card overflow-hidden relative">
       {/* Main Chat Area */}
       <div ref={chatContainerRef} className="flex flex-col flex-1 min-w-0">
       {/* Header */}
-      <div className="flex items-center gap-3 p-4 border-b border-border bg-card/80 backdrop-blur-sm">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-          <Sparkles className="w-5 h-5 text-primary-foreground" />
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/80 backdrop-blur-sm">
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
+          <Sparkles className="w-4 h-4 text-primary-foreground" />
         </div>
-        <div>
-          <h3 className="font-semibold">Plug</h3>
-          <p className="text-xs text-muted-foreground">Your AI HR Assistant</p>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-sm">Plug AI</h3>
+          <p className="text-[11px] text-muted-foreground">{isRTL ? 'עוזר AI לחיפוש עבודה' : 'AI Job Search Assistant'}</p>
         </div>
-        <div className="flex-1" />
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-          <span className="text-xs text-muted-foreground">Online</span>
+          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <span className="text-[11px] text-muted-foreground">{isRTL ? 'מחובר' : 'Online'}</span>
         </div>
+        {onClose && (
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground flex-shrink-0" onClick={onClose}>
+            <X className="w-4 h-4" />
+          </Button>
+        )}
       </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {showGreeting && (
-          <div className="flex flex-col items-center py-6 gap-5">
+          <div className="flex flex-col items-center py-4 gap-3">
             <div className="text-center max-w-sm">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="w-8 h-8 text-primary-foreground" />
-              </div>
-              <h4 className="font-semibold text-lg mb-2">{greeting.title}</h4>
-              <p className="text-muted-foreground text-sm">
+              <h4 className="font-semibold text-base mb-1">{greeting.title}</h4>
+              <p className="text-muted-foreground text-xs leading-relaxed">
                 {greeting.subtitle}
               </p>
             </div>
 
-            {/* Prompt Starters — categorized */}
-            <div className="w-full max-w-md px-2 space-y-3">
+            {/* Prompt Starters — categorized, compact */}
+            <div className="w-full max-w-md px-2 space-y-2">
               {/* Category tabs */}
-              <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none" dir={isRTL ? 'rtl' : 'ltr'}>
+              <div className="flex gap-1 overflow-x-auto pb-0.5 scrollbar-none" dir={isRTL ? 'rtl' : 'ltr'}>
                 {PROMPT_CATEGORIES.map(cat => {
                   const Icon = cat.icon;
                   const isActive = activePromptCat === cat.id;
@@ -933,7 +943,7 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, con
                       key={cat.id}
                       onClick={() => setActivePromptCat(cat.id)}
                       className={cn(
-                        'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap transition-all cursor-pointer flex-shrink-0',
+                        'flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition-all cursor-pointer flex-shrink-0',
                         isActive
                           ? 'bg-primary text-primary-foreground'
                           : 'bg-muted/40 text-muted-foreground hover:bg-muted border border-border'
@@ -946,19 +956,32 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, con
                 })}
               </div>
 
-              {/* Prompts for active category */}
+              {/* Prompts for active category — show 3, compact */}
               {PROMPT_CATEGORIES.filter(c => c.id === activePromptCat).map(cat => (
-                <div key={cat.id} className="grid grid-cols-1 gap-1.5">
-                  {cat.prompts.map(prompt => (
+                <div key={cat.id} className="grid grid-cols-1 gap-1">
+                  {cat.prompts.slice(0, 3).map(prompt => (
                     <button
                       key={prompt}
                       onClick={() => { setInput(prompt); }}
-                      className="flex items-center justify-between text-start text-xs px-3 py-2 rounded-xl border border-border bg-muted/40 hover:bg-muted hover:border-primary/40 text-muted-foreground hover:text-foreground transition-all cursor-pointer leading-snug group"
+                      className="flex items-center justify-between text-start text-xs px-3 py-2 rounded-xl border border-border bg-muted/40 hover:bg-muted hover:border-primary/40 text-muted-foreground hover:text-foreground transition-all cursor-pointer leading-snug group min-h-[36px]"
                     >
-                      <span>{prompt}</span>
+                      <span className="line-clamp-1">{prompt}</span>
                       <ChevronRight className={cn('w-3 h-3 flex-shrink-0 opacity-0 group-hover:opacity-60 transition-opacity', isRTL && 'rotate-180')} />
                     </button>
                   ))}
+                  {cat.prompts.length > 3 && (
+                    <button
+                      onClick={() => {
+                        // Show remaining prompts by cycling to show all
+                        const remaining = cat.prompts.slice(3);
+                        const randomPrompt = remaining[Math.floor(Math.random() * remaining.length)];
+                        setInput(randomPrompt);
+                      }}
+                      className="text-[11px] text-primary hover:text-primary/80 transition-colors py-1 text-center"
+                    >
+                      {isRTL ? `עוד ${cat.prompts.length - 3} שאלות...` : `${cat.prompts.length - 3} more prompts...`}
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -1010,7 +1033,18 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, con
                     : 'bg-muted text-foreground rounded-tl-sm rtl:rounded-tl-2xl rtl:rounded-tr-sm plug-ai-highlight'
                 )}
               >
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                <div className={cn(
+                  "text-sm leading-relaxed whitespace-pre-wrap",
+                  message.sender === 'ai' && '[&_strong]:font-bold [&_code]:bg-foreground/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono'
+                )} dangerouslySetInnerHTML={
+                  message.sender === 'ai'
+                    ? { __html: message.content
+                        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/`([^`]+)`/g, '<code>$1</code>')
+                      }
+                    : undefined
+                }>{message.sender === 'user' ? message.content : undefined}</div>
                 <p className={cn(
                   'text-[10px] mt-1',
                   message.sender === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'
@@ -1031,6 +1065,13 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, con
               <div className="flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin text-accent" />
                 <span className="text-sm text-muted-foreground">{t('plug.thinking')}</span>
+                <button
+                  onClick={handleStopGenerating}
+                  className="ms-2 flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <Square className="w-3 h-3 fill-current" />
+                  {isRTL ? 'עצור' : 'Stop'}
+                </button>
               </div>
             </div>
           </div>
@@ -1046,101 +1087,88 @@ export function PlugChat({ initialMessage, initialMessageKey, onMessageSent, con
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input with function buttons */}
-      <div className="p-4 border-t border-border bg-card/80 backdrop-blur-sm space-y-3">
-        {/* Function buttons row */}
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2 text-muted-foreground hover:text-foreground"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploadingAttachment}
-          >
-            <Paperclip className="w-4 h-4 me-1" />
-            <span className="text-xs">
-              {isUploadingAttachment
-                ? (direction === 'rtl' ? 'מעלה…' : 'Uploading…')
-                : (direction === 'rtl' ? 'קובץ' : 'File')}
-            </span>
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void handleAttachmentPicked(f);
-              e.target.value = '';
-            }}
-          />
+      {/* Input area */}
+      <div className="px-3 py-2.5 border-t border-border bg-card/80 backdrop-blur-sm">
+        {/* Attachment indicator */}
+        {uploadedAttachmentSummary && (
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <Paperclip className="w-3 h-3 text-primary" />
+            <span className="text-xs text-muted-foreground truncate">{uploadedAttachmentSummary.fileName}</span>
+            <button onClick={() => setUploadedAttachmentSummary(null)} className="text-muted-foreground hover:text-foreground">
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        )}
 
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2 text-muted-foreground hover:text-foreground"
-            onClick={() => imageInputRef.current?.click()}
-            disabled={isUploadingAttachment}
-          >
-            <Image className="w-4 h-4 me-1" />
-            <span className="text-xs">{direction === 'rtl' ? 'תמונה' : 'Image'}</span>
-          </Button>
-          <input
-            ref={imageInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/gif,image/webp"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void handleImagePicked(f);
-              e.target.value = '';
-            }}
-          />
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className={cn(
-              'h-8 px-2',
-              isRecording
-                ? 'text-red-500 animate-pulse'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-            onClick={handleVoiceInput}
-            disabled={isLoading}
-          >
-            <Mic className="w-4 h-4 me-1" />
-            <span className="text-xs">
-              {isRecording
-                ? (direction === 'rtl' ? 'מקליט…' : 'Recording…')
-                : (direction === 'rtl' ? 'קול' : 'Voice')}
-            </span>
-          </Button>
-        </div>
-
-        {/* Input row */}
-        <form 
+        <form
           onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-          className="flex gap-2"
+          className="flex items-center gap-1.5"
         >
+          {/* Collapsed + menu */}
+          <div className="relative">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-11 w-11 rounded-xl text-muted-foreground hover:text-foreground flex-shrink-0"
+              onClick={() => {
+                const el = document.getElementById('plug-attach-menu');
+                if (el) el.classList.toggle('hidden');
+              }}
+              disabled={isUploadingAttachment}
+            >
+              {isUploadingAttachment ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-5 h-5" />}
+            </Button>
+            <div id="plug-attach-menu" className="hidden absolute bottom-full start-0 mb-1 bg-popover border border-border rounded-xl shadow-xl overflow-hidden z-50 min-w-[140px]">
+              <button
+                type="button"
+                onClick={() => { fileInputRef.current?.click(); document.getElementById('plug-attach-menu')?.classList.add('hidden'); }}
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-accent text-start"
+              >
+                <Paperclip className="w-4 h-4" />
+                {isRTL ? 'קובץ' : 'File'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { imageInputRef.current?.click(); document.getElementById('plug-attach-menu')?.classList.add('hidden'); }}
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-accent text-start"
+              >
+                <Image className="w-4 h-4" />
+                {isRTL ? 'תמונה' : 'Image'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { handleVoiceInput(); document.getElementById('plug-attach-menu')?.classList.add('hidden'); }}
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-accent text-start"
+              >
+                <Mic className="w-4 h-4" />
+                {isRTL ? 'הקלטה קולית' : 'Voice'}
+              </button>
+            </div>
+          </div>
+
+          <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleAttachmentPicked(f); e.target.value = ''; }} />
+          <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleImagePicked(f); e.target.value = ''; }} />
+
+          {/* Voice recording indicator */}
+          {isRecording && (
+            <span className="text-xs text-red-500 animate-pulse flex-shrink-0">{isRTL ? 'מקליט...' : 'Recording...'}</span>
+          )}
+
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={t('plug.placeholder')}
-            className="flex-1 h-11 rounded-xl"
+            className="flex-1 h-10 rounded-xl text-sm"
             disabled={isLoading}
           />
-          <Button 
-            type="submit" 
-            size="icon" 
-            className="h-11 w-11 rounded-xl"
+          <Button
+            type="submit"
+            size="icon"
+            className="h-11 w-11 rounded-xl flex-shrink-0"
             disabled={!input.trim() || isLoading}
           >
-            <Send className="w-5 h-5" />
+            <Send className="w-4 h-4" />
           </Button>
         </form>
       </div>
