@@ -11,8 +11,11 @@ interface AuthPageProps {
 }
 
 export default function AuthPage({ onSuccess }: AuthPageProps) {
-  const [step, setStep] = useState<AuthStep>('identity');
-  const [selectedRole, setSelectedRole] = useState<AppRole | null>(null);
+  // ── Feature flag: skip role selection, go straight to job_seeker registration ──
+  const SHOW_HR = false;
+
+  const [step, setStep] = useState<AuthStep>(SHOW_HR ? 'identity' : 'register');
+  const [selectedRole, setSelectedRole] = useState<AppRole | null>(SHOW_HR ? null : 'job_seeker');
   const [isNewRegistration, setIsNewRegistration] = useState(false);
 
   const handleRoleSelect = (role: AppRole) => {
@@ -21,6 +24,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
   };
 
   const handleBack = () => {
+    if (!SHOW_HR) return; // No going back when HR is hidden
     setStep('identity');
     setSelectedRole(null);
   };
@@ -31,7 +35,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
     onSuccess();
   };
 
-  if (step === 'identity') {
+  if (step === 'identity' && SHOW_HR) {
     return <IdentitySelection onSelect={handleRoleSelect} />;
   }
 

@@ -19,10 +19,17 @@ import { AnalyticsDashboard } from './AnalyticsDashboard';
 import { MentorshipTab } from './MentorshipTab';
 import { SpeedNetworkingTab } from './SpeedNetworkingTab';
 import { IntegrationsPanel } from './IntegrationsPanel';
+import { DigitalProductsTab } from './DigitalProductsTab';
+import { ChallengesTab } from './ChallengesTab';
+import { SubscriptionsTab } from './SubscriptionsTab';
+import { PaymentLinksManager } from './PaymentLinksManager';
+import { CommunityLandingPageEditor } from './CommunityLandingPageEditor';
+import { CreatorAIPanel } from './CreatorAIPanel';
+import { AffiliatePanel } from './AffiliatePanel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Hash, MessageSquare, GraduationCap, Calendar, HelpCircle, Award, Video, Trophy, BarChart3, Sparkles, Handshake, Zap, Plug } from 'lucide-react';
+import { Hash, MessageSquare, GraduationCap, Calendar, HelpCircle, Award, Video, Trophy, BarChart3, Sparkles, Handshake, Zap, Plug, ShoppingBag, Target, CreditCard, Link2, FileText, Bot, Users } from 'lucide-react';
 
 interface CommunityHubViewProps {
   hubId: string;
@@ -202,6 +209,42 @@ export function CommunityHubView({ hubId, onBack }: CommunityHubViewProps) {
               {isHebrew ? 'יצירת קורס AI' : 'AI Generator'}
             </TabsTrigger>
           )}
+          <TabsTrigger value="products" className="gap-1.5">
+            <ShoppingBag className="w-4 h-4" />
+            {isHebrew ? 'מוצרים' : 'Products'}
+          </TabsTrigger>
+          <TabsTrigger value="challenges" className="gap-1.5">
+            <Target className="w-4 h-4" />
+            {isHebrew ? 'אתגרים' : 'Challenges'}
+          </TabsTrigger>
+          <TabsTrigger value="subscriptions" className="gap-1.5">
+            <CreditCard className="w-4 h-4" />
+            {isHebrew ? 'מנויים' : 'Subscriptions'}
+          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="payment-links" className="gap-1.5">
+              <Link2 className="w-4 h-4" />
+              {isHebrew ? 'קישורי תשלום' : 'Pay Links'}
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger value="landing-page" className="gap-1.5">
+              <FileText className="w-4 h-4" />
+              {isHebrew ? 'דף נחיתה' : 'Landing Page'}
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger value="creator-ai" className="gap-1.5">
+              <Bot className="w-4 h-4" />
+              {isHebrew ? 'AI יוצר' : 'Creator AI'}
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger value="affiliates" className="gap-1.5">
+              <Users className="w-4 h-4" />
+              {isHebrew ? 'שותפים' : 'Affiliates'}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="chat">
@@ -303,6 +346,42 @@ export function CommunityHubView({ hubId, onBack }: CommunityHubViewProps) {
         {isAdmin && (
           <TabsContent value="ai-generator">
             <AICourseGenerator hubId={hubId} isAdmin={isAdmin} />
+          </TabsContent>
+        )}
+
+        <TabsContent value="products">
+          <DigitalProductsTab hubId={hubId} isAdmin={isAdmin} />
+        </TabsContent>
+
+        <TabsContent value="challenges">
+          <ChallengesTab hubId={hubId} isAdmin={isAdmin} />
+        </TabsContent>
+
+        <TabsContent value="subscriptions">
+          <SubscriptionsTab hubId={hubId} isAdmin={isAdmin} />
+        </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="payment-links">
+            <PaymentLinksManager hubId={hubId} />
+          </TabsContent>
+        )}
+
+        {isAdmin && (
+          <TabsContent value="landing-page">
+            <CommunityLandingPageEditor hubId={hubId} />
+          </TabsContent>
+        )}
+
+        {isAdmin && (
+          <TabsContent value="creator-ai">
+            <CreatorAIPanel hubId={hubId} isAdmin={isAdmin} />
+          </TabsContent>
+        )}
+
+        {isAdmin && (
+          <TabsContent value="affiliates">
+            <AffiliatePanel hubId={hubId} isAdmin={isAdmin} />
           </TabsContent>
         )}
       </Tabs>

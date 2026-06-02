@@ -18,7 +18,7 @@ import { NavTooltip } from '@/components/ui/nav-tooltip';
 import { VisibleToHRBanner } from '@/components/sidebar/VisibleToHRBanner';
 // PlugFloatingHint removed - notifications now in NotificationBell
 import {
-  LayoutDashboard, Users, Briefcase, FileText, MessageSquare, Settings, LogOut, Menu, X, User, Search, ArrowLeft, ArrowRight, Heart, FileEdit, Route, Sparkles, Mic, Newspaper, Video, Globe, DollarSign, Building2, Target, Calendar, LayoutGrid, Gem, ClipboardList, BarChart3, UserSearch, Monitor, Share2, History, Lightbulb, Eye, ChevronDown, ZoomIn, ZoomOut, Smartphone, Shield, Trophy, Bookmark
+  LayoutDashboard, Users, Briefcase, FileText, MessageSquare, Settings, LogOut, Menu, X, User, Search, ArrowLeft, ArrowRight, Heart, FileEdit, Route, Sparkles, Mic, Newspaper, Video, Globe, DollarSign, Building2, Target, Calendar, LayoutGrid, Gem, ClipboardList, BarChart3, UserSearch, Monitor, Share2, History, Lightbulb, Eye, ChevronDown, ZoomIn, ZoomOut, Smartphone, Shield, Trophy, Bookmark, Compass, Link2, Wand2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -46,7 +46,7 @@ function useZoom() {
   return { zoom, cycleZoom };
 }
 
-export type DashboardSection = 'overview' | 'profile-docs' | 'profile-settings' | 'applications' | 'candidates' | 'jobs' | 'job-search' | 'chat' | 'settings' | 'messages' | 'post-job' | 'saved-jobs' | 'cv-builder' | 'interview-prep' | 'feed' | 'create-feed-post' | 'create-webinar' | 'communities' | 'create-community' | 'community-view' | 'content-dashboard' | 'negotiation-sandbox' | 'content-hub' | 'b2b-suite' | 'recruiter-profile' | 'clients' | 'client-profile' | 'missions' | 'create-mission' | 'my-missions' | 'schedule' | 'hr-tools' | 'credits' | 'referrals' | 'analyses' | 'favorite-companies' | 'assignments' | 'candidate-search' | 'analytics' | 'my-stats' | 'vouches' | 'network' | 'job-swipe' | 'my-matches' | 'my-secrets' | 'ideas' | 'my-company' | 'companies' | 'achievements' | 'offers' | 'video-interviews' | 'referral-tracker' | 'my-tasks';
+export type DashboardSection = 'overview' | 'profile-docs' | 'profile-settings' | 'applications' | 'candidates' | 'jobs' | 'job-search' | 'chat' | 'settings' | 'messages' | 'post-job' | 'saved-jobs' | 'cv-builder' | 'interview-prep' | 'feed' | 'create-feed-post' | 'create-webinar' | 'communities' | 'create-community' | 'community-view' | 'content-dashboard' | 'negotiation-sandbox' | 'content-hub' | 'b2b-suite' | 'recruiter-profile' | 'clients' | 'client-profile' | 'missions' | 'create-mission' | 'my-missions' | 'schedule' | 'hr-tools' | 'credits' | 'referrals' | 'analyses' | 'favorite-companies' | 'assignments' | 'candidate-search' | 'analytics' | 'my-stats' | 'vouches' | 'network' | 'job-swipe' | 'my-matches' | 'my-secrets' | 'ideas' | 'my-company' | 'companies' | 'achievements' | 'offers' | 'video-interviews' | 'referral-tracker' | 'my-tasks' | 'discover' | 'create-community-wizard' | 'payment-links';
 
 interface NavItemConfig {
   icon: typeof LayoutDashboard;
@@ -191,31 +191,32 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
     }
   };
 
+  // ── Feature flag: set to true to re-enable HR/recruiter features ──
+  const SHOW_HR = false;
+
   // Navigation items based on role with tooltips
   const getNavItems = (): NavItemConfig[] => {
-    if (role === 'job_seeker') {
+    if (role === 'job_seeker' || !SHOW_HR) {
       return [
         // ── Core ──
         { icon: User, label: isRTL ? 'הפרופיל שלי' : 'My Profile', section: 'profile-settings', tooltipHe: 'פרופיל, הגדרות, אינטגרציות וחשבון', tooltipEn: 'Profile, settings, integrations & account' },
         { icon: LayoutDashboard, label: isRTL ? 'מסך ראשי' : 'Overview', section: 'overview', tooltipHe: 'מסך ראשי — הצצה לכל מה שקורה אצלך', tooltipEn: 'Home — a peek into everything happening' },
         { icon: Search, label: isRTL ? 'לוח המשרות שלי' : 'My Jobboard', section: 'job-search', tooltipHe: 'חיפוש משרות חדשות וסינון לפי מיקום, קטגוריה וסוג', tooltipEn: 'Search new jobs and filter by location, category, and type' },
         { icon: Target, label: isRTL ? 'ספרינט' : 'Sprint', section: 'job-swipe' as DashboardSection, tooltipHe: 'סוויפ על משרות מותאמות + היסטוריית מאצ׳ים', tooltipEn: 'Swipe through matched jobs + match history' },
-        { icon: Sparkles, label: 'PLUG Feed', section: 'feed', tooltipHe: 'פיד מקצועי — טיפים, תוכן ומטלות ממגייסים וחברות', tooltipEn: 'Professional feed — tips, content & assignments from recruiters' },
-        { icon: Briefcase, label: isRTL ? 'המשרות שהגשתי אליהם' : 'My job applications', section: 'applications', tooltipHe: 'משרות שהגשתי דרך פלאג, אולג\'ובס ולינקדין', tooltipEn: 'Jobs you applied to via PLUG, AllJobs & LinkedIn' },
-        { icon: Calendar, label: isRTL ? 'יומן החיפוש שלי' : 'My applications schedule', section: 'schedule', tooltipHe: 'יומן ראיונות, מעקב ותזכורות', tooltipEn: 'Interviews, follow-ups and reminders calendar' },
+        { icon: Briefcase, label: isRTL ? 'המשרות שהגשתי אליהם' : 'My Applications', section: 'applications', tooltipHe: 'משרות שהגשתי דרך פלאג, אולג\'ובס ולינקדין', tooltipEn: 'Jobs you applied to via PLUG, AllJobs & LinkedIn' },
+        { icon: Calendar, label: isRTL ? 'יומן החיפוש שלי' : 'My Schedule', section: 'schedule', tooltipHe: 'יומן ראיונות, מעקב ותזכורות', tooltipEn: 'Interviews, follow-ups and reminders calendar' },
         { icon: BarChart3, label: isRTL ? 'נתוני החיפוש שלי' : 'My Stats', section: 'my-stats' as DashboardSection, tooltipHe: 'סטטיסטיקות אישיות ונתוני שוק', tooltipEn: 'Personal statistics & market data' },
-        { icon: Heart, label: isRTL ? 'ההמלצות שלי' : 'My Vouches', section: 'vouches' as DashboardSection, tooltipHe: 'המלצות שקיבלת ונתת — מחזקות את הפרופיל', tooltipEn: 'Vouches received and given — strengthen your profile' },
-        { icon: Users, label: isRTL ? 'הרשת שלי' : 'My Network', section: 'network' as DashboardSection, tooltipHe: 'קולגות, מגייסים וחברות — כל הקשרים שלך', tooltipEn: 'Colleagues, recruiters and companies — your connections' },
-        { icon: Sparkles, label: isRTL ? 'הסודות שלי' : 'My Secrets', section: 'my-secrets' as DashboardSection, tooltipHe: 'תובנות חברות מלינקדאין — מה החברה עושה, אנשי קשר והתאמה', tooltipEn: 'LinkedIn company insights — what they do, contacts & fit' },
-        { icon: Building2, label: isRTL ? 'ספריית חברות' : 'Companies', section: 'companies' as DashboardSection, tooltipHe: 'גלה חברות וקרא ביקורות אנונימיות מהקהילה', tooltipEn: 'Discover companies & read anonymous community reviews' },
-        // ── Preparation & Profile ──
+        // ── Preparation ──
         { icon: FileEdit, label: isRTL ? 'בניית קורות חיים' : 'CV Builder', section: 'cv-builder', tooltipHe: 'בניית קורות חיים מקצועיים עם תבניות ו-AI', tooltipEn: 'Build professional CVs with templates and AI' },
         { icon: Mic, label: isRTL ? 'הכנה לראיון עבודה' : 'Interview Prep', section: 'interview-prep', tooltipHe: 'הכנה לראיון עבודה עם שאלות ותרגול AI', tooltipEn: 'Interview preparation with AI questions and practice' },
+        // ── Discovery ──
+        { icon: Sparkles, label: isRTL ? 'הסודות שלי' : 'My Secrets', section: 'my-secrets' as DashboardSection, tooltipHe: 'תובנות חברות מלינקדאין — מה החברה עושה, אנשי קשר והתאמה', tooltipEn: 'LinkedIn company insights — what they do, contacts & fit' },
+        { icon: Building2, label: isRTL ? 'ספריית חברות' : 'Companies', section: 'companies' as DashboardSection, tooltipHe: 'גלה חברות וקרא ביקורות אנונימיות מהקהילה', tooltipEn: 'Discover companies & read anonymous community reviews' },
         { icon: ClipboardList, label: isRTL ? 'לוח המטלות' : 'Assignments Board', section: 'assignments' as DashboardSection, tooltipHe: 'לוח המטלות – הוכח את הכישורים שלך עם אתגרים אמיתיים', tooltipEn: 'Assignments board – prove your skills with real challenges' },
+        // ── Extras ──
+        { icon: Trophy, label: isRTL ? 'הישגים' : 'Achievements', section: 'achievements' as DashboardSection, tooltipHe: 'רמות, תגים ומשימות שבועיות', tooltipEn: 'Levels, badges & weekly quests' },
+        { icon: Bookmark, label: isRTL ? 'משרות שמורות' : 'Saved Jobs', section: 'saved-jobs', tooltipHe: 'משרות ששמרת לצפייה מאוחרת', tooltipEn: 'Jobs saved for later' },
         { icon: Lightbulb, label: isRTL ? 'לוח רעיונות' : 'Ideas Board', section: 'ideas' as DashboardSection, tooltipHe: 'הציעו פיצ׳רים חדשים, הצביעו וצרו את עתיד PLUG', tooltipEn: 'Suggest new features, vote and shape PLUG\u2019s future' },
-        // ── Discovery & Opportunities ──
-        { icon: MessageSquare, label: isRTL ? 'הודעות' : 'Messages', section: 'messages', tooltipHe: 'הודעות פנימיות מקבלים ומגייסים', tooltipEn: 'Internal messages from recruiters and contacts' },
-        // ── System ──
         { icon: Gem, label: isRTL ? 'הקרדיטים שלי' : 'Credits', section: 'credits' as DashboardSection, tooltipHe: 'יתרת קרדיטים, היסטוריה ורכישה', tooltipEn: 'Credits balance, history & purchase' },
       ];
     }
@@ -232,6 +233,8 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
         { icon: LayoutGrid, label: isRTL ? 'כלי HR' : 'HR Tools', section: 'hr-tools' as DashboardSection, tooltipHe: 'אנליטיקות, בנק מועמדים, אישורים, התראות ועוד', tooltipEn: 'Analytics, talent pool, approvals, alerts & more' },
         { icon: Calendar, label: isRTL ? 'יומן' : 'Schedule', section: 'schedule', tooltipHe: 'יומן משימות, ראיונות ותזכורות', tooltipEn: 'Tasks, interviews and reminders calendar' },
         { icon: Newspaper, label: isRTL ? 'תוכן וקהילה' : 'Content & Community', section: 'content-hub' as DashboardSection, tooltipHe: 'דאשבורד תוכן, יצירת פוסטים, וובינרים וקהילות', tooltipEn: 'Content dashboard, posts, webinars & communities' },
+        { icon: Link2, label: isRTL ? 'קישורי תשלום' : 'Payment Links', section: 'payment-links' as DashboardSection, tooltipHe: 'צור קישורי תשלום ושתף בוואטסאפ', tooltipEn: 'Create payment links and share via WhatsApp' },
+        { icon: Wand2, label: isRTL ? 'בניית קהילה' : 'Build Community', section: 'create-community-wizard' as DashboardSection, tooltipHe: 'בנה קהילה דיגיטלית ב-3 שלבים עם AI', tooltipEn: 'Build a digital community in 3 steps with AI' },
         { icon: Target, label: isRTL ? 'לוח פרויקטים' : 'Hunters Billboard', section: 'missions' as DashboardSection, tooltipHe: 'שוק תחרותי לפרויקטי גיוס', tooltipEn: 'Competitive recruitment project marketplace' },
         { icon: ClipboardList, label: isRTL ? 'לוח המטלות' : 'Assignments', section: 'assignments' as DashboardSection, tooltipHe: 'לוח המטלות – פרסם מטלות ומצא טאלנט', tooltipEn: 'Assignment marketplace – post tasks and discover talent' },
         { icon: Lightbulb, label: isRTL ? 'לוח רעיונות' : 'Ideas Board', section: 'ideas' as DashboardSection, tooltipHe: 'הציעו פיצ׳רים חדשים, הצביעו וצרו את עתיד PLUG', tooltipEn: 'Suggest new features, vote and shape PLUG\u2019s future' },
@@ -397,9 +400,6 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
                     labelHe: 'הגשות', labelEn: 'Applications',
                     items: [
                       { icon: Briefcase, label: isRTL ? 'המשרות שהגשתי'    : 'My Applications', section: 'applications' as DashboardSection, tooltipHe: 'משרות שהגשתי דרך פלאג',        tooltipEn: 'Jobs applied via PLUG' },
-                      { icon: FileText,  label: isRTL ? 'פרטי משרות'        : 'Job Details',     section: 'offers'       as DashboardSection, tooltipHe: 'פרטים ותנאים של משרות מהמגייסים', tooltipEn: 'Job details and terms from recruiters' },
-                      { icon: Video,     label: isRTL ? 'ראיונות וידאו'     : 'Video Interviews', section: 'video-interviews' as DashboardSection, tooltipHe: 'ראיונות וידאו אסינכרוניים ממגייסים', tooltipEn: 'Async video interviews from recruiters' },
-                      { icon: ClipboardList, label: isRTL ? 'בקשות ממגייסים'   : 'Recruiter Requests', section: 'my-tasks'     as DashboardSection, tooltipHe: 'בקשות ומטלות שקיבלת מהמגייסים', tooltipEn: 'Requests and tasks from recruiters' },
                       { icon: Calendar,  label: isRTL ? 'יומן החיפוש'       : 'My Schedule',     section: 'schedule'     as DashboardSection, tooltipHe: 'יומן ראיונות ותזכורות',        tooltipEn: 'Interviews & reminders' },
                       { icon: BarChart3, label: isRTL ? 'נתוני החיפוש שלי'  : 'My Stats',        section: 'my-stats'     as DashboardSection, tooltipHe: 'סטטיסטיקות אישיות ושוק',       tooltipEn: 'Personal statistics & market data' },
                     ],
@@ -412,15 +412,7 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
                       { icon: ClipboardList, label: isRTL ? 'מטלות אופציונאליות' : 'Optional Assignments', section: 'assignments' as DashboardSection, tooltipHe: 'מטלות אופציונאליות — הוכח כישורים עם אתגרים אמיתיים', tooltipEn: 'Optional assignments — prove your skills with real challenges' },
                     ],
                   },
-                  {
-                    labelHe: 'קהילה', labelEn: 'Community',
-                    items: [
-                      { icon: Newspaper,    label: 'PLUG Feed',                                section: 'feed'     as DashboardSection, tooltipHe: 'פיד מקצועי ממגייסים',     tooltipEn: 'Professional feed from recruiters' },
-                      { icon: Users,        label: isRTL ? 'הרשת שלי'      : 'My Network',    section: 'network'  as DashboardSection, tooltipHe: 'קשרים מקצועיים',          tooltipEn: 'Professional connections' },
-                      { icon: Heart,        label: isRTL ? 'ההמלצות שלי'   : 'My Vouches',    section: 'vouches'  as DashboardSection, tooltipHe: 'המלצות שמחזקות הפרופיל', tooltipEn: 'Vouches that boost your profile' },
-                      { icon: MessageSquare,label: isRTL ? 'הודעות'         : 'Messages',      section: 'messages' as DashboardSection, tooltipHe: 'הודעות ממגייסים',         tooltipEn: 'Messages from recruiters' },
-                    ],
-                  },
+                  // Community group hidden — SHOW_HR = false
                 ] as Array<{ labelHe: string; labelEn: string; items: NavItemConfig[] }>).map(group => {
                   const isOpen = openGroup === group.labelEn;
                   const hasActive = group.items.some(i =>
@@ -736,8 +728,8 @@ export function DashboardLayout({ children, currentSection, onSectionChange, onC
               { icon: Search,    labelHe: 'לוח המשרות', labelEn: 'Job Board',     section: 'job-search'   as DashboardSection },
               { icon: Briefcase, labelHe: 'הגשות',       labelEn: 'Applications', section: 'applications' as DashboardSection },
               { icon: Calendar,  labelHe: 'יומן',         labelEn: 'Calendar',     section: 'schedule'     as DashboardSection },
-              { icon: Newspaper, labelHe: 'פיד',          labelEn: 'Feed',         section: 'feed'         as DashboardSection },
               { icon: BarChart3, labelHe: 'נתונים',       labelEn: 'Stats',        section: 'my-stats'     as DashboardSection },
+              { icon: FileEdit,  labelHe: 'קורות חיים',   labelEn: 'CV Builder',   section: 'cv-builder'   as DashboardSection },
             ]).map(({ icon: Icon, labelHe, labelEn, section }) => {
               const isActive = section === 'feed'
                 ? SOCIAL_SECTIONS.includes(currentSection)

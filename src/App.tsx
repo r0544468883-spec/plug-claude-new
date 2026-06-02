@@ -83,6 +83,9 @@ import Admin from "./pages/Admin";
 import RecordingStudio from "./pages/RecordingStudio";
 import Invite from "./pages/Invite";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import PaymentPage from "./pages/PaymentPage";
+import CommunityLandingPage from "./pages/CommunityLandingPage";
+import Discover from "./pages/Discover";
 
 const queryClient = new QueryClient();
 
@@ -145,6 +148,9 @@ const App = () => (
                   <Route path="/recording-studio" element={<RecordingStudio />} />
                   <Route path="/invite/:code" element={<Invite />} />
                   <Route path="/privacy" element={<PrivacyPolicy />} />
+                  <Route path="/pay/:slug" element={<PaymentPage />} />
+                  <Route path="/c/:slug" element={<CommunityLandingPage />} />
+                  <Route path="/discover" element={<Discover />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

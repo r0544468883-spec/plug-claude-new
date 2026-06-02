@@ -45,6 +45,9 @@ import { PlugSocial } from '@/components/social/PlugSocial';
 import { CommunityHubsList } from '@/components/communities/CommunityHubsList';
 import { CreateCommunityHub } from '@/components/communities/CreateCommunityHub';
 import { CommunityHubView } from '@/components/communities/CommunityHubView';
+import { CommunityOnboardingWizard } from '@/components/communities/CommunityOnboardingWizard';
+import { PaymentLinksManager } from '@/components/communities/PaymentLinksManager';
+import Discover from '@/pages/Discover';
 import { ContentDashboard } from '@/components/feed/ContentDashboard';
 import { PlacementRevenue } from '@/components/dashboard/PlacementRevenue';
 import { SLAMonitor } from '@/components/dashboard/SLAMonitor';
@@ -427,26 +430,13 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Candidate Hierarchy Widget — recruiter only, spread horizontally */}
-        {isRecruiterRole && (
-          <CandidateHierarchyWidget onNavigateToCandidates={() => setCurrentSection('candidates')} />
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2" ref={chatRef}>
-            <PlugChat
-              initialMessage={pendingMessage || undefined}
-              initialMessageKey={pendingMessageKey}
-              onMessageSent={handleMessageSent}
-              contextPage={plugContextPage}
-            />
-          </div>
-          <div className="lg:col-span-1">
-            <div className="lg:sticky lg:top-4 space-y-4">
-              <VouchWidget onNavigate={() => setCurrentSection('profile-settings')} />
-              <FeedCarouselWidget onNavigateToFeed={() => setCurrentSection('feed')} />
-            </div>
-          </div>
+        <div ref={chatRef}>
+          <PlugChat
+            initialMessage={pendingMessage || undefined}
+            initialMessageKey={pendingMessageKey}
+            onMessageSent={handleMessageSent}
+            contextPage={plugContextPage}
+          />
         </div>
       </div>
     );
@@ -652,6 +642,15 @@ export default function Dashboard() {
           <CommunityHubView hubId={viewingHubId} onBack={() => setCurrentSection('feed')} />,
           'feed'
         ) : null;
+      case 'discover':
+        return <Discover />;
+      case 'create-community-wizard':
+        return <CommunityOnboardingWizard
+          onComplete={(hubId) => { setViewingHubId(hubId); setCurrentSection('community-view'); }}
+          onCancel={() => setCurrentSection('feed')}
+        />;
+      case 'payment-links':
+        return withBackButton(<PaymentLinksManager />);
       case 'missions':
         return withBackButton(
           <MissionBoard 
