@@ -333,38 +333,6 @@ export default function PublicProfile() {
 
   // Public profile links (/p/:userId) are always visible.
   // visible_to_hr only affects recruiter search results, not direct profile links.
-  if (false && !isVisible && !isOwnProfile) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col" dir={isHebrew ? 'rtl' : 'ltr'}>
-        <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-30">
-          <div className="max-w-3xl mx-auto px-4 h-16 flex items-center">
-            <Link to="/"><PlugLogo size="sm" /></Link>
-          </div>
-        </header>
-        <main className="flex-1 flex items-center justify-center p-4">
-          <Card className="max-w-md w-full">
-            <CardContent className="p-8 text-center">
-              <div className="w-16 h-16 rounded-full bg-muted mx-auto mb-4 flex items-center justify-center">
-                <EyeOff className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <h2 className="text-xl font-semibold mb-2">
-                {isHebrew ? 'המשתמש במצב אנונימי' : 'This user is anonymous'}
-              </h2>
-              <p className="text-muted-foreground text-sm">
-                {isHebrew
-                  ? 'המשתמש בחר שלא להציג את הפרופיל שלו באופן ציבורי'
-                  : 'This user has chosen not to display their profile publicly'}
-              </p>
-              <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                <Lock className="w-3.5 h-3.5" />
-                {isHebrew ? 'פרופיל פרטי' : 'Private profile'}
-              </div>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background" dir={isHebrew ? 'rtl' : 'ltr'}>
