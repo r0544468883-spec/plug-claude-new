@@ -339,25 +339,46 @@ export const CVBuilder = () => {
   // Save CV to profile (storage)
   const handleSaveToProfile = async () => {
     if (!exportedPdfBlob || !user) return;
-    
+
     setIsSavingToProfile(true);
     try {
-      // Upload PDF to storage
-      const fileName = `${user.id}/${Date.now()}_cv.pdf`;
+      const ts = Date.now();
+
+      // Upload to generated-cvs bucket (for public URL / sharing)
+      const genFileName = `${user.id}/${ts}_cv.pdf`;
       const { error: uploadError } = await supabase.storage
         .from('generated-cvs')
-        .upload(fileName, exportedPdfBlob, {
+        .upload(genFileName, exportedPdfBlob, {
           contentType: 'application/pdf',
           upsert: true,
         });
-      
       if (uploadError) throw uploadError;
-      
-      // Get public URL
+
       const { data: { publicUrl } } = supabase.storage
         .from('generated-cvs')
-        .getPublicUrl(fileName);
-      
+        .getPublicUrl(genFileName);
+
+      // Also upload to resumes bucket + upsert documents row
+      // so the Chrome extension picks up the latest CV
+      const resumePath = `${user.id}/${ts}_cv_builder.pdf`;
+      const { error: resumeUploadErr } = await supabase.storage
+        .from('resumes')
+        .upload(resumePath, exportedPdfBlob, {
+          contentType: 'application/pdf',
+          upsert: true,
+        });
+
+      if (!resumeUploadErr) {
+        // Insert a new document row so extension's fetchResumeUrl finds it
+        await (supabase as any).from('documents').insert({
+          owner_id: user.id,
+          file_name: 'CV Builder Resume.pdf',
+          file_path: resumePath,
+          file_type: 'application/pdf',
+          doc_type: 'cv',
+        });
+      }
+
       setSavedCVUrl(publicUrl);
       toast.success(language === 'he' ? 'קורות החיים נשמרו לפרופיל!' : 'CV saved to profile!');
     } catch (error) {
