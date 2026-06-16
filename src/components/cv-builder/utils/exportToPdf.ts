@@ -11,7 +11,7 @@ export async function exportToPdf(
   filename?: string,
 ): Promise<Blob> {
   const canvas = await html2canvas(element, {
-    scale: 3,
+    scale: 2,
     useCORS: true,
     logging: false,
     backgroundColor: '#ffffff',
@@ -35,7 +35,7 @@ export async function exportToPdf(
 
   // If content fits in one page, center/place at top
   if (imgHeight <= pdfHeight) {
-    pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, imgWidth, imgHeight);
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.75), 'JPEG', 0, 0, imgWidth, imgHeight);
   } else {
     // Multi-page: slice the canvas into page-height chunks
     const pageHeightPx = Math.floor((pdfHeight / imgWidth) * canvas.width);
@@ -50,7 +50,7 @@ export async function exportToPdf(
       const ctx = sliceCanvas.getContext('2d');
       ctx?.drawImage(canvas, 0, yOffset, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
       const sliceImgH = (sliceH / canvas.width) * pdfWidth;
-      pdf.addImage(sliceCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pdfWidth, sliceImgH);
+      pdf.addImage(sliceCanvas.toDataURL('image/jpeg', 0.75), 'JPEG', 0, 0, pdfWidth, sliceImgH);
       yOffset += pageHeightPx;
       page++;
     }
@@ -104,7 +104,7 @@ export async function exportHtmlToPdf(
   }
 
   const canvas = await html2canvas(body, {
-    scale: 3,
+    scale: 2,
     useCORS: true,
     logging: false,
     backgroundColor: '#ffffff',
@@ -131,7 +131,7 @@ export async function exportHtmlToPdf(
   const imgHeight = (canvas.height / canvas.width) * pdfWidth;
 
   if (imgHeight <= pdfHeight) {
-    pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, imgWidth, imgHeight);
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.75), 'JPEG', 0, 0, imgWidth, imgHeight);
   } else {
     const pageHeightPx = Math.floor((pdfHeight / imgWidth) * canvas.width);
     let yOffset = 0;
@@ -145,7 +145,7 @@ export async function exportHtmlToPdf(
       const ctx = sliceCanvas.getContext('2d');
       ctx?.drawImage(canvas, 0, yOffset, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
       const sliceImgH = (sliceH / canvas.width) * pdfWidth;
-      pdf.addImage(sliceCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pdfWidth, sliceImgH);
+      pdf.addImage(sliceCanvas.toDataURL('image/jpeg', 0.75), 'JPEG', 0, 0, pdfWidth, sliceImgH);
       yOffset += pageHeightPx;
       page++;
     }
