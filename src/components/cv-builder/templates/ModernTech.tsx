@@ -1,9 +1,10 @@
 import { TemplateProps } from '../types';
 import { Mail, Phone, MapPin, Globe, Github, Linkedin } from 'lucide-react';
+import { CVLinkItems } from './LinkIcons';
 
 export const ModernTech = ({ data, scale = 1 }: TemplateProps) => {
-  const { personalInfo, experience, education, skills, certifications, projects, settings } = data;
-  
+  const { personalInfo, experience, education, skills, certifications, projects, links, settings } = data;
+
   const fontSizeClass = {
     small: 'text-xs',
     medium: 'text-sm',
@@ -11,7 +12,7 @@ export const ModernTech = ({ data, scale = 1 }: TemplateProps) => {
   }[settings.fontSize];
 
   return (
-    <div 
+    <div
       className="bg-white text-gray-900 w-full min-h-[297mm] font-sans"
       style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}
     >
@@ -30,7 +31,7 @@ export const ModernTech = ({ data, scale = 1 }: TemplateProps) => {
         <div>
         <h1 className="text-3xl font-bold">{personalInfo.fullName || 'Your Name'}</h1>
         <p className="text-xl opacity-90 mt-1">{personalInfo.title || 'Professional Title'}</p>
-        
+
         <div className="flex flex-wrap gap-4 mt-4 text-sm opacity-90">
           {personalInfo.email && (
             <span className="flex items-center gap-1">
@@ -50,6 +51,7 @@ export const ModernTech = ({ data, scale = 1 }: TemplateProps) => {
               {personalInfo.location}
             </span>
           )}
+          <CVLinkItems links={links} className="flex items-center gap-1 hover:underline" />
         </div>
         </div>
       </div>

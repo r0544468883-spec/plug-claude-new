@@ -1,7 +1,8 @@
 import { TemplateProps } from '../types';
+import { CVLinkItems } from './LinkIcons';
 
 export const Minimal = ({ data, scale = 1 }: TemplateProps) => {
-  const { personalInfo, experience, education, skills, certifications, projects, settings } = data;
+  const { personalInfo, experience, education, skills, certifications, projects, links, settings } = data;
   
   const fontSizeClass = {
     small: 'text-xs',
@@ -27,6 +28,7 @@ export const Minimal = ({ data, scale = 1 }: TemplateProps) => {
           {personalInfo.phone && <span>{personalInfo.phone}</span>}
           {personalInfo.location && <span>•</span>}
           {personalInfo.location && <span>{personalInfo.location}</span>}
+          <CVLinkItems links={links} className="flex items-center gap-1 text-gray-500 hover:underline" />
         </div>
       </div>
 

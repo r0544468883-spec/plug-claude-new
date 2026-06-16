@@ -1,9 +1,10 @@
 import { TemplateProps } from '../types';
 import { Mail, Phone, MapPin, BookOpen } from 'lucide-react';
+import { CVLinkItems } from './LinkIcons';
 
 export const Academic = ({ data, scale = 1 }: TemplateProps) => {
-  const { personalInfo, experience, education, skills, certifications, projects, settings } = data;
-  
+  const { personalInfo, experience, education, skills, certifications, projects, links, settings } = data;
+
   const fontSizeClass = {
     small: 'text-xs',
     medium: 'text-sm',
@@ -11,7 +12,7 @@ export const Academic = ({ data, scale = 1 }: TemplateProps) => {
   }[settings.fontSize];
 
   return (
-    <div 
+    <div
       className="bg-white text-gray-900 w-full min-h-[297mm] font-serif p-10"
       style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}
     >
@@ -21,13 +22,14 @@ export const Academic = ({ data, scale = 1 }: TemplateProps) => {
           {personalInfo.fullName || 'Your Name'}
         </h1>
         <p className="text-lg text-gray-600 mt-1">{personalInfo.title || 'Academic Title'}</p>
-        
-        <div className="flex justify-center gap-6 mt-4 text-sm text-gray-600">
+
+        <div className="flex justify-center flex-wrap gap-6 mt-4 text-sm text-gray-600">
           {personalInfo.email && <span>{personalInfo.email}</span>}
           {personalInfo.phone && <span>|</span>}
           {personalInfo.phone && <span>{personalInfo.phone}</span>}
           {personalInfo.location && <span>|</span>}
           {personalInfo.location && <span>{personalInfo.location}</span>}
+          <CVLinkItems links={links} className="flex items-center gap-1 hover:underline" style={{ color: settings.accentColor }} />
         </div>
       </div>
 

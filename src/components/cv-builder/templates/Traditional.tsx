@@ -1,7 +1,8 @@
 import { TemplateProps } from '../types';
+import { CVLinkItems } from './LinkIcons';
 
 export const Traditional = ({ data, scale = 1 }: TemplateProps) => {
-  const { personalInfo, experience, education, skills, certifications, projects, settings } = data;
+  const { personalInfo, experience, education, skills, certifications, projects, links, settings } = data;
   
   const fontSizeClass = {
     small: 'text-xs',
@@ -34,6 +35,7 @@ export const Traditional = ({ data, scale = 1 }: TemplateProps) => {
               <span>{personalInfo.email}</span>
             </>
           )}
+          <CVLinkItems links={links} className="inline-flex items-center gap-1 mx-1 hover:underline" />
         </div>
       </div>
 

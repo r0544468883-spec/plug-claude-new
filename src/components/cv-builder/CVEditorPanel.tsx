@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { CVData, Experience, Education, Project, Language } from './types';
+import { CVData, Experience, Education, Project, Language, ExternalLink, LinkType } from './types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Trash2, GripVertical, Camera } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Camera, Link as LinkIcon } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SkillsSelector } from './SkillsSelector';
 import { LanguageSelector } from './LanguageSelector';
 import { CVInlineAI } from './CVInlineAI';
@@ -304,6 +305,42 @@ export const CVEditorPanel = ({ data, onChange }: CVEditorPanelProps) => {
     }
   };
 
+  // ── External Links ───────────────────────────────────────────────────────
+  const linkTypeOptions: { value: LinkType; label: string; labelHe: string }[] = [
+    { value: 'linkedin', label: 'LinkedIn', labelHe: 'LinkedIn' },
+    { value: 'github', label: 'GitHub', labelHe: 'GitHub' },
+    { value: 'portfolio', label: 'Portfolio', labelHe: 'פורטפוליו' },
+    { value: 'website', label: 'Website', labelHe: 'אתר אישי' },
+    { value: 'twitter', label: 'Twitter / X', labelHe: 'Twitter / X' },
+    { value: 'dribbble', label: 'Dribbble', labelHe: 'Dribbble' },
+    { value: 'behance', label: 'Behance', labelHe: 'Behance' },
+    { value: 'other', label: 'Other', labelHe: 'אחר' },
+  ];
+
+  const addLink = () => {
+    const links = data.links ?? [];
+    onChange({ ...data, links: [...links, { id: generateId(), type: 'linkedin', url: '', label: '' }] });
+  };
+  const updateLink = (id: string, field: keyof ExternalLink, value: string) => {
+    const links = data.links ?? [];
+    onChange({ ...data, links: links.map((l) => l.id === id ? { ...l, [field]: value } : l) });
+  };
+  const removeLink = (id: string) => {
+    const links = data.links ?? [];
+    const removed = links.find((l) => l.id === id);
+    const newData = { ...data, links: links.filter((l) => l.id !== id) };
+    onChange(newData);
+    if (removed) {
+      toast(isHe ? 'קישור נמחק' : 'Link removed', {
+        action: {
+          label: isHe ? 'ביטול' : 'Undo',
+          onClick: () => onChange({ ...newData, links: [...(newData.links ?? []), removed] }),
+        },
+        duration: 5000,
+      });
+    }
+  };
+
   const cvDir = (data.settings.cvLanguage ?? 'en') === 'he' ? 'rtl' : 'ltr';
 
   return (
@@ -521,6 +558,64 @@ export const CVEditorPanel = ({ data, onChange }: CVEditorPanelProps) => {
               <Button variant="outline" className="w-full" onClick={addProject}>
                 <Plus className="w-4 h-4 me-2" />
                 {isHe ? 'הוסף פרויקט' : 'Add Project'}
+              </Button>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* ── External Links ──────────────────────────────────────────── */}
+          <AccordionItem value="links" className="border rounded-lg px-3">
+            <AccordionTrigger className="font-semibold">
+              {isHe ? '🔗 קישורים חיצוניים' : '🔗 External Links'}
+            </AccordionTrigger>
+            <AccordionContent className="space-y-3 pt-2">
+              <p className="text-xs text-muted-foreground">
+                {isHe ? 'הוסף קישורים לפרופילים מקצועיים כמו LinkedIn, GitHub, פורטפוליו ועוד' : 'Add links to professional profiles like LinkedIn, GitHub, portfolio and more'}
+              </p>
+              {(data.links ?? []).map((link) => (
+                <div key={link.id} className="border rounded-lg p-3 space-y-2 bg-muted/30">
+                  <div className="flex justify-end">
+                    <Button variant="ghost" size="icon" onClick={() => removeLink(link.id)}>
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label>{isHe ? 'סוג' : 'Type'}</Label>
+                      <Select value={link.type} onValueChange={(v) => updateLink(link.id, 'type', v)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {linkTypeOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {isHe ? opt.labelHe : opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>{isHe ? 'תווית (אופציונלי)' : 'Label (optional)'}</Label>
+                      <Input
+                        placeholder={isHe ? 'למשל: הפרויקט שלי' : 'e.g. My Portfolio'}
+                        value={link.label || ''}
+                        onChange={(e) => updateLink(link.id, 'label', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>URL</Label>
+                    <Input
+                      placeholder="https://..."
+                      value={link.url}
+                      onChange={(e) => updateLink(link.id, 'url', e.target.value)}
+                    />
+                  </div>
+                </div>
+              ))}
+              <Button variant="outline" className="w-full" onClick={addLink}>
+                <Plus className="w-4 h-4 me-2" />
+                {isHe ? 'הוסף קישור' : 'Add Link'}
               </Button>
             </AccordionContent>
           </AccordionItem>

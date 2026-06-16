@@ -52,6 +52,15 @@ export interface Project {
   url?: string;
 }
 
+export type LinkType = 'linkedin' | 'github' | 'portfolio' | 'website' | 'twitter' | 'dribbble' | 'behance' | 'other';
+
+export interface ExternalLink {
+  id: string;
+  type: LinkType;
+  url: string;
+  label?: string;
+}
+
 export type FontFamily = 'inter' | 'roboto' | 'open-sans' | 'heebo' | 'assistant' | 'playfair' | 'lora' | 'montserrat' | 'poppins' | 'raleway' | 'merriweather' | 'source-serif' | 'nunito';
 export type ColorPreset = 'default' | 'professional' | 'creative' | 'minimal' | 'bold' | 'elegant' | 'forest' | 'sunset' | 'rose' | 'midnight' | 'royal' | 'ocean';
 export type Spacing = 'compact' | 'normal' | 'spacious';
@@ -109,6 +118,7 @@ export interface CVData {
   skills: Skills;
   certifications: Certification[];
   projects: Project[];
+  links: ExternalLink[];
   settings: CVSettings;
 }
 
@@ -130,6 +140,7 @@ export const defaultCVData: CVData = {
   },
   certifications: [],
   projects: [],
+  links: [],
   settings: {
     templateId: 'modern-tech',
     accentColor: '#3b82f6',

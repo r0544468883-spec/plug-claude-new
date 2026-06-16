@@ -1,8 +1,9 @@
 import { TemplateProps } from '../types';
 import { Mail, Phone, MapPin, Palette, Layers, Eye } from 'lucide-react';
+import { CVLinkItems } from './LinkIcons';
 
 export const Designer = ({ data, scale = 1 }: TemplateProps) => {
-  const { personalInfo, experience, education, skills, certifications, projects, settings } = data;
+  const { personalInfo, experience, education, skills, certifications, projects, links, settings } = data;
   
   const fontSizeClass = {
     small: 'text-xs',
@@ -51,6 +52,7 @@ export const Designer = ({ data, scale = 1 }: TemplateProps) => {
                 <span>{personalInfo.location}</span>
               </div>
             )}
+            <CVLinkItems links={links} className="flex items-center gap-3 hover:underline" iconClassName="w-4 h-4" style={{ color: settings.accentColor }} />
           </div>
         </div>
       </div>

@@ -1,9 +1,10 @@
 import { TemplateProps } from '../types';
 import { Mail, MapPin, Github, Globe, Terminal, Code2, Database } from 'lucide-react';
+import { CVLinkItems } from './LinkIcons';
 
 export const Developer = ({ data, scale = 1 }: TemplateProps) => {
-  const { personalInfo, experience, education, skills, certifications, projects, settings } = data;
-  
+  const { personalInfo, experience, education, skills, certifications, projects, links, settings } = data;
+
   const fontSizeClass = {
     small: 'text-xs',
     medium: 'text-sm',
@@ -11,7 +12,7 @@ export const Developer = ({ data, scale = 1 }: TemplateProps) => {
   }[settings.fontSize];
 
   return (
-    <div 
+    <div
       className="bg-slate-900 text-slate-100 w-full min-h-[297mm] font-mono"
       style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}
     >
@@ -23,14 +24,14 @@ export const Developer = ({ data, scale = 1 }: TemplateProps) => {
           <div className="w-3 h-3 rounded-full bg-green-500" />
           <span className="ml-4 text-slate-400 text-sm">~/resume</span>
         </div>
-        
+
         <div className="flex items-center gap-2 text-green-400">
           <Terminal className="w-5 h-5" />
           <span className="text-lg">$</span>
           <h1 className="text-2xl font-bold">{personalInfo.fullName || 'dev_name'}</h1>
         </div>
         <p className="text-slate-400 mt-1 ml-7"># {personalInfo.title || 'Software Developer'}</p>
-        
+
         <div className="flex flex-wrap gap-4 mt-4 ml-7 text-sm">
           {personalInfo.email && (
             <span className="flex items-center gap-1 text-slate-300">
@@ -44,6 +45,7 @@ export const Developer = ({ data, scale = 1 }: TemplateProps) => {
               {personalInfo.location}
             </span>
           )}
+          <CVLinkItems links={links} className="flex items-center gap-1 text-slate-300 hover:underline" iconClassName="w-4 h-4" style={{ color: settings.accentColor }} />
         </div>
       </div>
 
