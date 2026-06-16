@@ -331,8 +331,9 @@ export default function PublicProfile() {
     );
   }
 
-  // If profile is not visible (anonymous mode) and viewer is not the owner
-  if (!isVisible && !isOwnProfile) {
+  // Public profile links (/p/:userId) are always visible.
+  // visible_to_hr only affects recruiter search results, not direct profile links.
+  if (false && !isVisible && !isOwnProfile) {
     return (
       <div className="min-h-screen bg-background flex flex-col" dir={isHebrew ? 'rtl' : 'ltr'}>
         <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-30">
