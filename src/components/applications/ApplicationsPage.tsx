@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -482,23 +482,82 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
     }
   }, [user?.id, isRTL, t, applications]);
 
-  const handleDelete = useCallback(async (id: string) => {
+  // Pending deletes awaiting the undo window: id -> timeout handle.
+  // A delete is optimistic (removed from UI now) but only committed to the DB
+  // after the toast's undo window elapses, so "בטל" can restore it in place.
+  const pendingDeletes = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  const commitDelete = useCallback(async (id: string, removed: (typeof applications)[number], idx: number) => {
+    pendingDeletes.current.delete(id);
     try {
       const { error } = await supabase
         .from('applications')
         .delete()
         .eq('id', id)
         .eq('candidate_id', user?.id);
-
       if (error) throw error;
-
-      setApplications((prev) => prev.filter((app) => app.id !== id));
-      toast.success(isRTL ? 'המועמדות נמחקה' : 'Application deleted');
     } catch (error) {
       console.error('Error deleting application:', error);
       toast.error(t('common.error') || 'Failed to delete application');
+      // Roll back the optimistic removal so the UI stays truthful to the DB.
+      setApplications((prev) => {
+        if (prev.some((a) => a.id === id)) return prev;
+        const next = [...prev];
+        next.splice(Math.min(idx, next.length), 0, removed);
+        return next;
+      });
     }
-  }, [user?.id, isRTL, t]);
+  }, [user?.id, t]);
+
+  const handleDelete = useCallback((id: string) => {
+    const idx = applications.findIndex((app) => app.id === id);
+    if (idx === -1) return;
+    const removed = applications[idx];
+
+    // Optimistic removal — the row disappears immediately.
+    setApplications((prev) => prev.filter((app) => app.id !== id));
+
+    // Schedule the real delete for after the undo window.
+    const timer = setTimeout(() => commitDelete(id, removed, idx), 5000);
+    pendingDeletes.current.set(id, timer);
+
+    toast(isRTL ? 'המועמדות נמחקה' : 'Application deleted', {
+      duration: 5000,
+      action: {
+        label: isRTL ? 'בטל' : 'Undo',
+        onClick: () => {
+          const pending = pendingDeletes.current.get(id);
+          if (pending) {
+            clearTimeout(pending);
+            pendingDeletes.current.delete(id);
+          }
+          // Restore the row at its original position.
+          setApplications((prev) => {
+            if (prev.some((a) => a.id === id)) return prev;
+            const next = [...prev];
+            next.splice(Math.min(idx, next.length), 0, removed);
+            return next;
+          });
+        },
+      },
+    });
+  }, [applications, isRTL, commitDelete]);
+
+  // On unmount, flush any pending deletes so nothing is silently lost.
+  useEffect(() => {
+    const pending = pendingDeletes.current;
+    return () => {
+      pending.forEach((timer, id) => {
+        clearTimeout(timer);
+        void supabase
+          .from('applications')
+          .delete()
+          .eq('id', id)
+          .eq('candidate_id', user?.id);
+      });
+      pending.clear();
+    };
+  }, [user?.id]);
 
 
   // Stage counts from shared config
