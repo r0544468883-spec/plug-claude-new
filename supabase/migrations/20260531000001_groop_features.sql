@@ -353,7 +353,7 @@ CREATE POLICY "challenge_tasks_update" ON challenge_tasks FOR UPDATE USING (
 
 -- Challenge teams: visible to all
 CREATE POLICY "challenge_teams_select" ON challenge_teams FOR SELECT USING (true);
-CREATE POLICY "challenge_teams_insert" ON challenge_teams FOR INSERT WITH CHECK (true);
+CREATE POLICY "challenge_teams_insert" ON challenge_teams FOR INSERT TO authenticated WITH CHECK (true); -- hardened 2026-08-08: require an account
 
 -- Challenge participants: user can join, all can see leaderboard
 CREATE POLICY "participants_select" ON challenge_participants FOR SELECT USING (true);
@@ -390,7 +390,9 @@ CREATE POLICY "payment_links_delete" ON payment_links FOR DELETE USING (creator_
 CREATE POLICY "link_tx_select" ON payment_link_transactions FOR SELECT USING (
   link_id IN (SELECT id FROM payment_links WHERE creator_id = auth.uid())
 );
-CREATE POLICY "link_tx_insert" ON payment_link_transactions FOR INSERT WITH CHECK (true);
+-- hardened 2026-08-08: public checkout may insert, but only as 'pending';
+-- the payment webhook (service role) sets 'completed'. Was WITH CHECK (true) → self-mark paid.
+CREATE POLICY "link_tx_insert" ON payment_link_transactions FOR INSERT WITH CHECK (status = 'pending');
 
 -- Landing pages: public if published, creator manages
 CREATE POLICY "landing_select" ON community_landing_pages FOR SELECT USING (is_published = true OR
@@ -415,7 +417,8 @@ CREATE POLICY "affiliates_update" ON affiliates FOR UPDATE USING (user_id = auth
 CREATE POLICY "conversions_select" ON affiliate_conversions FOR SELECT USING (
   affiliate_id IN (SELECT id FROM affiliates WHERE user_id = auth.uid())
 );
-CREATE POLICY "conversions_insert" ON affiliate_conversions FOR INSERT WITH CHECK (true);
+-- hardened 2026-08-08: conversions are attributed server-side (service role);
+-- no client INSERT policy. Was WITH CHECK (true) → anyone forges conversions (affiliate fraud).
 
 -- Affiliate payouts: affiliate owner can see
 CREATE POLICY "payouts_select" ON affiliate_payouts FOR SELECT USING (
