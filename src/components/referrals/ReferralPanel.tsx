@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Copy, Share2, Users, Zap, Gift, CheckCircle2, Loader2, Trophy, Target, Crown, Star, Lock } from 'lucide-react';
+import { ReferralQRCard } from './ReferralQRCard';
 
 // Milestones — tiered rewards
 const MILESTONES = [
@@ -230,6 +231,11 @@ export function ReferralPanel() {
           </div>
         </CardContent>
       </Card>
+
+      {/* QR code — offline bridge */}
+      {referralCode && (
+        <ReferralQRCard inviteLink={inviteLink} referralCode={referralCode} isHebrew={isHebrew} />
+      )}
 
       {/* Milestones */}
       <Card>
