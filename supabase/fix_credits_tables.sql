@@ -189,8 +189,11 @@ CREATE TABLE IF NOT EXISTS public.promo_code_redemptions (
 ALTER TABLE public.promo_codes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.promo_code_redemptions ENABLE ROW LEVEL SECURITY;
 
+-- promo_codes is a money table: RLS enabled with NO client policy = deny-all.
+-- Only the service_role (edge functions redeem-promo-code / create) accesses it,
+-- and service_role BYPASSES RLS. A `FOR ALL USING (true)` here would let any
+-- client read/forge/redeem codes. Matches migration 20260217162529 (deny-all).
 DROP POLICY IF EXISTS "Admins can manage promo codes" ON public.promo_codes;
-CREATE POLICY "Admins can manage promo codes" ON public.promo_codes FOR ALL USING (true);
 
 DROP POLICY IF EXISTS "Users can view their own redemptions" ON public.promo_code_redemptions;
 CREATE POLICY "Users can view their own redemptions" ON public.promo_code_redemptions
