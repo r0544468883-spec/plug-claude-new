@@ -6,6 +6,18 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Invisible/watermark characters LLM output can carry. Stripped from every
+// streamed text delta before it reaches the client. Bidi controls (LRM/RLM,
+// isolates) are intentionally NOT included — they are legitimate in Hebrew RTL.
+const INVISIBLE_RE = new RegExp(
+  "[\\u200B-\\u200D\\u2060-\\u2065\\u061C\\u180E\\uFEFF\\uFFF0-\\uFFF8" +
+    "\\u3164\\uFFA0\\uFE00-\\uFE0F\\uFDD0-\\uFDEF]" +
+    "|[\\u{E0000}-\\u{E0FFF}]|[\\u{E0100}-\\u{E01EF}]" +
+    "|[\\u{F0000}-\\u{FFFFD}]|[\\u{100000}-\\u{10FFFD}]",
+  "gu",
+);
+const stripInvisible = (s: string): string => s.replace(INVISIBLE_RE, "");
+
 // ─── Static prompts (module scope) ──────────────────────────────────────────
 // These strings MUST be byte-identical between requests so Anthropic's
 // prompt cache hits. Any per-request data goes into the dynamic block built
@@ -428,7 +440,7 @@ ${careerContext.trim()}
               try {
                 const event = JSON.parse(jsonStr);
                 if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
-                  const chunk = JSON.stringify({ choices: [{ delta: { content: event.delta.text } }] });
+                  const chunk = JSON.stringify({ choices: [{ delta: { content: stripInvisible(event.delta.text) } }] });
                   controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
                 } else if (event.type === "message_start" && event.message?.usage) {
                   const u = event.message.usage;
