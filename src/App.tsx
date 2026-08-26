@@ -47,6 +47,7 @@ function WhatsAppButton() {
   );
 }
 import Index from "./pages/Index";
+import CommandBar from "./components/CommandBar";
 import PublicProfile from "./pages/PublicProfile";
 import SavedJobs from "./pages/SavedJobs";
 import CandidateProfile from "./pages/CandidateProfile";
@@ -109,6 +110,8 @@ const App = () => (
                 </a>
                 {/* Floating WhatsApp button */}
                 <WhatsAppButton />
+                {/* Global ⌘K command bar (@helix/motion) */}
+                <CommandBar />
 
                 <Routes>
                   <Route path="/" element={<Index />} />

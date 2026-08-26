@@ -33,6 +33,7 @@ import { RecruiterTracker } from './RecruiterTracker';
 import { StagnantApplicationsTab } from './StagnantApplicationsTab';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useFlip } from '@/lib/motion';
 
 interface Application {
   id: string;
@@ -342,6 +343,10 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
       return (now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24) >= 30;
     }).length;
   }, [applications]);
+
+  // FLIP: rows flow to new positions when the list is re-sorted/filtered
+  // (@helix/motion — Apple spatial-consistency primitive). Purely additive.
+  const listFlipRef = useFlip<HTMLDivElement>([sortBy, statusFilter, stageFilter, search, filteredApplications]);
 
   // Handlers
   const handleViewDetails = useCallback((application: Application) => {
@@ -836,10 +841,10 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
               </Card>
             )
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3" ref={listFlipRef}>
               {filteredApplications.map((application) => (
+                <div key={application.id} data-flip-id={application.id}>
                 <VerticalApplicationCard
-                  key={application.id}
                   application={{
                     ...application,
                     job: application.job ? {
@@ -862,6 +867,7 @@ export function ApplicationsPage({ initialStageFilter, initialTab, onNavigate }:
                   onStageChange={(stage) => handleStageChange(application.id, stage)}
                   onDelete={() => handleDelete(application.id)}
                 />
+                </div>
               ))}
             </div>
           ))}
