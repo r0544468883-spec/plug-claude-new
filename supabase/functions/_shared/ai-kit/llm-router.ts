@@ -176,6 +176,25 @@ function isTransient(err: unknown): boolean {
  */
 export async function llm(req: LlmRequest): Promise<LlmResult> {
   const primary = req.model ?? `anthropic/${CURRENT_AI_MODEL}`;
+
+  // ── Mock hook (Polsia's CLAUDE_CLI_MOCK equivalent) ──────────
+  // When AI_KIT_MOCK is set, short-circuit before any network call:
+  // return AI_KIT_MOCK_RESPONSE verbatim (a string, usually JSON so
+  // structured() also validates). Lets the whole agent stack run in
+  // tests / CI with no API keys and zero spend. Tests set the env per
+  // case to script a specific response.
+  const mock = Deno.env.get("AI_KIT_MOCK");
+  if (mock) {
+    return {
+      text: Deno.env.get("AI_KIT_MOCK_RESPONSE") ?? '{"result": "AI Kit mock response"}',
+      model: parseModel(primary)[1],
+      provider: parseModel(primary)[0],
+      usage: { inputTokens: 0, outputTokens: 0 },
+      costUsd: 0,
+      latencyMs: 0,
+    };
+  }
+
   const chain = [primary, ...(req.fallbacks ?? [])];
   let lastErr: unknown;
 

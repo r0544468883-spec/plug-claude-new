@@ -23,6 +23,12 @@ export * from "./orchestrator.ts";      // autogen
 export * from "./agent-config.ts";      // crewai
 export * from "./memory-extraction.ts"; // mem0
 
+// 🟣 Agent runtime (distilled from the Polsia teardown)
+export * from "./sandbox.ts";           // SANDBOX_MODE side-effect gate
+export * from "./context.ts";           // get_full_context / company brief
+export * from "./agent-runtime.ts";     // tracked runs + activity feed + dual-write memory
+export * from "./agents/index.ts";      // 8-agent registry + runNamedAgent (crew_factory)
+
 // 🔵 Future infra (no-op / Postgres-backed until env configured)
 export * from "./cache.ts";             // redis / upstash
 export * from "./queue.ts";             // trigger.dev
