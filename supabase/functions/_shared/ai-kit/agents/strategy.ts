@@ -20,6 +20,7 @@ export const strategyAgent: AgentDef = {
     "Each bet names the department/agent that would own it.",
     "No em-dash (—); use a comma or period.",
   ],
+  skills: ["business-strategy"],
 };
 
 export const strategySchema: Schema = {

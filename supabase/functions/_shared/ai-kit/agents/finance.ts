@@ -20,6 +20,7 @@ export const financeAgent: AgentDef = {
     "Flag any churn spike, failed-payment cluster, or CAC>LTV as an alert.",
     "No em-dash (—) in any prose; use a comma or period.",
   ],
+  skills: ["finance-metrics", "helix-brand-voice"],
 };
 
 export const financeSchema: Schema = {

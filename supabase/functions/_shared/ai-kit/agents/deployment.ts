@@ -20,6 +20,7 @@ export const deploymentAgent: AgentDef = {
     "Never mark a deploy done; execution is a separate gated action.",
     "No em-dash (—); use a comma or period.",
   ],
+  skills: ["qa-verification"],
 };
 
 export const deploymentSchema: Schema = {

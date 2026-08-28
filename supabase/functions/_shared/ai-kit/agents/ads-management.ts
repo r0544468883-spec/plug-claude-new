@@ -21,6 +21,7 @@ export const adsManagementAgent: AgentDef = {
     "Never name or criticize a competitor in ad copy.",
     "No em-dash (—) in any copy; use a comma or period.",
   ],
+  skills: ["paid-ads", "cro-conversion", "helix-brand-voice"],
 };
 
 export const adsManagementSchema: Schema = {

@@ -21,6 +21,7 @@ export const customerSupportAgent: AgentDef = {
     "Escalate billing disputes, legal threats, and anything about data/privacy.",
     "No em-dash (—); use a comma or period.",
   ],
+  skills: ["comms-storytelling", "ecommerce-sell", "helix-brand-voice"],
 };
 
 export const customerSupportSchema: Schema = {

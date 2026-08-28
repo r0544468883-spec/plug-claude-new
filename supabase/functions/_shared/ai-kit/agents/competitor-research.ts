@@ -20,6 +20,7 @@ export const competitorResearchAgent: AgentDef = {
     "Every insight must end in a 'so what' for our roadmap or GTM.",
     "No em-dash (—) in prose; use a comma or period.",
   ],
+  skills: ["competitive-intel", "helix-brand-voice"],
 };
 
 export const competitorResearchSchema: Schema = {

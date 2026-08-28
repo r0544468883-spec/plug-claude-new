@@ -21,6 +21,7 @@ export const orchestratorAgent: AgentDef = {
     "The summary reports only what the context shows was done; no fabrication.",
     "No em-dash (—); use a comma or period.",
   ],
+  skills: ["project-orchestration"],
 };
 
 export const orchestratorSchema: Schema = {

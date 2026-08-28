@@ -21,6 +21,7 @@ export const codeGenerationAgent: AgentDef = {
     "Never claim a PR was opened; opening it is a separate gated action.",
     "Flag any migration, secret, or breaking change explicitly under risks.",
   ],
+  skills: ["code-review-ship", "qa-verification"],
 };
 
 export const codeGenerationSchema: Schema = {

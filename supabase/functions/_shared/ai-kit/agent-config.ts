@@ -10,6 +10,7 @@
 
 import { llm, type ChatMessage } from "./llm-router.ts";
 import { structured, type Schema } from "./structured-output.ts";
+import { withSkills } from "./skills/registry.ts";
 
 export interface AgentDef {
   name: string;
@@ -21,6 +22,9 @@ export interface AgentDef {
   maxTokens?: number;
   /** hard rules appended to the system prompt (guardrails as text) */
   rules?: string[];
+  /** capability skills loaded from skills/registry.ts (STANDING RULE:
+   *  domain knowledge lives in a shared skill, not a duplicated prompt) */
+  skills?: string[];
 }
 
 export interface TaskDef {
@@ -38,7 +42,8 @@ export function renderSystemPrompt(agent: AgentDef): string {
     agent.backstory ? `Background: ${agent.backstory}` : "",
     agent.rules?.length ? `Rules you must follow:\n${agent.rules.map((r) => `- ${r}`).join("\n")}` : "",
   ];
-  return parts.filter(Boolean).join("\n\n");
+  // STANDING RULE: load capability from the shared skill library.
+  return withSkills(parts.filter(Boolean).join("\n\n"), agent.skills);
 }
 
 export interface AgentRun<T = string> {

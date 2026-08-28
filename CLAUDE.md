@@ -1,5 +1,10 @@
 # PLUG Nexus AI - Project Instructions
 
+## Reuse-Before-Build Rule
+Before building any new product or major feature, FIRST search for ready-made skills/MCP/subagents/GitHub repos — don't build from scratch what exists in open source.
+Search: Glama + mcp.so (MCP) · Composio/awesome-claude-skills + Skillselion + SkillsClaude (skills) · wshobson/agents (subagents) · agentskills.co.il (Israeli/regulatory) · GitHub `awesome-<domain>`.
+Install skills with `npx skills add owner/repo`. Full source list: `Desktop/HELIX - מאגר מקורות סקילים MCP ואייגנטים.docx`.
+
 ## UX Skill
 When building or reviewing UI components, always reference and apply the UX checklist at:
 `C:\Users\User\Desktop\Claude agents (skills)\tools\UX\ux-review-skill.md`
@@ -10,6 +15,9 @@ Key rules to always follow:
 - Loading, error, and empty states for all data views
 - Mobile responsive (44px touch targets, no horizontal scroll)
 - Accessibility: contrast, focus indicators, aria-labels
+
+## Skill-Based Agents (STANDING RULE — all products)
+Every product agent that calls an LLM MUST load its capability from the shared skill library (`helix/skills/`), not from a prompt duplicated per product. Agent = archetype (role/format/gate in code) × domain (loaded from a skill). One skill per capability, shared across products — never a skill per agent. Every text-producing agent also loads `helix-brand-voice` (+ Hebrew-native + clean-text/no-em-dash). Deterministic agents (no LLM) need no skill. Reference `PRODUCTS/HELIX-AGENT-SKILLS-MAP.md` (matrix) + `HELIX-SKILLS-WIRING-CHECKLIST.md` (method) in the helix repo. Reuse ready-made skills (anthropics/skills, ComposioHQ/awesome-claude-skills) before building; security-read third-party skills first. Wire the skill before treating any agent work as done. In ai-kit, the injection point is `_shared/ai-kit/agent-config.ts::renderSystemPrompt` + `_shared/ai-kit/skills/registry.ts`.
 
 ## PLUG Chrome Extension
 The Chrome Extension source code is at:
